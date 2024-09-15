@@ -1,0 +1,105 @@
+[
+  {
+    "id": 0,
+    "namePermission": "Manager",
+    "action": "manage",
+    "subject": "all"
+  },
+  {
+    "id": 1,
+    "namePermission": "ReadAdmin",
+    "action": "read",
+    "subject": "admin"
+  },
+  {
+    "id": 2,
+    "namePermission": "CreateAdmin",
+    "action": "create",
+    "subject": "admin"
+  },
+  {
+    "id": 3,
+    "namePermission": "DeleteAdmin",
+    "action": "delete",
+    "subject": "admin"
+  },
+  {
+    "id": 4,
+    "namePermission": "UpdateAdmin",
+    "action": "update",
+    "subject": "admin"
+  },
+  {
+    "id": 5,
+    "namePermission": "blockAdmin",
+    "action": "block",
+    "subject": "admin"
+  },
+  {
+    "id": 6,
+    "namePermission": "createRole",
+    "action": "create",
+    "subject": "role"
+  },
+  {
+    "id": 7,
+    "namePermission": "deleteRole",
+    "action": "delete",
+    "subject": "role"
+  },
+  {
+    "id": 8,
+    "namePermission": "updateRole",
+    "action": "update",
+    "subject": "role"
+  },
+  {
+    "id": 9,
+    "namePermission": "readRole",
+    "action": "read",
+    "subject": "role"
+  },
+  {
+    "id": 14,
+    "namePermission": "createUser",
+    "action": "create",
+    "subject": "user"
+  },
+  {
+    "id": 15,
+    "namePermission": "deleteUser",
+    "action": "delete",
+    "subject": "user"
+  },
+  {
+    "id": 16,
+    "namePermission": "updateUser",
+    "action": "update",
+    "subject": "user"
+  },
+  {
+    "id": 17,
+    "namePermission": "readUser",
+    "action": "read",
+    "subject": "user"
+  },
+  {
+    "id": 18,
+    "namePermission": "blockUser",
+    "action": "block",
+    "subject": "user"
+  },
+  {
+    "id": 19,
+    "namePermission": "createCategory",
+    "action": "create",
+    "subject": "category"
+  },
+  {
+    "id": 20,
+    "namePermission": "deleteCategory",
+    "action": "delete",
+    "subject": "category"
+  }
+
+  ]

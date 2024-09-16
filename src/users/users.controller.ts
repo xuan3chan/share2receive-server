@@ -46,7 +46,7 @@ export class UsersController {
   ) {}
 
   private getUserIdFromToken(request: Request): string {
-    const token = (request.headers as any).authorization.split(' ')[1]; // Bearer <token>
+    const token = (request.cookies.accessToken as string) || '';
     const decodedToken = jwt.decode(token) as JwtPayload;
     return decodedToken._id;
   }

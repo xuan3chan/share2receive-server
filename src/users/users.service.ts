@@ -40,15 +40,6 @@ export class UsersService {
     return this.findOneEmailOrUsernameService(username);
   }
 
-  async findOneUserForMessageService(userId: string): Promise<User> {
-
-    const user = await this.userModel
-      .findOne({ _id: userId })
-      .select('firstname avatar lastname')
-      .exec();
- 
-    return user;
-  }
 
   async findOneReTokenService(refreshToken: string): Promise<User> {
     const user = await this.userModel.findOne({ refreshToken }).exec();
@@ -91,9 +82,6 @@ export class UsersService {
    
     const users = await this.userModel
       .find()
-      .select(
-        'firstname avatar lastname email dateOfBirth address gender phone nickname description hyperlink createdAt status isBlock',
-      )
       .exec();
  
     return users;
@@ -168,10 +156,7 @@ export class UsersService {
  
     const user = await this.userModel
       .findOne({ _id })
-      .select(
-        'email role _id avatar firstname lastname address dateOfBirth description gender hyperlink nickname phone createdAt rankID rankScore',
-      )
-      .populate('rankID', '-score -rankScoreGoal')
+      .select('-password -encryptKey -refreshToken -authCode')  
       .exec();
   
     return user;

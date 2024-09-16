@@ -24,7 +24,7 @@ export class MemberGuard extends AuthGuard {
     }
 
     const request = context.switchToHttp().getRequest();
-    if (request.user && request.user.role === 'member' && request.user.isBlock === false) {
+    if (request.user && request.user.role === 'user' && request.user.isBlock === false) {
       return true;
     }
     throw new UnauthorizedException('Only members are allowed OR you are blocked');

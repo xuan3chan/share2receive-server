@@ -2,7 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { MongooseModule } from '@nestjs/mongoose';
-import { User, UserSchema } from './schema/user.schema';
+import { User, UserSchema } from '@app/libs/common/schema';
 import { ConfigModule } from '@nestjs/config';
 import {CloudinaryModule} from '../cloudinary/cloudinary.module';
 import {AbilityFactory} from '@app/libs/common/abilities';

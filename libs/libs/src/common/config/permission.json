@@ -88,18 +88,6 @@
     "namePermission": "blockUser",
     "action": "block",
     "subject": "user"
-  },
-  {
-    "id": 19,
-    "namePermission": "createCategory",
-    "action": "create",
-    "subject": "category"
-  },
-  {
-    "id": 20,
-    "namePermission": "deleteCategory",
-    "action": "delete",
-    "subject": "category"
   }
 
   ]

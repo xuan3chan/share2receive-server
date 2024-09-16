@@ -75,8 +75,8 @@ export class AdminService {
     return { massage: 'Admin updated successfully' };
   }
 
-  async findOneAdminEmailService(email: string): Promise<Admin> {
-    return this.adminModel.findOne({ email }).exec();
+  async findOneAdminAccountNameService(accountName: string): Promise<Admin> {
+    return this.adminModel.findOne({ accountName }).exec();
   }
   async updateRefreshTokenService(
     accountName: string,

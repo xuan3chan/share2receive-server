@@ -27,9 +27,9 @@ import { PermissionGuard } from '@app/libs/common/gaurd';
 @Controller('role')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
-  // @UseGuards(PermissionGuard)
-  // @Action('create')
-  // @Subject('role')
+  @UseGuards(PermissionGuard)
+  @Action('create')
+  @Subject('role')
   @ApiCreatedResponse({ description: 'Role created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @HttpCode(201)

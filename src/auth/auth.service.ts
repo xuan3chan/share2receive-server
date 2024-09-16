@@ -81,7 +81,7 @@ export class AuthService {
     try {
       const user =
         await this.usersService.findOneEmailOrUsernameService(account);
-      const admin = await this.adminService.findOneAdminEmailService(account);
+      const admin = await this.adminService.findOneAdminAccountNameService(account);
       const accountHolder = user || admin;
 
       if (!accountHolder) {

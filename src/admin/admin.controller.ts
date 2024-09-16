@@ -34,9 +34,9 @@ import { Subject, Action } from '@app/libs/common/decorator';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  // @Subject('admin')
-  // @Action('create')
-  // @UseGuards(PermissionGuard)
+  @Subject('admin')
+  @Action('create')
+  @UseGuards(PermissionGuard)
   @ApiCreatedResponse({ description: 'Admin created successfully' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @HttpCode(201)
@@ -46,9 +46,9 @@ export class AdminController {
       createAdminDto
     );
   }
-  // @Action('update')
-  // @Subject('admin')
-  // @UseGuards(PermissionGuard)
+  @Action('update')
+  @Subject('admin')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Admin updated successfully' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @HttpCode(200)
@@ -62,9 +62,9 @@ export class AdminController {
     );
   }
 
-  // @Action('delete')
-  // @Subject('admin')
-  // @UseGuards(PermissionGuard)
+  @Action('delete')
+  @Subject('admin')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Admin deleted successfully' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @Delete()
@@ -72,9 +72,9 @@ export class AdminController {
     return this.adminService.deleteAdminService(deleteAdminDto.id);
   }
 
-  // @Action('read')
-  // @Subject('admin')
-  // @UseGuards(PermissionGuard)
+  @Action('read')
+  @Subject('admin')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Admin listed successfully' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @HttpCode(200)
@@ -82,9 +82,9 @@ export class AdminController {
   async listAdminController() {
     return this.adminService.listAdminService();
   }
-  // @Action('block')
-  // @Subject('admin')
-  // @UseGuards(PermissionGuard)
+  @Action('block')
+  @Subject('admin')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Admin blocked successfully' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @HttpCode(200)

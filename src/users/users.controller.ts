@@ -13,7 +13,6 @@ import {
   Param,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { AuthGuard } from '../gaurd/auth.gaurd';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -28,15 +27,14 @@ import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
-import { PermissionGuard } from '../gaurd/permission.gaurd';
-import { Subject, Action } from 'src/decorator/casl.decorator';
+import { PermissionGuard,MemberGuard,AuthGuard } from '@app/libs/common/gaurd';
+import { Subject, Action } from '@app/libs/common/decorator';
 import { Request } from 'express';
 import {
   DeleteUserDto,
   BlockUserDto,
   UpdateUserProfileDto,
-} from './dto/index';
-import { MemberGuard } from 'src/gaurd/member.gaurd';
+} from '@app/libs/common/dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -93,30 +91,10 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserProfileDto,
   ): Promise<{ message: string }> {
     const userId = this.getUserIdFromToken(request);
-    const {
-      firstname,
-      lastname,
-      email,
-      dateOfBirth,
-      address,
-      gender,
-      phone,
-      nickname,
-      description,
-      hyperlink,
-    } = updateUserDto;
+   
     await this.usersService.updateUserProfileService(
       userId,
-      firstname,
-      lastname,
-      email,
-      dateOfBirth,
-      address,
-      gender,
-      phone,
-      nickname,
-      description,
-      hyperlink,
+      updateUserDto,
     );
     return { message: 'User profile updated successfully' };
   }
@@ -212,12 +190,5 @@ export class UsersController {
     return { message: 'delete user successfully' };
   }
 
-  @Patch('attendance-user')
-  @ApiOkResponse({ description: 'Attendance user success' })
-  @ApiBadRequestResponse({ description: 'bad request' })
-  @UseGuards(MemberGuard)
-  async attendanceUserController(@Req() request: Request): Promise<any> {
-    const userId = this.getUserIdFromToken(request);
-    return await this.usersService.attendanceService(userId);
-  }
+
 }

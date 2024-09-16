@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Res,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -16,8 +17,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import {RegisterDto,LoginDto,RefreshTokenDto,ForgotPasswordDto,ResetPasswordDto} from './dto/index';
-
+import {RegisterDto,LoginDto,RefreshTokenDto,ForgotPasswordDto,ResetPasswordDto} from '@app/libs/common/dto';
+import { Response } from 'express';
 @ApiTags('authentication')
 @ApiBearerAuth()
 @Controller('auth')
@@ -33,7 +34,6 @@ export class AuthController {
     return await this.authService.registerService(
       register.email,
       register.password,
-      register.username,
       register.firstname,
       register.lastname,
      
@@ -44,11 +44,13 @@ export class AuthController {
   @ApiOkResponse({ description: 'login successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Post('login')
-  async loginController(@Body() user: LoginDto) {
+  async loginController(@Body() user: LoginDto,@Res({ passthrough: true }) response: Response) {
     const loginResult = await this.authService.loginService(
       user.account,
       user.password,
     );
+    response.cookie('refreshToken', loginResult.refreshToken);
+    response.cookie('accessToken', loginResult.access_token);
     return { message: 'successfully', data: loginResult };
   }
 
@@ -56,10 +58,13 @@ export class AuthController {
   @ApiOkResponse({ description: 'refresh token successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Patch('refresh-token')
-  async refreshTokenController(@Body() refreshToken: RefreshTokenDto) {
-    return await this.authService.refreshTokenService(
+  async refreshTokenController(@Body() refreshToken: RefreshTokenDto,@Res({ passthrough: true }) response: Response) {
+    const result = await this.authService.refreshTokenService(
       refreshToken.refreshToken,
     );
+    response.cookie('refreshToken', result.refreshToken);
+    response.cookie('accessToken', result.access_token);
+    return { message: 'successfully', data: result };
   }
 
   @HttpCode(HttpStatus.OK)
@@ -68,8 +73,17 @@ export class AuthController {
   @Patch('logout')
   async logoutController(
     @Body() refreshToken: RefreshTokenDto,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
-    return await this.authService.logoutService(refreshToken.refreshToken);
+    // xoa cookie
+    const result = await this.authService.logoutService(refreshToken.refreshToken);
+    
+    if (result) {
+      response.clearCookie('refreshToken');
+    response.clearCookie('accessToken');
+      return { message: 'Logout successfully' };
+    }
+    return { message: 'Logout failed' };
   }
 
   @HttpCode(HttpStatus.ACCEPTED)

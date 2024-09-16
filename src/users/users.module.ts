@@ -14,13 +14,10 @@ import { EncryptionModule } from 'src/encryption/encryption.module';
 @Module({
   imports: [
     forwardRef(() => EncryptionModule),
-    AdminModule,,
+    AdminModule,
     CloudinaryModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
+ 
   ],
   controllers: [UsersController],
   providers: [UsersService,AbilityFactory],

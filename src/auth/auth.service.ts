@@ -30,7 +30,7 @@ export class AuthService {
         _id: accountHolder._id,
         role: accountHolder.role,
         isBlock: accountHolder.isBlock,
-        rankID: accountHolder.rankID,
+        userStyle: accountHolder.userStyle,
         sub: accountHolder._id,
       };
     } else {
@@ -39,10 +39,9 @@ export class AuthService {
       );
       return {
         _id: accountHolder._id,
-        email: accountHolder.email,
-        fullname: accountHolder.fullname,
+        adminName: accountHolder.adminName,
         role: roles,
-       
+        isBlock: accountHolder.isBlock,
       };
     }
   }
@@ -50,17 +49,15 @@ export class AuthService {
   async registerService(
     email: string,
     password: string,
-    username: string,
     firstname: string,
     lastname: string,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<{ message:string }> {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const createRefreshToken = randomBytes(32).toString('hex');
       const user = await this.usersService.createUserService(
         email,
         hashedPassword,
-        username,
         firstname,
         lastname,
         createRefreshToken,
@@ -68,12 +65,9 @@ export class AuthService {
       if ('message' in user) {
         throw new BadRequestException(user.message);
       }
-      const payload = await this.createJwtPayload(user, true);
-
 
       return {
-        access_token: this.jwtService.sign(payload),
-        refresh_token: createRefreshToken,
+        message: 'Register successfully',
       };
     } catch (error) {
       throw new BadRequestException(error.message);
@@ -85,7 +79,8 @@ export class AuthService {
     password: string,
   ): Promise<{ access_token: string; refreshToken: string; user: any }> {
     try {
-      const user =  await this.usersService.findOneEmailOrUsernameService(account);
+      const user =
+        await this.usersService.findOneEmailOrUsernameService(account);
       const admin = await this.adminService.findOneAdminEmailService(account);
       const accountHolder = user || admin;
 
@@ -117,11 +112,10 @@ export class AuthService {
             gender: user.gender,
             nickname: user.nickname,
             phone: user.phone,
-            dateAttendance: user.rankScore?.attendance?.dateAttendance ?? null,
+            userStyle : user.userStyle,
           }
         : {
-            fullname: admin.fullname,
-            email: admin.email,
+            adminName: admin.adminName,
             role: await this.roleService.findRoleService(
               admin.role.map(String),
             ),
@@ -263,7 +257,7 @@ export class AuthService {
     }
   }
 
-  async handleVerifyTokenService(token: string):Promise<string> {
+  async handleVerifyTokenService(token: string): Promise<string> {
     try {
       const Payload = this.jwtService.verify(token);
       return Payload['_id'];

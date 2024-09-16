@@ -21,72 +21,29 @@ export class MailerService {
   async sendEmailWithCode(email: string, code: string): Promise<void> {
     const mailOptions = {
       to: email,
-      subject: 'DaiQuanGia - Password Reset Instructions',
+      subject: 'Share2Receive - Password Reset Instructions',
       html: `
-      <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      color: #fff;
-    }
-  </style>
-  <body style="background-color: #25293c">
-    <div
-      style="
-        max-width: 800px;
-        margin: 0 auto;
-        background-color: #2f3349;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-        border-radius: 10px;
-      "
-    >
-      <div
-        style="
-          background-color: #7367f0;
-          text-align: center;
-          color: #fff;
-          margin-bottom: 10px;
-          height: 100px;
-          border-top-left-radius: 10px;
-          border-top-right-radius: 10px;
-        "
-      >
-        <h1 style="text-transform: uppercase; padding-top: 27px">
-          Dai quan gia
-        </h1>
-      </div>
-      <div style="padding: 20px">
-        <h4 style="margin-bottom: 10px; color: #fff">Dear user,</h4>
-        <p style="color: #fff">
-          We received a request to reset your password for your DaiQuanGia
-          account.
-        </p>
-        <p style="margin-bottom: 10px; color: #fff">
-          Here is your password reset code:
-        </p>
-
-        <div
-          style="
-            margin-bottom: 10px;
-            font-size: 46px;
-            font-weight: bold;
-            text-align: center;
-            color: #fff;
-          "
-        >
-          <p>${code}</p>
+      <body style="background-color: #f9f4eb; font-family: Arial, sans-serif; padding: 50px; text-align: center;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);">
+      <div style="background-color: #388e3c; text-align: center; color: #fff; padding: 30px 20px; border-top-left-radius: 10px; border-top-right-radius: 10px; font-family: 'Arial Black', Gadget, sans-serif;">
+  <h1 style="text-transform: uppercase; margin: 0; font-size: 36px; letter-spacing: 3px;">Share2Receive</h1>
+</div>
+      <div style="padding: 20px; color: #333;">
+        <h4 style="margin-bottom: 10px;">Dear user,</h4>
+        <p style="margin-bottom: 10px; line-height: 1.6;">We received a request to reset your password for your Share2Receive account.</p>
+        <p style="margin-bottom: 10px; line-height: 1.6;">Here is your password reset code:</p>
+        <div style="margin-bottom: 20px; font-size: 46px; font-weight: bold; letter-spacing: 10px; color: #333; background-color: #f5f5f5; border: 2px solid #333; padding: 10px; border-radius: 5px; display: inline-block;">
+          650050 <!-- Replace this with dynamic code -->
         </div>
-
-        <p style="margin-bottom: 15px; color: #fff">
-          If you did not request a password reset, please ignore this email or
-          reply to let us know. This password reset is only valid for the next
-          5 minutes.
-        </p>
-
-        <p style="color: #fff">Thank you, DaiQuanGia Support Team</p>
+        <p style="margin-top: 5px; font-size: 14px; color: #999;">Please note this code is only valid for 5 minutes.</p>
+        <p style="margin-bottom: 10px; line-height: 1.6;">If you did not request a password reset, please ignore this email or reply to let us know.</p>
+        <p style="line-height: 1.6;">Thank you, Share2Receive Support Team</p>
       </div>
-    </div>`,
+      <div style="margin-top: 30px; font-size: 14px; color: #555;">
+        <p>Have questions or trouble logging in? Just reply to this email or contact <a href="mailto:support@share2receive.com" style="color: #7367f0; text-decoration: none;">support@share2receive.com</a>.</p>
+      </div>
+    </div>
+  </body>`,
     };
 
     const info = await this.transporter.sendMail(mailOptions);

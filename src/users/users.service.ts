@@ -6,9 +6,10 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import {UpdateUserProfileDto} from '@app/libs/common/dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from './schema/user.schema';
+import { User } from '@app/libs/common/schema';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { remove as removeAccents } from 'remove-accents';
 import { EncryptionService } from '../encryption/encryption.service';
@@ -22,10 +23,6 @@ export class UsersService {
     private encryptionService: EncryptionService,
     
   ) {}
-
-  
-
-
 
   async findOneEmailOrUsernameService(account: string): Promise<User> {
   
@@ -137,14 +134,13 @@ export class UsersService {
   async createUserService(
       email: string,
       password: string,
-      username: string,
       firstname: string,
       lastname: string,
       refreshToken: string,
   ): Promise<User | { message: string }> {
       const userExist = await this.userModel
           .findOne({
-              $or: [{ email: email }, { username: username }],
+              $or: [{ email: email }],
           })
           .exec();
       if (userExist) {
@@ -156,7 +152,6 @@ export class UsersService {
       const newUser = new this.userModel({
           email,
           password,
-          username,
           firstname,
           lastname,
           encryptKey: createEncryptKey,
@@ -183,31 +178,13 @@ export class UsersService {
 
   async updateUserProfileService(
     _id: string,
-    firstname?: string,
-    lastname?: string,
-    email?: string,
-    dateOfBirth?: Date,
-    address?: string,
-    gender?: string,
-    phone?: string,
-    nickname?: string,
-    description?: string,
-    hyperlink?: string[],
+    UpdateUserProfileDto
   ): Promise<User> {
     const updatedUser = await this.userModel
       .findOneAndUpdate(
         { _id },
         {
-          firstname,
-          lastname,
-          email,
-          dateOfBirth,
-          address,
-          gender,
-          phone,
-          nickname,
-          description,
-          hyperlink,
+          UpdateUserProfileDto
         },
         { new: true },
       )

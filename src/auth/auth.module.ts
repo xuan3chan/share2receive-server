@@ -6,9 +6,12 @@ import { MailerModule } from '../mailer/mailer.module';
 import { AdminModule } from 'src/admin/admin.module';
 import { RoleModule } from 'src/role/role.module';
 import { UsersModule } from 'src/users/users.module';
+import {GoogleStrategy}from './google.strategy'
+import { PassportModule } from '@nestjs/passport';
 
 @Module({
   imports: [
+    PassportModule.register({ defaultStrategy: 'google' }),
     UsersModule,
     RoleModule,
     AdminModule,
@@ -19,7 +22,7 @@ import { UsersModule } from 'src/users/users.module';
     signOptions: { expiresIn: '1h' },
   }),],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService,GoogleStrategy],
   exports: [AuthService]
 })
 export class AuthModule {}

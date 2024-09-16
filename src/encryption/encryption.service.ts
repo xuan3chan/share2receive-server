@@ -32,11 +32,15 @@ export class EncryptionService {
   }
 
   createEncryptKey(password: string): string {
+    try{
     const keyA = crypto.randomBytes(32);
     const cipher = this.createCipher(password);
     let keyB = cipher.update(keyA);
     keyB = Buffer.concat([keyB, cipher.final()]);
     return keyB.toString(ENCODING);
+    }catch(e){
+      return e;
+    }
   }
   updateEncryptKey(password: string, decryptedKey: string): string {
     const cipher = this.createCipher(password);

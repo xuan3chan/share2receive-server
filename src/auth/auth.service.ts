@@ -74,6 +74,59 @@ export class AuthService {
     }
   }
 
+  async googleLogin(profile: any): Promise<{ access_token: string; refreshToken: string; user: any }> {
+    const { email, firstName, lastName, avatar } = profile;
+
+    try {
+      // Check if user already exists in the database
+      let user = await this.usersService.findOneEmailOrUsernameService(email);
+
+      // If user doesn't exist, create a new user
+      if (!user) {
+        const createRefreshToken = randomBytes(32).toString('hex');
+        const password = Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        user = await this.usersService.createUserService(
+          email,
+          hashedPassword, // Google users don't have a password initially
+          firstName,
+          lastName,
+          createRefreshToken,
+          avatar, // Use Google profile picture
+        );
+      }
+
+      if (user.isBlock) {
+        throw new UnauthorizedException('Account is blocked');
+      }
+
+      // Generate new refresh token
+      const createRefreshToken = randomBytes(32).toString('hex');
+      const payload = await this.createJwtPayload(user, true);
+
+      // Update refresh token in the database
+      await this.usersService.updateRefreshTokenService(user.email, createRefreshToken);
+
+      const returnedUser = {
+        email: user.email,
+        role: user.role,
+        _id: user._id,
+        avatar: user.avatar,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      };
+
+      return {
+        access_token: this.jwtService.sign(payload),
+        refreshToken: createRefreshToken,
+        user: returnedUser,
+      };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException(error.message);
+    }
+  }
+
   async loginService(
     account: string,
     password: string,

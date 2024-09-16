@@ -126,7 +126,8 @@ export class UsersService {
       firstname: string,
       lastname: string,
       refreshToken: string,
-  ): Promise<User | { message: string }> {
+      avatar?: string,
+  ): Promise<any> {
       const userExist = await this.userModel
           .findOne({
               $or: [{ email: email }],
@@ -135,6 +136,7 @@ export class UsersService {
       if (userExist) {
           return { message: 'Email or username already exists' };
       }
+     
       const createEncryptKey = this.encryptionService.createEncryptKey(
           password.toString(),
       );
@@ -143,6 +145,7 @@ export class UsersService {
           password,
           firstname,
           lastname,
+          avatar,
           encryptKey: createEncryptKey,
           refreshToken,
       });

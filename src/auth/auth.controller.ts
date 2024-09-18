@@ -99,8 +99,17 @@ export class AuthController {
       user.account,
       user.password,
     );
-    response.cookie('refreshToken', loginResult.refreshToken);
-    response.cookie('accessToken', loginResult.access_token);
+    response.cookie('refreshToken', loginResult.refreshToken, {
+      httpOnly: true,    // Bảo mật, không cho phép truy cập từ JavaScript
+      secure: process.env.NODE_ENV === 'production',  // Chỉ sử dụng trên HTTPS trong môi trường production
+      maxAge: 7 * 24 * 60 * 60 * 1000,  // Thời gian sống của cookie, ví dụ: 7 ngày
+    });
+
+    response.cookie('accessToken', loginResult.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 1000,  // Ví dụ: 1 giờ
+    });
     return { message: 'successfully', data: loginResult };
   }
 
@@ -115,8 +124,17 @@ export class AuthController {
     const result = await this.authService.refreshTokenService(
       refreshToken.refreshToken,
     );
-    response.cookie('refreshToken', result.refreshToken);
-    response.cookie('accessToken', result.access_token);
+    response.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,    // Bảo mật, không cho phép truy cập từ JavaScript
+      secure: process.env.NODE_ENV === 'production',  // Chỉ sử dụng trên HTTPS trong môi trường production
+      maxAge: 7 * 24 * 60 * 60 * 1000,  // Thời gian sống của cookie, ví dụ: 7 ngày
+    });
+
+    response.cookie('accessToken', result.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 1000,  // Ví dụ: 1 giờ
+    });
     return { message: 'successfully', data: result };
   }
 

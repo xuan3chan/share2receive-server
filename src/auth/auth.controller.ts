@@ -55,15 +55,19 @@ export class AuthController {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
       response.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,    // Bảo mật, không cho phép truy cập từ JavaScript
-        secure: process.env.NODE_ENV === 'production',  // Chỉ sử dụng trên HTTPS trong môi trường production
-        maxAge: 7 * 24 * 60 * 60 * 1000,  // Thời gian sống của cookie, ví dụ: 7 ngày
+        httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
+        secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
+        maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
+        sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
+        path: '/',  // Cookie có hiệu lực trên tất cả các route
       });
   
       response.cookie('accessToken', result.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 1000,  // Ví dụ: 1 giờ
+        httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
+        secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
+        maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
+        sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
+        path: '/',  // Cookie có hiệu lực trên tất cả các route
       });
       return result;
   
@@ -100,15 +104,19 @@ export class AuthController {
       user.password,
     );
     response.cookie('refreshToken', loginResult.refreshToken, {
-      httpOnly: true,    // Bảo mật, không cho phép truy cập từ JavaScript
-      secure: process.env.NODE_ENV === 'production',  // Chỉ sử dụng trên HTTPS trong môi trường production
-      maxAge: 7 * 24 * 60 * 60 * 1000,  // Thời gian sống của cookie, ví dụ: 7 ngày
+      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
+      secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
+      maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
+      sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
+      path: '/',  // Cookie có hiệu lực trên tất cả các route
     });
 
     response.cookie('accessToken', loginResult.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 1000,  // Ví dụ: 1 giờ
+      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
+  secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
+  maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
+  sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
+  path: '/',  // Cookie có hiệu lực trên tất cả các route
     });
     return { message: 'successfully', data: loginResult };
   }
@@ -125,15 +133,19 @@ export class AuthController {
       refreshToken.refreshToken,
     );
     response.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,    // Bảo mật, không cho phép truy cập từ JavaScript
-      secure: process.env.NODE_ENV === 'production',  // Chỉ sử dụng trên HTTPS trong môi trường production
-      maxAge: 7 * 24 * 60 * 60 * 1000,  // Thời gian sống của cookie, ví dụ: 7 ngày
+      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
+      secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
+      maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
+      sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
+      path: '/',  // Cookie có hiệu lực trên tất cả các route
     });
 
     response.cookie('accessToken', result.access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 1000,  // Ví dụ: 1 giờ
+      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
+  secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
+  maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
+  sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
+  path: '/',  // Cookie có hiệu lực trên tất cả các route
     });
     return { message: 'successfully', data: result };
   }

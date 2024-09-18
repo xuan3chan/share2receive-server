@@ -8,6 +8,9 @@ import {
   Patch,
   Post,
   Put,
+  Req,
+  Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
@@ -27,12 +30,25 @@ import {
 } from '@nestjs/swagger';
 import { PermissionGuard } from '@app/libs/common/gaurd';
 import { Subject, Action } from '@app/libs/common/decorator';
+import { Request } from 'express';
+import * as jwt from 'jsonwebtoken';
+import { JwtPayload } from 'jsonwebtoken';
+
 
 @ApiTags('admin')
 @ApiBearerAuth()
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  private getUserIdFromToken(request: Request): string {
+    const token = (request.cookies.accessToken as string) || '';
+    if (!token) {
+      throw new UnauthorizedException('token not found');
+    }
+    const decodedToken = jwt.decode(token) as JwtPayload;
+    return decodedToken._id;
+  }
 
   @Subject('admin')
   @Action('create')
@@ -94,5 +110,13 @@ export class AdminController {
       blockAdminDto.id,
       blockAdminDto.isBlocked,
     );
+  }
+
+  @Get('view-profile')
+  async viewProfileController(
+    @Req() request: Request
+  ) {
+    const id = this.getUserIdFromToken(request);
+    return this.adminService.viewProfileService(id);
   }
 }

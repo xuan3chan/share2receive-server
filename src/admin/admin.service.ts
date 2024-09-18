@@ -150,4 +150,10 @@ export class AdminService {
   async findOneAdminbyIdRoleService(id: string): Promise<Admin> {
     return this.adminModel.findOne({ role: id }).exec();
   }
+  async viewProfileService(id: string): Promise<Admin> {
+    return this.adminModel
+      .findById(id)
+      .select('adminName _id').lean()
+      .exec();
+  }
 }

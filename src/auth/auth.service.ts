@@ -74,7 +74,7 @@ export class AuthService {
     }
   }
 
-  async googleLogin(profile: any): Promise<{ access_token: string; refreshToken: string; user: any }> {
+  async googleLogin(profile: any): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const { email, firstName, lastName, avatar } = profile;
 
     try {
@@ -117,7 +117,7 @@ export class AuthService {
       };
 
       return {
-        access_token: this.jwtService.sign(payload),
+        accessToken: this.jwtService.sign(payload),
         refreshToken: createRefreshToken,
         user: returnedUser,
       };
@@ -130,7 +130,7 @@ export class AuthService {
   async loginService(
     account: string,
     password: string,
-  ): Promise<{ access_token: string; refreshToken: string; user: any }> {
+  ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     try {
       const user =
         await this.usersService.findOneEmailOrUsernameService(account);
@@ -188,7 +188,7 @@ export class AuthService {
       }
 
       return {
-        access_token: this.jwtService.sign(payload),
+        accessToken: this.jwtService.sign(payload),
         refreshToken: createRefreshToken,
         user: returnedUser,
       };
@@ -199,7 +199,7 @@ export class AuthService {
 
   async refreshTokenService(
     refreshToken: string,
-  ): Promise<{ access_token: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
       const user = await this.usersService.findOneReTokenService(refreshToken);
       const admin =
@@ -229,7 +229,7 @@ export class AuthService {
       }
 
       return {
-        access_token: this.jwtService.sign(payload),
+        accessToken: this.jwtService.sign(payload),
         refreshToken: createRefreshToken,
       };
     } catch (error) {

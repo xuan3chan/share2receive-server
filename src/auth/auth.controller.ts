@@ -62,7 +62,7 @@ export class AuthController {
         path: '/',  // Cookie có hiệu lực trên tất cả các route
       });
   
-      response.cookie('accessToken', result.access_token, {
+      response.cookie('accessToken', result.accessToken, {
         httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
         secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
         maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
@@ -111,7 +111,7 @@ export class AuthController {
       path: '/',  // Cookie có hiệu lực trên tất cả các route
     });
 
-    response.cookie('accessToken', loginResult.access_token, {
+    response.cookie('accessToken', loginResult.accessToken, {
       httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
   secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
   maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
@@ -140,7 +140,7 @@ export class AuthController {
       path: '/',  // Cookie có hiệu lực trên tất cả các route
     });
 
-    response.cookie('accessToken', result.access_token, {
+    response.cookie('accessToken', result.accessToken, {
       httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
   secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
   maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ

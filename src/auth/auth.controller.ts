@@ -43,28 +43,27 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
-    // Initiates the Google OAuth2 login flow
+
   }
 
   @Get('/google/redirect')
-  @UseGuards(AuthGuard('google'))
-  @UseFilters(OAuthExceptionFilter)
-  async googleAuthRedirect(
-    @Req() req,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    try {
-      const googleUserProfile = req.user;
-      const result = await this.authService.googleLogin(googleUserProfile);
-
-      setCookie(response, 'refreshToken', result.refreshToken);
-      setCookie(response, 'accessToken', result.accessToken);
-      
-      return result;
-    } catch (err) {
-      throw new ForbiddenException('Google login failed: ' + err.message);
-    }
+@UseGuards(AuthGuard('google'))
+@UseFilters(OAuthExceptionFilter)
+async googleAuthRedirect(
+  @Req() req,
+  @Res({ passthrough: true }) response: Response,
+) {
+  try {
+    const googleUserProfile = req.user;
+    const result = await this.authService.googleLogin(googleUserProfile);
+    setCookie(response, 'refreshToken', result.refreshToken);
+    setCookie(response, 'accessToken', result.accessToken);
+    response.redirect(`http://localhost:3000?user=${encodeURIComponent(JSON.stringify(result))}`);
+  } catch (err) {
+    throw new ForbiddenException('Google login failed: ' + err.message);
   }
+}
+
 
   @ApiConsumes('application/json')
   @HttpCode(HttpStatus.CREATED)

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google OAuth2 Authentication</title>
+</head>
+<body>
+
+  <h1>Google OAuth2 Authentication</h1>
+
+  <!-- Nút bấm đăng nhập với Google -->
+  <button id="googleAuthBtn">Login with Google</button>
+
+  <!-- Khu vực hiển thị dữ liệu người dùng sau khi xác thực thành công -->
+  <div id="userData"></div>
+
+  <script>
+    // Hàm để lấy query parameters từ URL
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    // Lấy dữ liệu người dùng từ URL và hiển thị
+    const userData = getQueryParam('user');
+    if (userData) {
+      const user = JSON.parse(decodeURIComponent(userData));
+      document.getElementById('userData').innerHTML = `
+        <h2>Welcome, ${user.name}!</h2>
+        <p>Email: ${user.email}</p>
+      `;
+    }
+
+    // Thêm sự kiện cho nút "Login with Google"
+    const googleAuthBtn = document.getElementById('googleAuthBtn');
+    googleAuthBtn.addEventListener('click', () => {
+      // Chuyển hướng người dùng đến server để bắt đầu quá trình OAuth2
+      window.location.href = 'http://127.0.0.1:3000/api/auth/google';
+    });
+  </script>
+
+</body>
+</html>

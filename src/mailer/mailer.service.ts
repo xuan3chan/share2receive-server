@@ -33,7 +33,7 @@ export class MailerService {
         <p style="margin-bottom: 10px; line-height: 1.6;">We received a request to reset your password for your Share2Receive account.</p>
         <p style="margin-bottom: 10px; line-height: 1.6;">Here is your password reset code:</p>
         <div style="margin-bottom: 20px; font-size: 46px; font-weight: bold; letter-spacing: 10px; color: #333; background-color: #f5f5f5; border: 2px solid #333; padding: 10px; border-radius: 5px; display: inline-block;">
-          650050 <!-- Replace this with dynamic code -->
+          ${code}
         </div>
         <p style="margin-top: 5px; font-size: 14px; color: #999;">Please note this code is only valid for 5 minutes.</p>
         <p style="margin-bottom: 10px; line-height: 1.6;">If you did not request a password reset, please ignore this email or reply to let us know.</p>

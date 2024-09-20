@@ -1,25 +1,25 @@
 import {
   Body,
-  Put,
-  Patch,
   Controller,
+  Post,
+  Patch,
+  Get,
   HttpCode,
   HttpStatus,
-  Post,
   Res,
-  Get,
-  UseGuards,
   Req,
-  ForbiddenException,
+  UseGuards,
   UseFilters,
+  ForbiddenException,
+  Put,
 } from '@nestjs/common';
 import {
-  ApiBadRequestResponse,
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiCreatedResponse,
-  ApiOkResponse,
   ApiTags,
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
@@ -32,6 +32,8 @@ import {
 import { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthExceptionFilter } from '@app/libs/common/filter/oauth-exception.filter';
+import { setCookie } from '@app/libs/common/util/';
+
 @ApiTags('authentication')
 @ApiBearerAuth()
 @Controller('auth')
@@ -43,7 +45,7 @@ export class AuthController {
   async googleAuth() {
     // Initiates the Google OAuth2 login flow
   }
-  
+
   @Get('/google/redirect')
   @UseGuards(AuthGuard('google'))
   @UseFilters(OAuthExceptionFilter)
@@ -54,28 +56,15 @@ export class AuthController {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-      response.cookie('refreshToken', result.refreshToken, {
-        httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
-        secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
-        maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
-        sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
-        path: '/',  // Cookie có hiệu lực trên tất cả các route
-      });
-  
-      response.cookie('accessToken', result.accessToken, {
-        httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
-        secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
-        maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
-        sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
-        path: '/',  // Cookie có hiệu lực trên tất cả các route
-      });
+
+      setCookie(response, 'refreshToken', result.refreshToken);
+      setCookie(response, 'accessToken', result.accessToken);
+      
       return result;
-  
     } catch (err) {
       throw new ForbiddenException('Google login failed');
     }
   }
-  
 
   @ApiConsumes('application/json')
   @HttpCode(HttpStatus.CREATED)
@@ -103,21 +92,10 @@ export class AuthController {
       user.account,
       user.password,
     );
-    response.cookie('refreshToken', loginResult.refreshToken, {
-      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
-      secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
-      maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
-      sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
-      path: '/',  // Cookie có hiệu lực trên tất cả các route
-    });
 
-    response.cookie('accessToken', loginResult.accessToken, {
-      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
-  secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
-  maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
-  sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
-  path: '/',  // Cookie có hiệu lực trên tất cả các route
-    });
+    setCookie(response, 'refreshToken', loginResult.refreshToken);
+    setCookie(response, 'accessToken', loginResult.accessToken);
+
     return { message: 'successfully', data: loginResult };
   }
 
@@ -132,21 +110,10 @@ export class AuthController {
     const result = await this.authService.refreshTokenService(
       refreshToken.refreshToken,
     );
-    response.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
-      secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
-      maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
-      sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
-      path: '/',  // Cookie có hiệu lực trên tất cả các route
-    });
 
-    response.cookie('accessToken', result.accessToken, {
-      httpOnly: true,  // Cookie sẽ không thể truy cập được từ JavaScript
-  secure: false,  // Không sử dụng cờ secure trên môi trường phát triển
-  maxAge: 60 * 60 * 1000,  // Cookie sẽ hết hạn sau 1 giờ
-  sameSite: 'none',  // Cho phép gửi cookie qua các origin khác nhau
-  path: '/',  // Cookie có hiệu lực trên tất cả các route
-    });
+    setCookie(response, 'refreshToken', result.refreshToken);
+    setCookie(response, 'accessToken', result.accessToken);
+
     return { message: 'successfully', data: result };
   }
 
@@ -158,7 +125,6 @@ export class AuthController {
     @Body() refreshToken: RefreshTokenDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
-    // xoa cookie
     const result = await this.authService.logoutService(
       refreshToken.refreshToken,
     );
@@ -192,7 +158,7 @@ export class AuthController {
     );
     return {
       ...result,
-      statusCode: 201, // Replace with the appropriate status code
+      statusCode: 201,
     };
   }
 }

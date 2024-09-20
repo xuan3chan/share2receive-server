@@ -52,7 +52,9 @@ export class RoleService {
     return role;
   }
   async findRoleService(ids: string[]): Promise<Role[]> {
-    return this.roleModel.find({ _id: { $in: ids } }).exec();
+    return this.roleModel.find({ _id: { $in: ids } })
+    .select('-_id')
+    .exec();
   }
 
   async viewlistRoleService(): Promise<Role[]> {

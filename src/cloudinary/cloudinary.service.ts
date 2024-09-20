@@ -64,7 +64,7 @@ export class CloudinaryService {
     const normalizedImageName = imageName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const newImageName = normalizedImageName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 25);
 
-    const publicId = `daitongquan/images/${newImageName}-${timestamp.getTime()}`;
+    const publicId = `share2receive/images/${newImageName}-${timestamp.getTime()}`;
     const uploadResult = await this.uploadFile(file, { public_id: publicId });
 
     return { uploadResult };
@@ -78,7 +78,7 @@ export class CloudinaryService {
     thumbnailResult: UploadApiResponse | UploadApiErrorResponse,
   }> {
     this.validateFile(file, 'video');
-    const publicId = `daitongquan/videos/${videoName}`;
+    const publicId = `share2receive/videos/${videoName}`;
     const uploadResult = await this.uploadFile(file, { public_id: publicId, resource_type: 'video' });
 
     // Extract the first frame

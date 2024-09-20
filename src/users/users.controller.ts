@@ -34,6 +34,7 @@ import {
   DeleteUserDto,
   BlockUserDto,
   UpdateUserProfileDto,
+  UserStyleDto,
 } from '@app/libs/common/dto';
 
 @ApiTags('users')
@@ -64,7 +65,7 @@ export class UsersController {
   @Get('view-profile/:userId')
   @ApiOkResponse({ description: 'Get user by id' })
   @ApiBadRequestResponse({ description: 'User not found' })
-  @UseGuards(AuthGuard)
+  @UseGuards(MemberGuard)
   async viewProfileByIdController(
     @Param('userId') userId: string,
   ): Promise<{ data: any }> {
@@ -74,12 +75,22 @@ export class UsersController {
 
   @ApiOkResponse({ description: 'Get user by id' })
   @ApiBadRequestResponse({ description: 'User not found' })
-  @UseGuards(AuthGuard)
+  @UseGuards(MemberGuard)
   @Get('view-profile')
   async viewProfileController(@Req() request: Request): Promise<{ data: any }> {
     const userId = this.getUserIdFromToken(request);
     const data = await this.usersService.viewProfileService(userId);
     return { data };
+  }
+
+  @Put('update-style')
+  async updateUserStyleController(
+    @Req() request: Request,
+    @Body() userStyleDto: UserStyleDto,
+  ): Promise<{ message: string }> {
+    const userId = this.getUserIdFromToken(request);
+    await this.usersService.updateUserStyleService(userId, userStyleDto);
+    return { message: 'User style updated successfully' };
   }
 
   @ApiOkResponse({ description: 'Update success' })

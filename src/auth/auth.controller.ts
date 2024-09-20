@@ -62,7 +62,7 @@ export class AuthController {
       
       return result;
     } catch (err) {
-      throw new ForbiddenException('Google login failed');
+      throw new ForbiddenException('Google login failed: ' + err.message);
     }
   }
 

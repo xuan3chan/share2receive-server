@@ -6,7 +6,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import {UpdateUserProfileDto} from '@app/libs/common/dto';
+import {UpdateUserProfileDto,UserStyleDto} from '@app/libs/common/dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '@app/libs/common/schema';
@@ -82,6 +82,8 @@ export class UsersService {
    
     const users = await this.userModel
       .find()
+      .select('firstname lastname email avatar isBlock createdAt')
+      .lean()
       .exec();
  
     return users;
@@ -167,21 +169,43 @@ export class UsersService {
 
   async updateUserProfileService(
     _id: string,
-    UpdateUserProfileDto
+    updateUserProfileDto: UpdateUserProfileDto, // DTO chứa cả userStyle và các thuộc tính khác
+  ): Promise<User> {
+    const updatedUser = await this.userModel
+      .findOneAndUpdate(
+        { _id }, // Tìm theo _id của người dùng
+        {
+          $set: {
+            ...updateUserProfileDto,        // Cập nhật các thuộc tính ngoài userStyle
+          },
+        },
+        { new: true }, // Trả về tài liệu đã được cập nhật
+      )
+      .exec();
+  
+    return updatedUser;
+  }
+  async updateUserStyleService(
+    _id: string,
+    userStyle: UserStyleDto, // Sử dụng kiểu UserStyleDto
   ): Promise<User> {
     const updatedUser = await this.userModel
       .findOneAndUpdate(
         { _id },
         {
-          UpdateUserProfileDto
+          $set: {
+            userStyle,
+          },
         },
         { new: true },
       )
       .exec();
-   
   
     return updatedUser;
   }
+  
+  
+
 
   async updateAvatarService(_id: string, avatar: string): Promise<User> {
     const user = await this.userModel.findOne({ _id }).exec();
@@ -200,9 +224,7 @@ export class UsersService {
     searchKey: string,
   ): Promise<{ message: string; user: User[] }> {
     try {
-   
-
-      const users = await this.userModel.find({}, { password: 0 }).exec();
+      // Xử lý trước khi tìm kiếm (loại bỏ dấu, ký tự không cần thiết)
       const preprocessString = (str: string) =>
         str
           ? removeAccents(str)
@@ -210,34 +232,41 @@ export class UsersService {
               .trim()
               .toLowerCase()
           : '';
+      
       const preprocessedSearchKey = preprocessString(searchKey);
-      const regex = new RegExp(`${preprocessedSearchKey}`, 'i');
-      const matchedUsers = users.filter((user) => {
-        const { username, firstname, lastname, email } = user;
-        const fullname = `${firstname} ${lastname}`;
-        const [preprocessedUsername, preprocessedFullname, preprocessedEmail] =
-          [username, fullname, email].map((field) => preprocessString(field));
-        return (
-          regex.test(preprocessedUsername) ||
-          regex.test(preprocessedFullname) ||
-          regex.test(preprocessedEmail)
-        );
-      });
-
-      if (matchedUsers.length > 0) {
+      
+      // Tạo regex cho firstname, lastname và email
+      const regex = new RegExp(preprocessedSearchKey, 'i');
+      
+      // Tìm kiếm người dùng trong MongoDB với regex trên firstname, lastname, hoặc email
+      const users = await this.userModel
+        .find(
+          {
+            $or: [
+              { firstname: regex },
+              { lastname: regex },
+              { email: regex }
+            ],
+          }
+        )
+        .select('firstname lastname email avatar isBlock createdAt') // Chỉ chọn các trường cần thiết
+        .lean() // Tăng hiệu suất bằng cách trả về plain objects
+        .exec();
+  
+      if (users.length > 0) {
         return {
-          message: `Found ${matchedUsers.length} user(s)`,
-          user: matchedUsers,
+          message: `Found ${users.length} user(s)`,
+          user: users,
         };
       }
+  
       return { message: 'No user found', user: [] };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
       throw new InternalServerErrorException(error.message);
     }
   }
+  
+  
  
 
   async blockUserService(_id: string, isBlock: boolean): Promise<User> {

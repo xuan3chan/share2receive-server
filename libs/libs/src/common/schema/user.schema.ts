@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import mongoose from 'mongoose';
+import { UserStyle } from '@app/libs/common/interface'; // Đường dẫn tới file chứa interface UserStyle
 
 @Schema({ timestamps: true })
 export class User extends Document {
@@ -8,7 +9,7 @@ export class User extends Document {
 
   @Prop({ type: mongoose.Schema.Types.String, required: true })
   firstname: string;
-  
+
   @Prop({ type: mongoose.Schema.Types.String, required: true })
   lastname: string;
 
@@ -20,12 +21,11 @@ export class User extends Document {
 
   @Prop({ type: mongoose.Schema.Types.String })
   address: string;
-  
+
   @Prop({ type: mongoose.Schema.Types.String })
   phone: string;
-  
 
-  @Prop({ type: mongoose.Schema.Types.String})
+  @Prop({ type: mongoose.Schema.Types.String })
   description: string;
 
   @Prop({
@@ -35,7 +35,7 @@ export class User extends Document {
   })
   role: string;
 
-  @Prop({ type: mongoose.Schema.Types.Date})
+  @Prop({ type: mongoose.Schema.Types.Date })
   dateOfBirth: Date;
 
   @Prop({
@@ -60,29 +60,68 @@ export class User extends Document {
     default: 'active',
   })
   status: string;
+
   @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
   isBlock: boolean;
 
   @Prop({ type: mongoose.Schema.Types.String, default: null })
   refreshToken: string;
 
-  @Prop({type: mongoose.Schema.Types.String})
+  @Prop({ type: mongoose.Schema.Types.String })
   gender: string;
 
-  @Prop({type: mongoose.Schema.Types.String,})
+  @Prop({ type: mongoose.Schema.Types.String })
   encryptKey: string;
+
   @Prop({
-    type: mongoose.Schema.Types.Mixed, // This allows a nested object
-    required: false,
+    type: {
+      color: [{ type: mongoose.Schema.Types.String }],
+      material: [{ type: mongoose.Schema.Types.String, enum: ['cotton', 'wool', 'silk', 'leather', 'other'] }],
+      size: [{ type: mongoose.Schema.Types.String, enum: ['S', 'M', 'L', 'XL'] }],
+      hobby: [
+        {
+          type: mongoose.Schema.Types.String,
+          enum: [
+            'sport',
+            'music',
+            'reading',
+            'travel',
+            'movie',
+            'game',
+            'cooking',
+            'fishing',
+            'shopping',
+            'gardening',
+            'photography',
+            'painting',
+            'writing',
+            'dancing',
+            'other',
+          ],
+        },
+      ],
+      age: { type: mongoose.Schema.Types.String, enum: ['0-18', '19-30', '31-50', '51-70', '71-100'] },
+      zodiacSign: {
+        type: mongoose.Schema.Types.String,
+        enum: [
+          'Aries',
+          'Taurus',
+          'Gemini',
+          'Cancer',
+          'Leo',
+          'Virgo',
+          'Libra',
+          'Scorpio',
+          'Sagittarius',
+          'Capricorn',
+          'Aquarius',
+          'Pisces',
+        ],
+      },
+    },
+    default: null,
   })
-  userStyle: {
-    color: string;
-    material: string;
-    size: string;
-    hobby: string;
-    Age: string;
-  };
-  
+  userStyle: UserStyle;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

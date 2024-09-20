@@ -95,8 +95,7 @@ export class AuthService {
           avatar, // Use Google profile picture
         );
       }
-
-      if (user.isBlock) {
+      if (user.isBlock == true) {
         throw new UnauthorizedException('Account is blocked');
       }
 

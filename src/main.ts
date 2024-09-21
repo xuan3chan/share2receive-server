@@ -9,7 +9,7 @@ async function bootstrap() {
   
   // Cấu hình CORS
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://daitongquanv2.thaitamdev.id.vn'],
+    origin: ['http://localhost:3000', 'https://share2receive-client.vercel.app/'],
     credentials: true,  // Cho phép credentials (như cookies)
   });
   

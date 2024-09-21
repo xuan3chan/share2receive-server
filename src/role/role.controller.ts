@@ -65,8 +65,8 @@ export class RoleController {
   @ApiOkResponse({ description: 'Get all roles' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   async viewlistRoleController(
-    @Query('page') page: number,
-    @Query('limit') limit: number,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ): Promise<{ data: any }> {
     const data = await this.roleService.viewlistRoleService(page, limit);
     return { data };

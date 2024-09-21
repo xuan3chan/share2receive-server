@@ -58,6 +58,12 @@ export class RoleService {
   }
 
   async viewlistRoleService(page: number, limit: number): Promise<Role[]> {
+    if (!page) {
+      page = 1;
+    }
+    if (!limit) {
+      limit = 10;
+    }
     const skip = (page - 1) * limit; // Calculate how many documents to skip
     return this.roleModel.find().skip(skip).limit(limit).exec();
   }

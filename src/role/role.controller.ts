@@ -8,6 +8,7 @@ import {
   Get,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto,UpdateRoleDto,DeleteRoleDto } from '@app/libs/common/dto';
@@ -63,8 +64,11 @@ export class RoleController {
   @Get()
   @ApiOkResponse({ description: 'Get all roles' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
-  async viewlistRoleController(): Promise<{ data: any }> {
-    const data = await this.roleService.viewlistRoleService();
+  async viewlistRoleController(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+  ): Promise<{ data: any }> {
+    const data = await this.roleService.viewlistRoleService(page, limit);
     return { data };
   }
   

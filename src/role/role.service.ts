@@ -57,9 +57,11 @@ export class RoleService {
     .exec();
   }
 
-  async viewlistRoleService(): Promise<Role[]> {
-    return this.roleModel.find().exec();
+  async viewlistRoleService(page: number, limit: number): Promise<Role[]> {
+    const skip = (page - 1) * limit; // Calculate how many documents to skip
+    return this.roleModel.find().skip(skip).limit(limit).exec();
   }
+  
   async deleteRoleService(id: string): Promise<{ message: string }> {
     try {
       const checkRoleExistInAdmin =

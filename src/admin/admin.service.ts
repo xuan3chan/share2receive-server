@@ -106,7 +106,7 @@ export class AdminService {
     if (!admin) {
       throw new BadRequestException('Admin not exists');
     }
-    if (admin.email === 'masterAdmin@gmail.com') {
+    if (admin.accountName === 'masteradmin') {
       throw new BadRequestException('Cannot delete master admin');
     }
     await this.adminModel.findByIdAndDelete(id).exec();

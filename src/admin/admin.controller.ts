@@ -96,8 +96,8 @@ export class AdminController {
 @ApiOkResponse({ description: 'Get all admins with pagination' })
 @ApiBadRequestResponse({ description: 'Bad Request' })
 async listAdminController(
-  @Query('page') page: number,
-  @Query('limit') limit: number,
+  @Query('page') page?: number,
+  @Query('limit') limit?: number,
 ): Promise<{ data: any }> {
   const data = await this.adminService.listAdminService(page, limit);
   return { data };

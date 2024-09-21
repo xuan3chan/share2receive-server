@@ -113,8 +113,14 @@ export class AdminService {
     return { message: 'Admin deleted successfully' };
   }
   async listAdminService(page: number, limit: number): Promise<(Admin & { role: Role[] })[]> {
+    if (!page) {
+      page = 1;
+    }
+    if (!limit) {
+      limit = 10;
+    }
     const skip = (page - 1) * limit;
-  
+    
     // Fetch paginated admins from the database without certain fields (password, createdAt, etc.)
     const admins = await this.adminModel
       .find()

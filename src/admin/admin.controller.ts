@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   Res,
   UnauthorizedException,
@@ -89,15 +90,19 @@ export class AdminController {
   }
 
   @Action('read')
-  @Subject('admin')
-  @UseGuards(PermissionGuard)
-  @ApiOkResponse({ description: 'Admin listed successfully' })
-  @ApiBadRequestResponse({ description: 'bad request' })
-  @HttpCode(200)
-  @Get()
-  async listAdminController() {
-    return this.adminService.listAdminService();
-  }
+@Subject('admin')
+@UseGuards(PermissionGuard)
+@Get('list')
+@ApiOkResponse({ description: 'Get all admins with pagination' })
+@ApiBadRequestResponse({ description: 'Bad Request' })
+async listAdminController(
+  @Query('page') page: number,
+  @Query('limit') limit: number,
+): Promise<{ data: any }> {
+  const data = await this.adminService.listAdminService(page, limit);
+  return { data };
+}
+
   @Action('block')
   @Subject('admin')
   @UseGuards(PermissionGuard)

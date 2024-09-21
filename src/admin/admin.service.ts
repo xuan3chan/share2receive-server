@@ -112,27 +112,38 @@ export class AdminService {
     await this.adminModel.findByIdAndDelete(id).exec();
     return { message: 'Admin deleted successfully' };
   }
-  async listAdminService(): Promise<(Admin & { role: Role[] })[]> {
-    // Fetch admins from the database without certain fields (password, createdAt, etc.)
+  async listAdminService(page: number, limit: number): Promise<(Admin & { role: Role[] })[]> {
+    const skip = (page - 1) * limit;
+  
+    // Fetch paginated admins from the database without certain fields (password, createdAt, etc.)
     const admins = await this.adminModel
       .find()
       .select('-password -createdAt -updatedAt -refreshToken')
+      .skip(skip)
+      .limit(limit)
       .exec();
+  
+    // Extract all roleIds from the admins
     const roleIds = admins.reduce((ids, admin) => [...ids, ...admin.role], []);
+  
+    // Fetch the roles for the corresponding role IDs
     const roles = await this.roleModel
       .find({ _id: { $in: roleIds } })
       .select('-permissionID')
       .exec();
+  
+    // Attach the appropriate roles to each admin
     return admins.map((admin) => {
       const role = roles.filter(
-        (role) => admin.role.includes(role.id), // Use _id (since roles have _id, not id)
+        (role) => admin.role.includes(role.id),
       );
       return {
-        ...admin.toObject(), // Convert admin to a plain object
-        role, // Attach the filtered roles to the admin
-      } as Admin & { role: Role[] }; // Explicitly cast to the correct type
+        ...admin.toObject(),
+        role,
+      } as Admin & { role: Role[] };
     });
   }
+  
 
   async blockAdminService(id: string, isBlock: boolean): Promise<any> {
     await this.adminModel
@@ -156,5 +167,5 @@ export class AdminService {
       .select('adminName _id').lean()
       .exec();
   }
-  
+
 }

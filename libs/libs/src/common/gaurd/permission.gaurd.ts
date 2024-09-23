@@ -50,9 +50,7 @@ export class PermissionGuard implements CanActivate {
     }
 
     try {
-      var permissions = payload.role.flatMap((role: { permissionID: any[] }) =>
-        role.permissionID.map(Number),
-      );
+      var permissions = payload.role.permissionID.map(Number);
     } catch (error) {
       throw new ForbiddenException(NO_PERMISSION_MESSAGE);
     }

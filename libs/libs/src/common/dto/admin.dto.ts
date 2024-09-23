@@ -41,11 +41,11 @@ export class CreateAdminDto {
 
   @ApiProperty({
     description: 'Role of the admin',
-    example: '["66445e3ad052f97add5912c1","66445e3ad052f97add5912c1"]',
+    example: '66445e3ad052f97add5912c1',
   })
   @IsNotEmpty()
   @IsMongoId({ each: true })
-  roleId: string[];
+  roleId: string;
 }
 export class DeleteAdminDto {
   @ApiProperty({
@@ -69,14 +69,6 @@ export class UpdateAdminDto {
   adminName: string;
 
   @ApiProperty({
-    description: 'Email of the admin',
-    example: 'admin1@gmail.com',
-  })
-  @IsOptional()
-  @IsString()
-  accountName: string;
-
-  @ApiProperty({
     description: 'Password of the admin',
     example: 'Admin@123',
   })
@@ -88,10 +80,10 @@ export class UpdateAdminDto {
 
   @ApiProperty({
     description: 'Role of the admin',
-    example: ['66445e3ad052f97add5912c1', '66445e3ad052f97add5912c1'],
+    example: '66445e3ad052f97add5912c1',
   })
   @IsOptional()
-  roleId: string[];
+  roleId: string;
 }
 export class BlockAdminDto {
   @ApiProperty({

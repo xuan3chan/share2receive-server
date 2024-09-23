@@ -35,7 +35,7 @@ export class AuthService {
       };
     } else {
       const roles = await this.roleService.findRoleService(
-        accountHolder.role.map(String),
+        accountHolder.role
       );
       return {
         _id: accountHolder._id,
@@ -168,9 +168,7 @@ export class AuthService {
           }
         : {
             adminName: admin.adminName,
-            role: await this.roleService.findRoleService(
-              admin.role.map(String),
-            ),
+            role: await this.roleService.findRoleService(admin.role.toString()),
             _id: admin._id,
           };
 

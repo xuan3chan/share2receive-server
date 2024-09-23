@@ -78,15 +78,31 @@ export class UsersService {
     return user;
   }
 
-  async listUserService(): Promise<User[]> {
-   
+    async listUserService(page: number = 1, limit: number = 10): Promise<User[]> {
+    const skip = (page - 1) * limit;
+    
     const users = await this.userModel
       .find()
       .select('firstname lastname email avatar isBlock createdAt')
+      .skip(skip)
+      .limit(limit)
       .lean()
       .exec();
- 
+  
     return users;
+  }
+//filter 
+async filterUserService(
+  sortField: string = 'lastname',
+  sortOrder: 'asc' | 'desc' = 'asc')
+  : Promise<User[]> {
+  const users = await this.userModel
+    .find()
+    .select('firstname lastname email avatar isBlock createdAt')
+    .sort({ [sortField]: sortOrder })
+    .lean()
+    .exec();
+  return users;
   }
 
   async updateRefreshTokenService(
@@ -185,6 +201,7 @@ export class UsersService {
   
     return updatedUser;
   }
+
   async updateUserStyleService(
     _id: string,
     userStyle: UserStyleDto, // Sử dụng kiểu UserStyleDto
@@ -204,9 +221,6 @@ export class UsersService {
     return updatedUser;
   }
   
-  
-
-
   async updateAvatarService(_id: string, avatar: string): Promise<User> {
     const user = await this.userModel.findOne({ _id }).exec();
     const deleteAvatar = this.cloudinaryService.deleteMediaService(user.avatar);
@@ -266,9 +280,6 @@ export class UsersService {
     }
   }
   
-  
- 
-
   async blockUserService(_id: string, isBlock: boolean): Promise<User> {
     const updatedUser = await this.userModel
       .findOneAndUpdate({ _id }, { isBlock }, { new: true })

@@ -11,6 +11,7 @@ import {
   Delete,
   HttpCode,
   Param,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
@@ -57,9 +58,15 @@ export class UsersController {
   @ApiOkResponse({ description: 'Get all users' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @UseGuards(PermissionGuard)
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get('list-users')
-  async findAllController() {
-    return this.usersService.listUserService();
+  async findAllController(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<{ data: any }> {
+    const data = await this.usersService.listUserService(page, limit);
+    return { data };
   }
 
   @Get('view-profile/:userId')
@@ -200,6 +207,32 @@ export class UsersController {
     await this.usersService.deleteUserService(deleteUserDto._id);
     return { message: 'delete user successfully' };
   }
+  
+  @Get('filter')
+  @Action('read')
+  @Subject('user')
+  @UseGuards(PermissionGuard)
+  @ApiOperation({ summary: 'Filter user' })
+  @ApiQuery({
+    name: 'sortField',
+    required: false,
+    type: String,
+    description: 'The field to sort',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    type: String,
+    description: 'The order to sort',
+  })
+  async filterUserController(
+    @Query('sortField') sortField: string = 'createdAt',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{ data: any }> {
+    const data = await this.usersService.filterUserService(sortField, sortOrder);
+    return { data };
+  }
 
+  
 
 }

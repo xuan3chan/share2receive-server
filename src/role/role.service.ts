@@ -51,19 +51,14 @@ export class RoleService {
 
     return role;
   }
-  async findRoleService(ids: string[]): Promise<Role[]> {
-    return this.roleModel.find({ _id: { $in: ids } })
+  async findRoleService(id: string): Promise<Role> {
+    return this.roleModel.findById(id)
     .select('-_id')
     .exec();
   }
 
-  async viewlistRoleService(page: number, limit: number): Promise<Role[]> {
-    if (!page) {
-      page = 1;
-    }
-    if (!limit) {
-      limit = 10;
-    }
+  async viewlistRoleService(page: number = 1, limit: number = 10): Promise<Role[]> {
+  
     const skip = (page - 1) * limit; // Calculate how many documents to skip
     return this.roleModel.find().skip(skip).limit(limit).exec();
   }

@@ -42,15 +42,8 @@ export class AdminService {
     id: string,
     updateData: Partial<UpdateAdminDto>,
   ): Promise<{ massage: string }> {
-    let { adminName, accountName, password, roleId } = updateData;
-    if (accountName) {
-      const duplicate = await this.adminModel
-        .findOne({ accountName, _id: { $ne: id } })
-        .exec();
-      if (duplicate) {
-        throw new BadRequestException('Admin already exists');
-      }
-    }
+    let { adminName, password, roleId } = updateData;
+   
     if (password) {
       password = await bcrypt.hash(password, 10);
     }
@@ -61,12 +54,12 @@ export class AdminService {
       if (findRole.length !== roleId.length) {
         throw new BadRequestException('Some roles were not found');
       }
-      roleId = findRole.map((role) => role._id.toString()); // Extract _id values as strings
+      roleId = findRole.map((role) => role._id.toString()).join(','); // Join _id values as a single string
     }
     await this.adminModel
       .findByIdAndUpdate(
         id,
-        { $set: { adminName, accountName, password, role: roleId } },
+        { $set: { adminName, password, role: roleId } },
         { new: true, runValidators: true },
       )
       .orFail(new BadRequestException('Admin not exists'))
@@ -130,7 +123,7 @@ export class AdminService {
       .exec();
   
     // Extract all roleIds from the admins
-    const roleIds = admins.reduce((ids, admin) => [...ids, ...admin.role], []);
+    const roleIds = admins.reduce((ids, admin) => [...ids, ...(Array.isArray(admin.role) ? admin.role : [admin.role])], []);
   
     // Fetch the roles for the corresponding role IDs
     const roles = await this.roleModel
@@ -141,7 +134,7 @@ export class AdminService {
     // Attach the appropriate roles to each admin
     return admins.map((admin) => {
       const role = roles.filter(
-        (role) => admin.role.includes(role.id),
+        (role) => admin.role.toString().includes(role.id.toString()),
       );
       return {
         ...admin.toObject(),

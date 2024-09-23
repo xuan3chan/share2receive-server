@@ -27,6 +27,7 @@ import {
   ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { PermissionGuard } from '@app/libs/common/gaurd';
@@ -34,7 +35,6 @@ import { Subject, Action } from '@app/libs/common/decorator';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
-
 
 @ApiTags('admin')
 @ApiBearerAuth()
@@ -59,9 +59,7 @@ export class AdminController {
   @HttpCode(201)
   @Post()
   async createAdminController(@Body() createAdminDto: CreateAdminDto) {
-    return this.adminService.createAdminService(
-      createAdminDto
-    );
+    return this.adminService.createAdminService(createAdminDto);
   }
   @Action('update')
   @Subject('admin')
@@ -71,12 +69,10 @@ export class AdminController {
   @HttpCode(200)
   @Put(':id')
   async updateAdmincontroller(
-    @Param('id') id: string
-    ,@Body() updateAdminDto: UpdateAdminDto) {
-    return this.adminService.updateAdminService(
-      id,
-     updateAdminDto
-    );
+    @Param('id') id: string,
+    @Body() updateAdminDto: UpdateAdminDto,
+  ) {
+    return this.adminService.updateAdminService(id, updateAdminDto);
   }
 
   @Action('delete')
@@ -90,18 +86,20 @@ export class AdminController {
   }
 
   @Action('read')
-@Subject('admin')
-@UseGuards(PermissionGuard)
-@Get('list')
-@ApiOkResponse({ description: 'Get all admins with pagination' })
-@ApiBadRequestResponse({ description: 'Bad Request' })
-async listAdminController(
-  @Query('page') page?: number,
-  @Query('limit') limit?: number,
-): Promise<{ data: any }> {
-  const data = await this.adminService.listAdminService(page, limit);
-  return { data };
-}
+  @Subject('admin')
+  @UseGuards(PermissionGuard)
+  @Get('list')
+  @ApiOkResponse({ description: 'Get all admins with pagination' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async listAdminController(
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<{ data: any }> {
+    const data = await this.adminService.listAdminService(page, limit);
+    return { data };
+  }
 
   @Action('block')
   @Subject('admin')
@@ -118,9 +116,7 @@ async listAdminController(
   }
 
   @Get('view-profile')
-  async viewProfileController(
-    @Req() request: Request
-  ) {
+  async viewProfileController(@Req() request: Request) {
     const id = this.getUserIdFromToken(request);
     return this.adminService.viewProfileService(id);
   }

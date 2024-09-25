@@ -54,19 +54,21 @@ export class UsersController {
     return decodedToken._id;
   }
 
-  @Action('read')
-  @Subject('user')
-  @ApiOkResponse({ description: 'Get all users' })
-  @ApiBadRequestResponse({ description: 'bad request' })
-  @UseGuards(PermissionGuard)
+  // @Action('read')
+  // @Subject('user')
+  // @ApiOkResponse({ description: 'Get all users' })
+  // @ApiBadRequestResponse({ description: 'bad request' })
+  // @UseGuards(PermissionGuard)
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'searchKey', required: false, type: String })
   @Get('list-users')
   async findAllController(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('searchKey') searchKey: string,
   ): Promise<{ data: any }> {
-    const data = await this.usersService.listUserService(page, limit);
+    const data = await this.usersService.listUserService(page, limit,searchKey);
     return { data };
   }
 
@@ -150,23 +152,6 @@ export class UsersController {
     }
   }
 
-  @Get('search')
-  @UseGuards(PermissionGuard)
-  @Action('read')
-  @Subject('user')
-  @ApiOkResponse({ description: 'Search user success' })
-  @ApiBadRequestResponse({ description: 'bad request' })
-  @ApiQuery({
-    name: 'searchKey',
-    required: true,
-    type: String,
-    description: 'The search key',
-  })
-  async searchUserController(@Req() request: Request): Promise<{ data: any }> {
-    const searchKey = request.query.searchKey as string;
-    const data = await this.usersService.searchUserService(searchKey);
-    return { data };
-  }
   @Get('search-user')
   @UseGuards(MemberGuard)
   @ApiOperation({ summary: 'Search for user' })

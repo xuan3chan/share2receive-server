@@ -77,13 +77,48 @@ export class UsersService {
 
     return user;
   }
-async listUserService(page?: number, limit?: number): Promise<{ total: number, users: User[] }> {
-  const total = await this.userModel.countDocuments().exec(); // Get the total count of users
-
-  const skip = (page - 1) * limit; // Calculate how many documents to skip
-  const users = await this.userModel.find().select('firstname lastname email avatar isBlock createdAt').skip(skip).limit(limit).lean().exec();
-  return { total, users };
-}
+  async listUserService(
+    page: number,
+    limit: number,
+    searchKey?: string,
+  ): Promise<{ total: number; users: User[] }> {
+    let query = {};
+  
+    if (searchKey) {
+      // Xử lý từ khóa tìm kiếm (loại bỏ dấu và ký tự không cần thiết)
+      const preprocessString = (str: string) =>
+        str
+          ? removeAccents(str)
+              .replace(/[^a-zA-Z0-9\s]/gi, '')
+              .trim()
+              .toLowerCase()
+          : '';
+      
+      const preprocessedSearchKey = preprocessString(searchKey);
+  
+      // Tạo regex cho firstname, lastname và email
+      const regex = new RegExp(preprocessedSearchKey, 'i');
+      query = {
+        $or: [{ firstname: regex }, { lastname: regex }, { email: regex }],
+      };
+    }
+  
+    // Đếm tổng số người dùng theo điều kiện tìm kiếm (nếu có)
+    const total = await this.userModel.countDocuments(query).exec();
+  
+    const skip = (page - 1) * limit; // Tính số lượng người dùng cần bỏ qua
+  
+    // Tìm kiếm và phân trang
+    const users = await this.userModel
+      .find(query)
+      .select('firstname lastname email avatar isBlock createdAt') // Chỉ lấy các trường cần thiết
+      .skip(skip)
+      .limit(limit)
+      .lean() // Sử dụng lean để tăng hiệu suất
+      .exec();
+  
+    return { total, users };
+  }
 //filter 
 async filterUserService(
   sortField: string = 'lastname',

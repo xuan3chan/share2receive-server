@@ -59,17 +59,17 @@ export class RoleController {
     return { message: 'Role updated successfully' };
   }
 
-  @Action('read')
-  @Subject('role')
-  @UseGuards(PermissionGuard)
+  // @Action('read')
+  // @Subject('role')
+  // @UseGuards(PermissionGuard)
   @Get()
   @ApiOkResponse({ description: 'Get all roles' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async viewlistRoleController(
-    @Query('page') page: number = 1,  // default value if page is not provided
-    @Query('limit') limit: number = 10, // default value if limit is not provided
+    @Query('page') page: number,  // default value if page is not provided
+    @Query('limit') limit: number, // default value if limit is not provided
   ): Promise<{ data: any }> {
     const data = await this.roleService.viewlistRoleService(page, limit);
     return { data };

@@ -62,8 +62,8 @@ export class UsersController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @Get('list-users')
   async findAllController(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
   ): Promise<{ data: any }> {
     const data = await this.usersService.listUserService(page, limit);
     return { data };

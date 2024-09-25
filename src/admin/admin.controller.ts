@@ -85,17 +85,17 @@ export class AdminController {
     return this.adminService.deleteAdminService(deleteAdminDto.id);
   }
 
-  @Action('read')
-  @Subject('admin')
-  @UseGuards(PermissionGuard)
+  // @Action('read')
+  // @Subject('admin')
+  // @UseGuards(PermissionGuard)
   @Get('list')
   @ApiOkResponse({ description: 'Get all admins with pagination' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   async listAdminController(
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
   ): Promise<{ data: any }> {
     const data = await this.adminService.listAdminService(page, limit);
     return { data };

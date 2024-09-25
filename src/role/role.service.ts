@@ -56,16 +56,13 @@ export class RoleService {
     .select('-_id')
     .exec();
   }
+async viewlistRoleService(page?: number, limit?: number): Promise<{ total: number, roles: Role[] }> {
+  const total = await this.roleModel.countDocuments().exec(); // Get the total count of roles
 
-    async viewlistRoleService(page?: number, limit?: number): Promise<Role[]> {
-    if (page === undefined || limit === undefined) {
-      // If no pagination parameters are provided, return all roles
-      return this.roleModel.find().exec();
-    }
-  
-    const skip = (page - 1) * limit; // Calculate how many documents to skip
-    return this.roleModel.find().skip(skip).limit(limit).exec();
-  }
+  const skip = (page - 1) * limit; // Calculate how many documents to skip
+  const roles = await this.roleModel.find().skip(skip).limit(limit).exec();
+  return { total, roles };
+}
   
   async deleteRoleService(id: string): Promise<{ message: string }> {
     try {

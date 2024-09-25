@@ -77,20 +77,13 @@ export class UsersService {
 
     return user;
   }
+async listUserService(page?: number, limit?: number): Promise<{ total: number, users: User[] }> {
+  const total = await this.userModel.countDocuments().exec(); // Get the total count of users
 
-    async listUserService(page: number = 1, limit: number = 10): Promise<User[]> {
-    const skip = (page - 1) * limit;
-    
-    const users = await this.userModel
-      .find()
-      .select('firstname lastname email avatar isBlock createdAt')
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .exec();
-  
-    return users;
-  }
+  const skip = (page - 1) * limit; // Calculate how many documents to skip
+  const users = await this.userModel.find().select('firstname lastname email avatar isBlock createdAt').skip(skip).limit(limit).lean().exec();
+  return { total, users };
+}
 //filter 
 async filterUserService(
   sortField: string = 'lastname',

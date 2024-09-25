@@ -105,13 +105,9 @@ export class AdminService {
     await this.adminModel.findByIdAndDelete(id).exec();
     return { message: 'Admin deleted successfully' };
   }
-  async listAdminService(page: number, limit: number): Promise<(Admin & { role: Role[] })[]> {
-    if (!page) {
-      page = 1;
-    }
-    if (!limit) {
-      limit = 10;
-    }
+    async listAdminService(page: number, limit: number): Promise<{ total: number, admins: (Admin & { role: Role })[] }> {
+    const total = await this.adminModel.countDocuments().exec(); // Get the total count of admins
+  
     const skip = (page - 1) * limit;
     
     // Fetch paginated admins from the database without certain fields (password, createdAt, etc.)
@@ -123,7 +119,7 @@ export class AdminService {
       .exec();
   
     // Extract all roleIds from the admins
-    const roleIds = admins.reduce((ids, admin) => [...ids, ...(Array.isArray(admin.role) ? admin.role : [admin.role])], []);
+    const roleIds = admins.map(admin => admin.role);
   
     // Fetch the roles for the corresponding role IDs
     const roles = await this.roleModel
@@ -131,16 +127,22 @@ export class AdminService {
       .select('-permissionID')
       .exec();
   
-    // Attach the appropriate roles to each admin
-    return admins.map((admin) => {
-      const role = roles.filter(
-        (role) => admin.role.toString().includes(role.id.toString()),
-      );
+    // Create a map of role IDs to roles for quick lookup
+    const roleMap = roles.reduce((map, role) => {
+      map[role.id] = role;
+      return map;
+    }, {});
+  
+    // Attach the appropriate role to each admin
+    const adminsWithRoles = admins.map((admin) => {
+      const role = roleMap[admin.role.toString()];
       return {
         ...admin.toObject(),
         role,
-      } as Admin & { role: Role[] };
+      } as Admin & { role: Role };
     });
+  
+    return { total, admins: adminsWithRoles };
   }
   
 

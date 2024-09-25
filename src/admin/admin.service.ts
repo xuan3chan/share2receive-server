@@ -105,35 +105,48 @@ export class AdminService {
     await this.adminModel.findByIdAndDelete(id).exec();
     return { message: 'Admin deleted successfully' };
   }
-    async listAdminService(page: number, limit: number): Promise<{ total: number, admins: (Admin & { role: Role })[] }> {
-    const total = await this.adminModel.countDocuments().exec(); // Get the total count of admins
+  async listAdminService(
+    page: number = 1, 
+    limit: number = 10, 
+    searchKey?: string
+  ): Promise<{ total: number, admins: (Admin & { role: Role })[] }> {
   
-    const skip = (page - 1) * limit;
+    let query = {};
+    if (searchKey) {
+      query = {
+        $or: [
+          { accountName: { $regex: searchKey, $options: 'i' } },
+          { adminName: { $regex: searchKey, $options: 'i' } },
+        ],
+      };
+    }
+  
+    const total = await this.adminModel.countDocuments(query).exec(); // Đếm số lượng admin dựa trên query tìm kiếm nếu có
     
-    // Fetch paginated admins from the database without certain fields (password, createdAt, etc.)
+    const skip = (page - 1) * limit; // Tính số lượng cần bỏ qua
     const admins = await this.adminModel
-      .find()
-      .select('-password -createdAt -updatedAt -refreshToken')
+      .find(query) // Tìm kiếm nếu có từ khóa
+      .select('-password -createdAt -updatedAt -refreshToken') // Bỏ qua các trường không cần thiết
       .skip(skip)
       .limit(limit)
       .exec();
+    
+    // Lấy danh sách roleIds từ các admin
+    const roleIds = admins.map((admin) => admin.role);
   
-    // Extract all roleIds from the admins
-    const roleIds = admins.map(admin => admin.role);
-  
-    // Fetch the roles for the corresponding role IDs
+    // Lấy các roles tương ứng với roleIds
     const roles = await this.roleModel
       .find({ _id: { $in: roleIds } })
       .select('-permissionID')
       .exec();
   
-    // Create a map of role IDs to roles for quick lookup
+    // Tạo map roleId -> role để dễ tra cứu
     const roleMap = roles.reduce((map, role) => {
       map[role.id] = role;
       return map;
     }, {});
   
-    // Attach the appropriate role to each admin
+    // Gán roles tương ứng cho mỗi admin
     const adminsWithRoles = admins.map((admin) => {
       const role = roleMap[admin.role.toString()];
       return {
@@ -169,15 +182,4 @@ export class AdminService {
       .exec();
   }
 
-  //search
-  async searchAdminService(searchKey: string): Promise<Admin[]> {
-    return this.adminModel
-      .find({
-        $or: [
-          { accountName: { $regex: searchKey, $options: 'i' } },
-          { adminName: { $regex: searchKey, $options: 'i' } },
-        ],
-      })
-      .exec();
-  }
 }

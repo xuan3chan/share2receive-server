@@ -85,19 +85,21 @@ export class AdminController {
     return this.adminService.deleteAdminService(deleteAdminDto.id);
   }
 
-  @Action('read')
-  @Subject('admin')
-  @UseGuards(PermissionGuard)
+  // @Action('read')
+  // @Subject('admin')
+  // @UseGuards(PermissionGuard)
   @Get('list')
   @ApiOkResponse({ description: 'Get all admins with pagination' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'searchKey', required: false, type: String })
   async listAdminController(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('searchKey') searchKey?: string,
   ): Promise<{ data: any }> {
-    const data = await this.adminService.listAdminService(page, limit);
+    const data = await this.adminService.listAdminService(page, limit,searchKey);
     return { data };
   }
 
@@ -120,12 +122,5 @@ export class AdminController {
     const id = this.getUserIdFromToken(request);
     return this.adminService.viewProfileService(id);
   }
-  // @Action('read')
-  // @Subject('admin')
-  // @UseGuards(PermissionGuard)
-  @ApiQuery({ name: 'searchKey', required: true, type: String })
-  @Get('search')
-  async searchAdminController(@Query('searchKey') searchKey: string) {
-    return this.adminService.searchAdminService(searchKey);
-  }
+
 }

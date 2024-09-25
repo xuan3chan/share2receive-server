@@ -56,13 +56,29 @@ export class RoleService {
     .select('-_id')
     .exec();
   }
-async viewlistRoleService(page?: number, limit?: number): Promise<{ total: number, roles: Role[] }> {
-  const total = await this.roleModel.countDocuments().exec(); // Get the total count of roles
-
-  const skip = (page - 1) * limit; // Calculate how many documents to skip
-  const roles = await this.roleModel.find().skip(skip).limit(limit).exec();
-  return { total, roles };
-}
+  async viewlistRoleService(
+    page: number, 
+    limit: number, 
+    searchKey?: string
+  ): Promise<{ total: number, roles: Role[] }> {
+  
+    let query = {};
+    if (searchKey) {
+      query = { name: { $regex: searchKey, $options: 'i' } }; // Tìm kiếm theo tên có chứa searchKey, không phân biệt hoa thường
+    }
+  
+    const total = await this.roleModel.countDocuments(query).exec(); // Đếm tổng số roles theo query (nếu có tìm kiếm)
+    
+    const skip = (page - 1) * limit; // Tính toán số lượng tài liệu cần bỏ qua
+    const roles = await this.roleModel
+      .find(query) // Thực hiện tìm kiếm nếu có searchKey
+      .skip(skip)
+      .limit(limit)
+      .exec();
+      
+    return { total, roles }; // Trả về tổng số và danh sách roles
+  }
+  
   
   async deleteRoleService(id: string): Promise<{ message: string }> {
     try {
@@ -80,18 +96,5 @@ async viewlistRoleService(page?: number, limit?: number): Promise<{ total: numbe
     } catch (error) {
       throw error;
     }
-  }
-  //search 
-
-   async searchRoleService(searchKey: string): Promise<{ message?: string, roles?: Role[] }> {
-    const roles = await this.roleModel
-      .find({ name: { $regex: searchKey, $options: 'i' } })
-      .exec();
-  
-    if (roles.length === 0) {
-      return { message: 'No roles found' };
-    }
-  
-    return { roles };
   }
 }

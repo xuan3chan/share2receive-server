@@ -78,26 +78,18 @@ export class RoleController {
   @Action('read')
   @Subject('role')
   @UseGuards(PermissionGuard)
-  @Get('search')
-  @ApiQuery({ name: 'searchKey', required: true, type: String })
-  async searchRoleController(@Query('searchKey') searchKey: string): Promise<{ data: any }> {
-    const data = await this.roleService.searchRoleService(searchKey);
-    return { data };
-  }
-
-  @Action('read')
-  @Subject('role')
-  @UseGuards(PermissionGuard)
   @Get()
   @ApiOkResponse({ description: 'Get all roles' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'searchKey', required: false, type: String })
   async viewlistRoleController(
     @Query('page') page: number = 1, // default value if page is not provided
     @Query('limit') limit: number = 10, // default value if limit is not provided
+    @Query('searchKey') searchKey?: string,
   ): Promise<{ data: any }> {
-    const data = await this.roleService.viewlistRoleService(page, limit);
+    const data = await this.roleService.viewlistRoleService(page, limit, searchKey);
     return { data };
   }
 }

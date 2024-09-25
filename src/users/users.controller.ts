@@ -12,6 +12,7 @@ import {
   HttpCode,
   Param,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
@@ -116,7 +117,7 @@ export class UsersController {
     );
     return { message: 'User profile updated successfully' };
   }
-
+  @UseGuards(MemberGuard)
   @Patch('update-avatar')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -138,10 +139,15 @@ export class UsersController {
     @Req() request: Request,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<{ message: string }> {
-    const userId = this.getUserIdFromToken(request);
-    const fileResult = await this.cloudinaryService.uploadImageService(userId.toString(),file);
-    await this.usersService.updateAvatarService(userId,fileResult.uploadResult.url);
-    return { message: 'Avatar updated successfully' };
+    try {
+      const userId = this.getUserIdFromToken(request);
+      const fileResult = await this.cloudinaryService.uploadImageService(userId.toString(), file);
+      await this.usersService.updateAvatarService(userId, fileResult.uploadResult.url);
+      return { message: 'Avatar updated successfully' };
+    } catch (error) {
+      // Handle the error appropriately
+      throw new BadRequestException('Failed to update avatar');
+    }
   }
 
   @Get('search')

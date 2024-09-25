@@ -41,21 +41,20 @@ export class AdminService {
   async updateAdminService(
     id: string,
     updateData: Partial<UpdateAdminDto>,
-  ): Promise<{ massage: string }> {
+  ): Promise<{ message: string }> {
     let { adminName, password, roleId } = updateData;
-   
+  
     if (password) {
       password = await bcrypt.hash(password, 10);
     }
     if (roleId) {
-      const findRole = await this.roleModel
-        .find({ _id: { $in: roleId } })
-        .exec();
-      if (findRole.length !== roleId.length) {
-        throw new BadRequestException('Some roles were not found');
+      const findRole = await this.roleModel.findById(roleId).exec();
+      if (!findRole) {
+        throw new BadRequestException('Role not found');
       }
-      roleId = findRole.map((role) => role._id.toString()).join(','); // Join _id values as a single string
+      roleId = findRole._id.toString(); // Ensure roleId is a string
     }
+  
     await this.adminModel
       .findByIdAndUpdate(
         id,
@@ -65,7 +64,8 @@ export class AdminService {
       .orFail(new BadRequestException('Admin not exists'))
       .lean()
       .exec();
-    return { massage: 'Admin updated successfully' };
+  
+    return { message: 'Admin updated successfully' };
   }
 
   async findOneAdminAccountNameService(accountName: string): Promise<Admin> {

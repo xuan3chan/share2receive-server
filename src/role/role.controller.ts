@@ -41,8 +41,8 @@ export class RoleController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @HttpCode(201)
   @Post()
-  async createRoleController(@Body() role: CreateRoleDto) {
-    await this.roleService.createRoleService(role.name, role.permissionID);
+  async createRoleController(@Body() dto: CreateRoleDto) {
+    await this.roleService.createRoleService(dto);
     return { message: 'Role created successfully' };
   }
 
@@ -57,9 +57,7 @@ export class RoleController {
     @Body() updateRoleDto: UpdateRoleDto,
   ): Promise<{ message: string }> {
     await this.roleService.updateRoleService(
-      updateRoleDto._id,
-      updateRoleDto.name,
-      updateRoleDto.permissionID,
+      updateRoleDto,
     );
     return { message: 'Role updated successfully' };
   }

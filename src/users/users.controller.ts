@@ -54,11 +54,11 @@ export class UsersController {
     return decodedToken._id;
   }
 
-  // @Action('read')
-  // @Subject('user')
-  // @ApiOkResponse({ description: 'Get all users' })
-  // @ApiBadRequestResponse({ description: 'bad request' })
-  // @UseGuards(PermissionGuard)
+  @Action('read')
+  @Subject('user')
+  @ApiOkResponse({ description: 'Get all users' })
+  @ApiBadRequestResponse({ description: 'bad request' })
+  @UseGuards(PermissionGuard)
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'searchKey', required: false, type: String })

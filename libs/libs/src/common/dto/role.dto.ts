@@ -34,6 +34,24 @@ export class CreateRoleDto {
   @ArrayMinSize(1)
   @IsNumber({}, { each: true })
   permissionID: number[];
+
+  @ApiProperty({
+    description: 'Icon of role ',
+    example: 'icon',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  icon: string;
+
+  @ApiProperty({
+    description: 'Color of role ',
+    example: 'color',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  color: string;
 }
 export class UpdateRoleDto {
   @ApiProperty({
@@ -63,6 +81,23 @@ export class UpdateRoleDto {
   @ArrayMinSize(1)
   @IsNumber({}, { each: true })
   permissionID: number[];
+  @ApiProperty({
+    description: 'Icon of role ',
+    example: 'icon',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  icon: string;
+
+  @ApiProperty({
+    description: 'Color of role ',
+    example: 'color',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  color: string;
 }
 export class DeleteRoleDto {
   @ApiProperty({

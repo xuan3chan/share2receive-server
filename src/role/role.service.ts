@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Role } from '@app/libs/common/schema';
 import { AdminService } from '../admin/admin.service';
+import { CreateRoleDto, UpdateRoleDto } from '@app/libs/common/dto';
 
 @Injectable()
 export class RoleService {
@@ -10,46 +11,43 @@ export class RoleService {
     @InjectModel(Role.name) private roleModel: Model<Role>,
     private adminService: AdminService,
   ) {}
-  async createRoleService(name: string, permissionID: number[]): Promise<Role> {
+  async createRoleService(createRoleDto:CreateRoleDto): Promise<Role> {
     const role = await this.roleModel
       .findOne({
-        name,
+        name :createRoleDto.name
       })
       .exec();
     if (role) {
       throw new BadRequestException('Role already exists');
     }
-    const newRole = new this.roleModel({
-      name,
-      permissionID,
-    });
+    const newRole = new this.roleModel(
+      createRoleDto
+    );
     return newRole.save();
   }
 
-  async updateRoleService(
-    id: string,
-    name: string,
-    permissionID: number[],
-  ): Promise<Role> {
-    // Check for duplicate role name
-    const roleDuplicate = await this.roleModel.findOne({ name }).exec();
-    if (roleDuplicate && roleDuplicate._id.toString() !== id) {
-      throw new BadRequestException('Role already exists');
+   async updateRoleService(updateRoleDto: UpdateRoleDto): Promise<Role> {
+    try {
+      // Check for duplicate role name
+      const roleDuplicate = await this.roleModel.findOne({ name: updateRoleDto.name }).exec();
+      if (roleDuplicate && roleDuplicate._id.toString() !== updateRoleDto._id) {
+        throw new BadRequestException('Role already exists');
+      }
+  
+      // Update the role
+      const role = await this.roleModel
+        .findByIdAndUpdate(updateRoleDto._id, updateRoleDto, { new: true })
+        .exec();
+  
+      if (!role) {
+        throw new BadRequestException('Role not exists');
+      }
+  
+      return role;
+    } catch (error) {
+      // Handle the error appropriately
+      throw new BadRequestException(error.message || 'Failed to update role');
     }
-    // Update the role
-    const role = await this.roleModel
-      .findByIdAndUpdate(
-        id,
-        { $set: { name, permissionID } },
-        { new: true, runValidators: true },
-      )
-      .exec();
-
-    if (!role) {
-      throw new BadRequestException('Role not exists');
-    }
-
-    return role;
   }
   async findRoleService(id: string): Promise<Role> {
     return this.roleModel.findById(id)

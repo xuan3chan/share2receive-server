@@ -11,7 +11,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
-import { CreateRoleDto,UpdateRoleDto,DeleteRoleDto } from '@app/libs/common/dto';
+import {
+  CreateRoleDto,
+  UpdateRoleDto,
+  DeleteRoleDto,
+} from '@app/libs/common/dto';
 
 import {
   ApiBadRequestResponse,
@@ -29,6 +33,7 @@ import { PermissionGuard } from '@app/libs/common/gaurd';
 @Controller('role')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
+
   @UseGuards(PermissionGuard)
   @Action('create')
   @Subject('role')
@@ -59,23 +64,6 @@ export class RoleController {
     return { message: 'Role updated successfully' };
   }
 
-  // @Action('read')
-  // @Subject('role')
-  // @UseGuards(PermissionGuard)
-  @Get()
-  @ApiOkResponse({ description: 'Get all roles' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  async viewlistRoleController(
-    @Query('page') page: number = 1,  // default value if page is not provided
-    @Query('limit') limit: number= 10, // default value if limit is not provided
-  ): Promise<{ data: any }> {
-    const data = await this.roleService.viewlistRoleService(page, limit);
-    return { data };
-  }
-  
-  
   @UseGuards(PermissionGuard)
   @Action('delete')
   @Subject('role')
@@ -85,5 +73,31 @@ export class RoleController {
   @HttpCode(200)
   async deleteRoleController(@Body() deleteRoleDto: DeleteRoleDto) {
     return this.roleService.deleteRoleService(deleteRoleDto.id);
+  }
+
+  @Action('read')
+  @Subject('role')
+  @UseGuards(PermissionGuard)
+  @Get('search')
+  @ApiQuery({ name: 'searchKey', required: true, type: String })
+  async searchRoleController(@Query('searchKey') searchKey: string): Promise<{ data: any }> {
+    const data = await this.roleService.searchRoleService(searchKey);
+    return { data };
+  }
+
+  @Action('read')
+  @Subject('role')
+  @UseGuards(PermissionGuard)
+  @Get()
+  @ApiOkResponse({ description: 'Get all roles' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async viewlistRoleController(
+    @Query('page') page: number = 1, // default value if page is not provided
+    @Query('limit') limit: number = 10, // default value if limit is not provided
+  ): Promise<{ data: any }> {
+    const data = await this.roleService.viewlistRoleService(page, limit);
+    return { data };
   }
 }

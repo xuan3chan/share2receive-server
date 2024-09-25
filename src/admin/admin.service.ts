@@ -169,4 +169,15 @@ export class AdminService {
       .exec();
   }
 
+  //search
+  async searchAdminService(searchKey: string): Promise<Admin[]> {
+    return this.adminModel
+      .find({
+        $or: [
+          { accountName: { $regex: searchKey, $options: 'i' } },
+          { adminName: { $regex: searchKey, $options: 'i' } },
+        ],
+      })
+      .exec();
+  }
 }

@@ -85,9 +85,9 @@ export class AdminController {
     return this.adminService.deleteAdminService(deleteAdminDto.id);
   }
 
-  // @Action('read')
-  // @Subject('admin')
-  // @UseGuards(PermissionGuard)
+  @Action('read')
+  @Subject('admin')
+  @UseGuards(PermissionGuard)
   @Get('list')
   @ApiOkResponse({ description: 'Get all admins with pagination' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -119,5 +119,13 @@ export class AdminController {
   async viewProfileController(@Req() request: Request) {
     const id = this.getUserIdFromToken(request);
     return this.adminService.viewProfileService(id);
+  }
+  // @Action('read')
+  // @Subject('admin')
+  // @UseGuards(PermissionGuard)
+  @ApiQuery({ name: 'searchKey', required: true, type: String })
+  @Get('search')
+  async searchAdminController(@Query('searchKey') searchKey: string) {
+    return this.adminService.searchAdminService(searchKey);
   }
 }

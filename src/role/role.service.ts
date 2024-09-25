@@ -81,4 +81,17 @@ async viewlistRoleService(page?: number, limit?: number): Promise<{ total: numbe
       throw error;
     }
   }
+  //search 
+
+   async searchRoleService(searchKey: string): Promise<{ message?: string, roles?: Role[] }> {
+    const roles = await this.roleModel
+      .find({ name: { $regex: searchKey, $options: 'i' } })
+      .exec();
+  
+    if (roles.length === 0) {
+      return { message: 'No roles found' };
+    }
+  
+    return { roles };
+  }
 }

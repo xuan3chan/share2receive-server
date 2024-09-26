@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { MailerModule } from './mailer/mailer.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { EncryptionModule } from './encryption/encryption.module';
+import { CategoryModule } from './category/category.module';
+import { BrandModule } from './brand/brand.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { EncryptionModule } from './encryption/encryption.module';
       envFilePath: '.env',
     }),
     MongooseModule.forRoot(process.env.DB_URI),
+    CategoryModule,
+    BrandModule,
   ],
 })
 export class AppModule {}

@@ -62,13 +62,27 @@ export class UsersController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'searchKey', required: false, type: String })
+  @ApiQuery({
+    name: 'sortField',
+    required: false,
+    type: String,
+    description: 'The field to sort',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    type: String,
+    description: 'The order to sort',
+  })
   @Get('list-users')
   async findAllController(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('searchKey') searchKey: string,
+    @Query('sortField') sortField: string = 'createdAt',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ data: any }> {
-    const data = await this.usersService.listUserService(page, limit,searchKey);
+    const data = await this.usersService.listUserService(page, limit,searchKey,sortField,sortOrder);
     return { data };
   }
 
@@ -199,30 +213,6 @@ export class UsersController {
     return { message: 'delete user successfully' };
   }
   
-  @Get('filter')
-  @Action('read')
-  @Subject('user')
-  @UseGuards(PermissionGuard)
-  @ApiOperation({ summary: 'Filter user' })
-  @ApiQuery({
-    name: 'sortField',
-    required: false,
-    type: String,
-    description: 'The field to sort',
-  })
-  @ApiQuery({
-    name: 'sortOrder',
-    required: false,
-    type: String,
-    description: 'The order to sort',
-  })
-  async filterUserController(
-    @Query('sortField') sortField: string = 'createdAt',
-    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ data: any }> {
-    const data = await this.usersService.filterUserService(sortField, sortOrder);
-    return { data };
-  }
 
   
 

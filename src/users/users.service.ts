@@ -6,7 +6,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
-import {UpdateUserProfileDto,UserStyleDto} from '@app/libs/common/dto';
+import { UpdateUserProfileDto, UserStyleDto } from '@app/libs/common/dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '@app/libs/common/schema';
@@ -21,10 +21,7 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<User>,
     @Inject(forwardRef(() => EncryptionService))
     private encryptionService: EncryptionService,
-    
   ) {}
-
- 
 
   async findOneEmailOrUsernameService(account: string): Promise<User> {
     const user = await this.userModel
@@ -32,14 +29,13 @@ export class UsersService {
         $or: [{ email: account }, { username: account }],
       })
       .exec();
-   
+
     return user;
   }
 
   async findOneUsernameService(username: string): Promise<User> {
     return this.findOneEmailOrUsernameService(username);
   }
-
 
   async findOneReTokenService(refreshToken: string): Promise<User> {
     const user = await this.userModel.findOne({ refreshToken }).exec();
@@ -81,11 +77,13 @@ export class UsersService {
     page: number,
     limit: number,
     searchKey?: string,
+    sortField: string = 'lastname',
+    sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; users: User[] }> {
     let query = {};
   
+    // Search functionality
     if (searchKey) {
-      // Xử lý từ khóa tìm kiếm (loại bỏ dấu và ký tự không cần thiết)
       const preprocessString = (str: string) =>
         str
           ? removeAccents(str)
@@ -93,46 +91,31 @@ export class UsersService {
               .trim()
               .toLowerCase()
           : '';
-      
       const preprocessedSearchKey = preprocessString(searchKey);
   
-      // Tạo regex cho firstname, lastname và email
       const regex = new RegExp(preprocessedSearchKey, 'i');
       query = {
         $or: [{ firstname: regex }, { lastname: regex }, { email: regex }],
       };
     }
   
-    // Đếm tổng số người dùng theo điều kiện tìm kiếm (nếu có)
+    // Count total users
     const total = await this.userModel.countDocuments(query).exec();
+    const skip = (page - 1) * limit; // Calculate the number of users to skip
   
-    const skip = (page - 1) * limit; // Tính số lượng người dùng cần bỏ qua
-  
-    // Tìm kiếm và phân trang
+    // Find and paginate users with sorting
     const users = await this.userModel
       .find(query)
-      .select('firstname lastname email avatar isBlock createdAt') // Chỉ lấy các trường cần thiết
+      .select('firstname lastname email avatar isBlock createdAt') // Select necessary fields
       .skip(skip)
       .limit(limit)
-      .lean() // Sử dụng lean để tăng hiệu suất
+      .sort({ [sortField]: sortOrder }) // Apply sorting
+      .lean() // Use lean for performance
       .exec();
   
     return { total, users };
   }
-//filter 
-async filterUserService(
-  sortField: string = 'lastname',
-  sortOrder: 'asc' | 'desc' = 'asc')
-  : Promise<User[]> {
-  const users = await this.userModel
-    .find()
-    .select('firstname lastname email avatar isBlock createdAt')
-    .sort({ [sortField]: sortOrder })
-    .lean()
-    .exec();
-  return users;
-  }
-
+  
   async updateRefreshTokenService(
     account: string,
     refreshToken: string,
@@ -144,7 +127,7 @@ async filterUserService(
         { new: true },
       )
       .exec();
-  
+
     return user;
   }
 
@@ -162,52 +145,46 @@ async filterUserService(
       expiredAt: expiredCode,
     };
     await user.save();
-  
     return user;
   }
 
   async createUserService(
-      email: string,
-      password: string,
-      firstname: string,
-      lastname: string,
-      refreshToken: string,
-      avatar?: string,
+    email: string,
+    password: string,
+    firstname: string,
+    lastname: string,
+    refreshToken: string,
+    avatar?: string,
   ): Promise<any> {
-      const userExist = await this.userModel
-          .findOne({
-              $or: [{ email: email }],
-          })
-          .exec();
-      if (userExist) {
-          return { message: 'Email or username already exists' };
-      }
-     
-      const createEncryptKey = this.encryptionService.createEncryptKey(
-          password.toString(),
-      );
-      const newUser = new this.userModel({
-          email,
-          password,
-          firstname,
-          lastname,
-          avatar,
-          encryptKey: createEncryptKey,
-          refreshToken,
-      });
-  
-      const savedUser = await newUser.save();
-    
-      return savedUser;
+    const userExist = await this.userModel
+      .findOne({
+        $or: [{ email: email }],
+      })
+      .exec();
+    if (userExist) {
+      return { message: 'Email or username already exists' };
+    }
+    const createEncryptKey = this.encryptionService.createEncryptKey(
+      password.toString(),
+    );
+    const newUser = new this.userModel({
+      email,
+      password,
+      firstname,
+      lastname,
+      avatar,
+      encryptKey: createEncryptKey,
+      refreshToken,
+    });
+    const savedUser = await newUser.save();
+    return savedUser;
   }
 
   async viewProfileService(_id: string): Promise<User> {
- 
     const user = await this.userModel
       .findOne({ _id })
-      .select('-password -encryptKey -refreshToken -authCode')  
+      .select('-password -encryptKey -refreshToken -authCode')
       .exec();
-  
     return user;
   }
 
@@ -220,13 +197,12 @@ async filterUserService(
         { _id }, // Tìm theo _id của người dùng
         {
           $set: {
-            ...updateUserProfileDto,        // Cập nhật các thuộc tính ngoài userStyle
+            ...updateUserProfileDto, // Cập nhật các thuộc tính ngoài userStyle
           },
         },
         { new: true }, // Trả về tài liệu đã được cập nhật
       )
       .exec();
-  
     return updatedUser;
   }
 
@@ -245,10 +221,10 @@ async filterUserService(
         { new: true },
       )
       .exec();
-  
+
     return updatedUser;
   }
-  
+
   async updateAvatarService(_id: string, avatar: string): Promise<User> {
     const user = await this.userModel.findOne({ _id }).exec();
     const deleteAvatar = this.cloudinaryService.deleteMediaService(user.avatar);
@@ -258,7 +234,7 @@ async filterUserService(
     const updatedUser = await this.userModel
       .findOneAndUpdate({ _id }, { avatar }, { new: true })
       .exec();
-   
+
     return updatedUser;
   }
 
@@ -274,45 +250,35 @@ async filterUserService(
               .trim()
               .toLowerCase()
           : '';
-      
+
       const preprocessedSearchKey = preprocessString(searchKey);
-      
       // Tạo regex cho firstname, lastname và email
       const regex = new RegExp(preprocessedSearchKey, 'i');
-      
       // Tìm kiếm người dùng trong MongoDB với regex trên firstname, lastname, hoặc email
       const users = await this.userModel
-        .find(
-          {
-            $or: [
-              { firstname: regex },
-              { lastname: regex },
-              { email: regex }
-            ],
-          }
-        )
+        .find({
+          $or: [{ firstname: regex }, { lastname: regex }, { email: regex }],
+        })
         .select('firstname lastname email avatar isBlock createdAt') // Chỉ chọn các trường cần thiết
         .lean() // Tăng hiệu suất bằng cách trả về plain objects
         .exec();
-  
+
       if (users.length > 0) {
         return {
           message: `Found ${users.length} user(s)`,
           user: users,
         };
       }
-  
       return { message: 'No user found', user: [] };
     } catch (error) {
       throw new InternalServerErrorException(error.message);
     }
   }
-  
+
   async blockUserService(_id: string, isBlock: boolean): Promise<User> {
     const updatedUser = await this.userModel
       .findOneAndUpdate({ _id }, { isBlock }, { new: true })
       .exec();
-
 
     return updatedUser;
   }
@@ -323,17 +289,13 @@ async filterUserService(
       throw new NotFoundException('User not found');
     }
     const deletedUser = await this.userModel.findOneAndDelete({ _id }).exec();
-   
- 
+
     return deletedUser;
   }
 
   async findUserByIdService(userId: string): Promise<any> {
- 
     const user = await this.userModel.findOne({ _id: userId }).exec();
-  
+
     return user;
   }
-
-  
 }

@@ -28,6 +28,8 @@ export class CreateAdminDto {
   })
   @IsNotEmpty()
   @IsString()
+  // chỉ số và chữ cái, không có ký tự đặc biệt, không khoảng trắng,không dấu
+  @Matches(/^[a-zA-Z0-9]+$/, { message: 'account name must only contain letters and numbers' })
   accountName: string;
 
   @ApiProperty({

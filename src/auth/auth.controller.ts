@@ -43,10 +43,9 @@ export class AuthController {
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
-
   }
 
-  @Get('/google/redirect')
+  @Get('callback/google')
 @UseGuards(AuthGuard('google'))
 @UseFilters(OAuthExceptionFilter)
 async googleAuthRedirect(
@@ -58,7 +57,8 @@ async googleAuthRedirect(
     const result = await this.authService.googleLogin(googleUserProfile);
     setCookie(response, 'refreshToken', result.refreshToken);
     setCookie(response, 'accessToken', result.accessToken);
-    response.redirect(`https://share2receive-client.vercel.app/?user=${encodeURIComponent(JSON.stringify(result))}`);
+    
+    return { message: 'successfully', data: result };
   } catch (err) {
     throw new ForbiddenException('Google login failed: ' + err.message);
   }

@@ -29,7 +29,7 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
 } from '@app/libs/common/dto';
-import { Response } from 'express';
+import { Response,Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthExceptionFilter } from '@app/libs/common/filter/oauth-exception.filter';
 import { setCookie } from '@app/libs/common/util/';
@@ -49,7 +49,7 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   @UseFilters(OAuthExceptionFilter)
   async googleAuthRedirect(
-    @Req() req,
+    @Req() req : Request,
     @Res({ passthrough: true }) response: Response,
   ) {
     try {
@@ -57,10 +57,8 @@ export class AuthController {
       const result = await this.authService.googleLogin(googleUserProfile);
       setCookie(response, 'refreshToken', result.refreshToken);
       setCookie(response, 'accessToken', result.accessToken);
-  
-    
-  
-      return response.redirect('https://share2receive-client.vercel.app');
+      const hostReq= req.headers.host
+      return response.redirect(hostReq);
     } catch (err) {
       throw new ForbiddenException('Google login failed: ' + err.message);
     }

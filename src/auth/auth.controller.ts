@@ -58,6 +58,7 @@ async googleAuthRedirect(
     setCookie(response, 'refreshToken', result.refreshToken);
     setCookie(response, 'accessToken', result.accessToken);
     
+    response.redirect('https://share2receive-client.vercel.app');
     return { message: 'successfully', data: result };
   } catch (err) {
     throw new ForbiddenException('Google login failed: ' + err.message);

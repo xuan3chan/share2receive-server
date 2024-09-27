@@ -46,24 +46,27 @@ export class AuthController {
   }
 
   @Get('callback/google')
-@UseGuards(AuthGuard('google'))
-@UseFilters(OAuthExceptionFilter)
-async googleAuthRedirect(
-  @Req() req,
-  @Res({ passthrough: true }) response: Response,
-) {
-  try {
-    const googleUserProfile = req.user;
-    const result = await this.authService.googleLogin(googleUserProfile);
-    setCookie(response, 'refreshToken', result.refreshToken);
-    setCookie(response, 'accessToken', result.accessToken);
-    
-    response.redirect('https://share2receive-client.vercel.app');
-    return { message: 'successfully', data: result };
-  } catch (err) {
-    throw new ForbiddenException('Google login failed: ' + err.message);
+  @UseGuards(AuthGuard('google'))
+  @UseFilters(OAuthExceptionFilter)
+  async googleAuthRedirect(
+    @Req() req,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    try {
+      const googleUserProfile = req.user;
+      const result = await this.authService.googleLogin(googleUserProfile);
+      setCookie(response, 'refreshToken', result.refreshToken);
+      setCookie(response, 'accessToken', result.accessToken);
+  
+  
+      const encodedUserData = encodeURIComponent(JSON.stringify(result.user));
+      setCookie(response, 'userData', encodedUserData);
+  
+      return response.redirect('https://share2receive-client.vercel.app');
+    } catch (err) {
+      throw new ForbiddenException('Google login failed: ' + err.message);
+    }
   }
-}
 
 
   @ApiConsumes('application/json')

@@ -113,6 +113,12 @@ export class AuthService {
         avatar: user.avatar,
         firstName: user.firstName,
         lastName: user.lastName,
+        address: user.address,
+        dateOfBirth: user.dateOfBirth,
+        description: user.description,
+        gender: user.gender,
+        phone: user.phone,
+        userStyle : user.userStyle,
       };
 
       return {

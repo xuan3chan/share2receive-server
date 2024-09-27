@@ -58,8 +58,7 @@ export class AuthController {
       setCookie(response, 'refreshToken', result.refreshToken);
       setCookie(response, 'accessToken', result.accessToken);
   
-      const encodedUserData = encodeURIComponent(JSON.stringify(result.user));
-      setCookie(response, 'userData', `${encodedUserData}`);
+    
   
       return response.redirect('https://share2receive-client.vercel.app');
     } catch (err) {

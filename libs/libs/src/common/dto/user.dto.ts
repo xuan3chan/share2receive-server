@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
-import { IsDate,MinLength, IsEmail, IsNotEmpty, IsString, MaxLength,Matches, IsOptional, IsBoolean, IsEnum, ValidateNested } from "class-validator";
+import { IsDate,MinLength, IsEmail, IsNotEmpty, IsString, MaxLength,Matches, IsOptional, IsBoolean, IsEnum, ValidateNested, Min } from "class-validator";
 
 export class CreateUserDto {
     
@@ -130,6 +130,10 @@ export class UpdateUserProfileDto {
     example: 'Nguyên Lê Minh',
   })
   @IsString()
+  @MaxLength(20)
+  @MinLength(2)
+  // @Matches(/^[a-zA-Z\s]*$/, {
+  //   message: 'Firstname must contain only letters and spaces',
   @IsOptional()
   firstname?: string;
 
@@ -139,6 +143,8 @@ export class UpdateUserProfileDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(20)
+  @MinLength(2)
   lastname?: string;
 
   @ApiProperty({
@@ -173,6 +179,7 @@ export class UpdateUserProfileDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(11)
   phone?: string;
 
   @ApiProperty({
@@ -188,7 +195,6 @@ export class UpdateUserProfileDto {
 
   export class DeleteUserDto {
     
-
     @ApiProperty({
         description: 'Id of user ',
         example: '60e1d0b5d8f1f40015e4e8b0'

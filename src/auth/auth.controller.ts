@@ -71,13 +71,19 @@ export class AuthController {
   @ApiCreatedResponse({ description: 'register successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Post('register')
-  async registerController(@Body() register: RegisterDto) {
-    return await this.authService.registerService(
+  async registerController(@Body() register: RegisterDto,@Res({ passthrough: true }) response: Response,) {
+    
+    const result = await this.authService.registerService(
       register.email,
       register.password,
       register.firstname,
       register.lastname,
     );
+    setCookie(response, 'refreshToken', result.refreshToken)
+    setCookie(response, 'accessToken', result.accessToken);
+    const userDecode = encodeURIComponent(JSON.stringify(result.user));
+    setCookie(response, 'userData', userDecode);
+    return { message: 'successfully', data: result };
   }
 
   @HttpCode(HttpStatus.OK)

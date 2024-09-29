@@ -51,7 +51,11 @@ export class AuthService {
     password: string,
     firstname: string,
     lastname: string,
-  ): Promise<{ message:string }> {
+  ): Promise<{
+    refreshToken: string;
+    accessToken: string;
+    user: any;
+  }> {
     try {
       const hashedPassword = await bcrypt.hash(password, 10);
       const createRefreshToken = randomBytes(32).toString('hex');
@@ -65,9 +69,38 @@ export class AuthService {
       if ('message' in user) {
         throw new BadRequestException(user.message);
       }
-
+  
+      const returnedUser = user
+        ? {
+            email: user.email,
+            role: user.role,
+            _id: user._id,
+            avatar: user.avatar,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            address: user.address,
+            dateOfBirth: user.dateOfBirth,
+            description: user.description,
+            gender: user.gender,
+            nickname: user.nickname,
+            phone: user.phone,
+            userStyle: user.userStyle,
+          }
+        : null;
+  
+      if (user) {
+        await this.usersService.updateRefreshTokenService(
+          user._id,
+          createRefreshToken,
+        );
+      }
+  
+      const payload = { sub: user._id, email: user.email, role: user.role };
+  
       return {
-        message: 'Register successfully',
+        accessToken: this.jwtService.sign(payload),
+        refreshToken: createRefreshToken,
+        user: returnedUser,
       };
     } catch (error) {
       throw new BadRequestException(error.message);

@@ -50,7 +50,34 @@ export class MailerService {
 
     console.log('Message sent: %s', info.messageId, code);
   }
+async sendEmailBlocked(email: string): Promise<void> {
+  const mailOptions = {
+    to: email,
+    subject: 'Share2Receive - Your account has been blocked',
+    html: `
+    <body style="background-color: #f9f4eb; font-family: Arial, sans-serif; padding: 50px; text-align: center;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px; border-radius: 10px; box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #388e3c; text-align: center; color: #fff; padding: 30px 20px; border-top-left-radius: 10px; border-top-right-radius: 10px; font-family: 'Arial Black', Gadget, sans-serif;">
+          <h1 style="text-transform: uppercase; margin: 0; font-size: 36px; letter-spacing: 3px;">Share2Receive</h1>
+        </div>
+        <div style="padding: 20px; color: #333;">
+          <h4 style="margin-bottom: 10px;">Dear user,</h4>
+          <p style="margin-bottom: 10px; line-height: 1.6;">We regret to inform you that your account has been blocked due to suspicious activities.</p>
+          <p style="margin-bottom: 10px; line-height: 1.6;">If you believe this is an error, please contact our support team immediately.</p>
+          <p style="margin-bottom: 10px; line-height: 1.6;">Thank you, Share2Receive Support Team</p>
+        </div>
+        <div style="margin-top: 30px; font-size: 14px; color: #555;">
+          <p>Have questions or trouble logging in? Just reply to this email or contact <a href="mailto:support@share2receive.com" style="color: #7367f0; text-decoration: none;">support@share2receive.com</a>.</p>
+        </div>
+      </div>
+    </body>`,
+  };
 
+  const info = await this.transporter.sendMail(mailOptions);
+  
+  console.log('Message sent: %s', info.messageId);
+}
+    
 
 
   }

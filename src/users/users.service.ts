@@ -13,6 +13,7 @@ import { User } from '@app/libs/common/schema';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { remove as removeAccents } from 'remove-accents';
 import { EncryptionService } from '../encryption/encryption.service';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
 export class UsersService {
@@ -21,6 +22,7 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<User>,
     @Inject(forwardRef(() => EncryptionService))
     private encryptionService: EncryptionService,
+    private mailerService: MailerService,
   ) {}
 
   async findOneEmailOrUsernameService(account: string): Promise<User> {
@@ -279,7 +281,7 @@ export class UsersService {
     const updatedUser = await this.userModel
       .findOneAndUpdate({ _id }, { isBlock }, { new: true })
       .exec();
-
+    if (isBlock == true) this.mailerService.sendEmailBlocked(updatedUser.email);
     return updatedUser;
   }
 

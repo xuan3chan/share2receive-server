@@ -9,6 +9,7 @@ import {AbilityFactory} from '@app/libs/common/abilities';
 
 import { AdminModule } from 'src/admin/admin.module';
 import { EncryptionModule } from 'src/encryption/encryption.module';
+import { MailerModule } from 'src/mailer/mailer.module';
 
 
 @Module({
@@ -16,6 +17,7 @@ import { EncryptionModule } from 'src/encryption/encryption.module';
     forwardRef(() => EncryptionModule),
     AdminModule,
     CloudinaryModule,
+    MailerModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
  
   ],

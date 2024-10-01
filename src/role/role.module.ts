@@ -8,7 +8,7 @@ import { AbilityFactory } from '@app/libs/common/abilities';
 import { AdminModule } from 'src/admin/admin.module';
 @Module({
   imports: [
-    AdminModule,
+    forwardRef(() => AdminModule),
     MongooseModule.forFeature([{ name: Role.name, schema: RoleSchema }]),
   
   ],

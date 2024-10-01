@@ -176,10 +176,17 @@ export class AdminService {
     return this.adminModel.findOne({ role: id }).exec();
   }
   async viewProfileService(id: string): Promise<Admin> {
+    // Populate roles and exclude _id of the role
     return this.adminModel
       .findById(id)
-      .select('adminName _id').lean()
+      .populate({
+        path: 'role',
+        select: '-_id name permissionID icon color' // Exclude _id from the role
+      })
+      .select('-password -createdAt -updatedAt -refreshToken -accountName') // Exclude unnecessary fields from admin
+      .lean()
       .exec();
   }
+  
 
 }

@@ -3,14 +3,12 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '@app/libs/common/schema';
-import { ConfigModule } from '@nestjs/config';
-import {CloudinaryModule} from '../cloudinary/cloudinary.module';
-import {AbilityFactory} from '@app/libs/common/abilities';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { AbilityFactory } from '@app/libs/common/abilities';
 
-import { AdminModule } from 'src/admin/admin.module';
 import { EncryptionModule } from 'src/encryption/encryption.module';
 import { MailerModule } from 'src/mailer/mailer.module';
-
+import { AdminModule } from 'src/admin/admin.module';
 
 @Module({
   imports: [
@@ -19,10 +17,9 @@ import { MailerModule } from 'src/mailer/mailer.module';
     CloudinaryModule,
     MailerModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
- 
   ],
   controllers: [UsersController],
-  providers: [UsersService,AbilityFactory],
+  providers: [UsersService, AbilityFactory],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

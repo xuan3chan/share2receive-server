@@ -15,7 +15,7 @@ export class Admin extends Document {
   @Prop({ type: mongoose.Schema.Types.String, required: true, unique: true })
   password: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'roles' }) 
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Role' }) 
   role: mongoose.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.Boolean, default: false })

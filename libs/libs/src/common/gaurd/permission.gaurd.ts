@@ -4,6 +4,8 @@ import {
   ExecutionContext,
   ForbiddenException,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AbilityFactory } from '../abilities/abilities.factory';
@@ -24,6 +26,7 @@ export class PermissionGuard implements CanActivate {
     private reflector: Reflector,
     private abilityFactory: AbilityFactory,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => AdminService))
     private adminService: AdminService,
   ) {}
 

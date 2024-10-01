@@ -1,0 +1,86 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, HydratedDocument } from 'mongoose';
+import { SizeE } from '../enum/size.enum';
+import mongoose from 'mongoose';
+
+@Schema({
+  timestamps: true,
+})
+export class Product extends Document {
+  @Prop({ type: mongoose.Schema.Types.String, required: true, unique: true })
+  productName: string;
+
+  @Prop({ type: mongoose.Schema.Types.String, required: true })
+  @Prop({
+    type: [mongoose.Schema.Types.String],
+    required: true,
+    validate: {
+      validator: (arr: string[]) => arr.length <= 3,
+      message: 'imgUrls array can contain a maximum of 3 values',
+    },
+  })
+  imgUrls: string[];
+
+  // Thay đổi thuộc tính `size` và `color` để chúng liên kết với nhau
+  @Prop([
+    {
+      size: { type: mongoose.Schema.Types.String, enum: SizeE, required: true },
+      colors: [{ type: mongoose.Schema.Types.String, required: true }],
+      amount: { type: mongoose.Schema.Types.Number, required: true },
+    },
+  ])
+  sizeVariants: {
+    size: string;
+    colors: string[];
+    amount: number;
+  }[];
+
+  @Prop({ type: mongoose.Schema.Types.String, required: true })
+  material: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  userId: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  categoryId: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  brandId: string;
+
+  @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
+  isDeleted: boolean;
+
+  @Prop({
+    isApproved: { type: mongoose.Schema.Types.Boolean, default: false },
+    date: { type: mongoose.Schema.Types.Date },
+  })
+  approved: {
+    isApproved: boolean;
+    date: Date;
+  };
+
+  @Prop({
+    type: mongoose.Schema.Types.Boolean,
+    enum: ['active', 'inactive'],
+    default: 'active',
+  })
+  status: string;
+
+  @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
+    isBlock: boolean;
+
+    @Prop({ type: mongoose.Schema.Types.String,enum:['sale','barter'] })
+    type: string;
+
+    @Prop({ type: mongoose.Schema.Types.Number, required: true })
+    price: number;
+    
+    @Prop({ type: mongoose.Schema.Types.Number, required: true })
+    priceNew: number;
+    
+    @Prop({ type: mongoose.Schema.Types.String, required: true })
+    tags: string[];
+
+}
+export type ProductDocument = HydratedDocument<Product>;
+export const ProductSchema = SchemaFactory.createForClass(Product);

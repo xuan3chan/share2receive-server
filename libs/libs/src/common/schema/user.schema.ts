@@ -2,7 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import mongoose from 'mongoose';
 import { UserStyle } from '@app/libs/common/interface'; // Đường dẫn tới file chứa interface UserStyle
-
+import {MaterialE} from '@app/libs/common/enum/material.enum';
+import { SizeE } from '../enum';
 @Schema({ timestamps: true })
 export class User extends Document {
   [x: string]: any;
@@ -76,8 +77,8 @@ export class User extends Document {
   @Prop({
     type: {
       color: [{ type: mongoose.Schema.Types.String }],
-      material: [{ type: mongoose.Schema.Types.String, enum: ['cotton', 'wool', 'silk', 'leather', 'other'] }],
-      size: [{ type: mongoose.Schema.Types.String, enum: ['S', 'M', 'L', 'XL'] }],
+      material: [{ type: mongoose.Schema.Types.String, enum:MaterialE  }],
+      size: [{ type: mongoose.Schema.Types.String, enum: SizeE }],
       hobby: [
         {
           type: mongoose.Schema.Types.String,

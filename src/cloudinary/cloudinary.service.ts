@@ -54,21 +54,45 @@ export class CloudinaryService {
 
   async uploadImageService(
     imageName: string,
-    file: Express.Multer.File,
+    files: Express.Multer.File | Express.Multer.File[],
   ): Promise<{
-    uploadResult: UploadApiResponse | UploadApiErrorResponse,
+    uploadResults: (UploadApiResponse | UploadApiErrorResponse)[],
   }> {
-    const timestamp = new Date();
-    this.validateFile(file, 'image');
-
-    const normalizedImageName = imageName.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const newImageName = normalizedImageName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 25);
-
-    const publicId = `share2receive/images/${newImageName}-${timestamp.getTime()}`;
-    const uploadResult = await this.uploadFile(file, { public_id: publicId });
-
-    return { uploadResult };
+    const normalizeName = (name: string) =>
+      name
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .substring(0, 25);
+  
+    // Hàm để upload một ảnh
+    const uploadSingleFile = async (
+      file: Express.Multer.File,
+      imageName: string,
+    ) => {
+      this.validateFile(file, 'image');
+      const newImageName = normalizeName(imageName);
+      const timestamp = new Date().getTime(); // Tạo timestamp mới cho mỗi file
+      const publicId = `share2receive/images/${newImageName}-${timestamp}`;
+      return this.uploadFile(file, { public_id: publicId });
+    };
+  
+    // Kiểm tra nếu là nhiều file (mảng)
+    let uploadResults: (UploadApiResponse | UploadApiErrorResponse)[] = [];
+    if (Array.isArray(files)) {
+      // Upload từng ảnh nếu là mảng file
+      uploadResults = await Promise.all(
+        files.map((file) => uploadSingleFile(file, imageName)),
+      );
+    } else {
+      // Upload một ảnh nếu là file đơn
+      const uploadResult = await uploadSingleFile(files, imageName);
+      uploadResults.push(uploadResult);
+    }
+  
+    return { uploadResults };
   }
+  
 
   async uploadVideoService(
     videoName: string,
@@ -130,20 +154,44 @@ export class CloudinaryService {
   }
 
   async deleteMediaService(url: string): Promise<UploadApiResponse | UploadApiErrorResponse> {
-    const publicId = url.split('/upload/')[1].split('.')[0];
-
+    // Trích xuất publicId từ URL Cloudinary, bỏ qua phần phiên bản (vd: v1727865186)
+    const publicId = url.split('/upload/')[1].split('.')[0].split('/').slice(1).join('/');
+  
+    // Xóa hình ảnh từ Cloudinary bằng publicId trực tiếp
     return new Promise((resolve, reject) => {
       cloudinary.uploader.destroy(publicId, (error, result) => {
         if (error) {
+          console.error(`Failed to delete ${publicId}:`, error); // Log lỗi nếu xảy ra
           reject(error);
         } else {
+          console.log(`Deleted ${publicId}:`, result); // Log kết quả nếu thành công
           resolve(result);
         }
       });
     });
   }
-
+  
+  
+  
+  
   async deleteManyImagesService(urls: string[]): Promise<void> {
-    await Promise.all(urls.map((url) => this.deleteMediaService(url)));
+    // Sử dụng await và Promise.all để xóa tất cả các hình ảnh cùng một lúc
+    const results = await Promise.all(
+      urls.map(async (url) => {
+        try {
+          // Trích xuất publicId và xóa hình ảnh từ Cloudinary
+          const result = await this.deleteMediaService(url);
+          return result;
+        } catch (error) {
+          console.error(`Failed to delete image from URL ${url}`, error);
+          return null; // Trả về null nếu không xóa được ảnh
+        }
+      })
+    );
+    
   }
+  
+  
+  
+  
 }

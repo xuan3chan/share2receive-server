@@ -10,13 +10,11 @@ export class Product extends Document {
   @Prop({ type: mongoose.Schema.Types.String, required: true, unique: true })
   productName: string;
 
-  @Prop({ type: mongoose.Schema.Types.String, required: true })
   @Prop({
     type: [mongoose.Schema.Types.String],
-    required: true,
     validate: {
-      validator: (arr: string[]) => arr.length <= 3,
-      message: 'imgUrls array can contain a maximum of 3 values',
+      validator: (arr: string[]) => arr.length <= 10,
+      message: 'imgUrls array can contain a maximum of 10 values',
     },
   })
   imgUrls: string[];
@@ -38,21 +36,27 @@ export class Product extends Document {
   @Prop({ type: mongoose.Schema.Types.String, required: true })
   material: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'User' })
   userId: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'Category',
+  })
   categoryId: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Brand' })
   brandId: string;
 
   @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
   isDeleted: boolean;
 
   @Prop({
-    isApproved: { type: mongoose.Schema.Types.Boolean, default: false },
-    date: { type: mongoose.Schema.Types.Date },
+    type: {
+      isApproved: { type: mongoose.Schema.Types.Boolean, default: false },
+      date: { type: mongoose.Schema.Types.Date, default: null },
+    },
   })
   approved: {
     isApproved: boolean;
@@ -60,27 +64,26 @@ export class Product extends Document {
   };
 
   @Prop({
-    type: mongoose.Schema.Types.Boolean,
-    enum: ['active', 'inactive'],
+    type: mongoose.Schema.Types.String,
+    enum: ['active', 'inactive','suspend'],
     default: 'active',
   })
   status: string;
 
   @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
-    isBlock: boolean;
+  isBlock: boolean;
 
-    @Prop({ type: mongoose.Schema.Types.String,enum:['sale','barter'] })
-    type: string;
+  @Prop({ type: mongoose.Schema.Types.String, enum: ['sale', 'barter'] })
+  type: string;
 
-    @Prop({ type: mongoose.Schema.Types.Number, required: true })
-    price: number;
-    
-    @Prop({ type: mongoose.Schema.Types.Number, required: true })
-    priceNew: number;
-    
-    @Prop({ type: mongoose.Schema.Types.String, required: true })
-    tags: string[];
+  @Prop({ type: mongoose.Schema.Types.Number, required: true })
+  price: number;
 
+  @Prop({ type: mongoose.Schema.Types.Number, required: true })
+  priceNew: number;
+
+  @Prop([{ type: mongoose.Schema.Types.String, required: true }])
+  tags: string[];
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

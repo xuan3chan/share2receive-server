@@ -10,6 +10,7 @@ import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { EncryptionModule } from './encryption/encryption.module';
 import { CategoryModule } from './category/category.module';
 import { BrandModule } from './brand/brand.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { BrandModule } from './brand/brand.module';
     MongooseModule.forRoot(process.env.DB_URI),
     CategoryModule,
     BrandModule,
+    ProductModule,
   ],
 })
 export class AppModule {}

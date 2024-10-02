@@ -140,7 +140,7 @@ export class UsersController {
     schema: {
       type: 'object',
       properties: {
-        avatar: {
+        S: {
           type: 'string',
           format: 'binary',
         },
@@ -158,7 +158,7 @@ export class UsersController {
     try {
       const userId = this.getUserIdFromToken(request);
       const fileResult = await this.cloudinaryService.uploadImageService(userId.toString(), file);
-      await this.usersService.updateAvatarService(userId, fileResult.uploadResult.url);
+      await this.usersService.updateAvatarService(userId, fileResult.uploadResults[0].secure_url);
       return { message: 'Avatar updated successfully' };
     } catch (error) {
       // Handle the error appropriately

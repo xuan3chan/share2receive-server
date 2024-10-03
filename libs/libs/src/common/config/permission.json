@@ -88,6 +88,53 @@
     "namePermission": "blockUser",
     "action": "block",
     "subject": "user"
+  },
+  {
+    "id": 19,
+    "namePermission": "createCategory",
+    "action": "create",
+    "subject": "category"
+  },
+  {
+    "id": 20,
+    "namePermission": "deleteCategory",
+    "action": "delete",
+    "subject": "category"
+  },
+  {
+    "id": 21,
+    "namePermission": "updateCategory",
+    "action": "update",
+    "subject": "category"
+  },
+  {
+    "id": 22,
+    "namePermission": "readCategory",
+    "action": "read",
+    "subject": "category"
+  },
+  {
+    "id": 23,
+    "namePermission": "readbrand",
+    "action": "read",
+    "subject": "brand"
+  },
+  {
+    "id": 24,
+    "namePermission": "createbrand",
+    "action": "create",
+    "subject": "brand"
+  },
+  {
+    "id": 25,
+    "namePermission": "deletebrand",
+    "action": "delete",
+    "subject": "brand"
+  },
+  {
+    "id": 26,
+    "namePermission": "updatebrand",
+    "action": "update",
+    "subject": "brand"
   }
-
   ]

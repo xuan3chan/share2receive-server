@@ -1,7 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { BrandService } from './brand.service';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateBrandDto, UpdateBrandDto } from '@app/libs/common/dto/brand.dto';
+import { Action, Subject } from '@app/libs/common/decorator';
+import { PermissionGuard } from '@app/libs/common/gaurd';
 
 @ApiTags('brand')
 @ApiBearerAuth()
@@ -9,6 +11,9 @@ import { CreateBrandDto, UpdateBrandDto } from '@app/libs/common/dto/brand.dto';
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
+  @Subject('brand')
+  @Action('create')
+  @UseGuards(PermissionGuard)
   @ApiCreatedResponse({ description: 'Brand created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Post()
@@ -17,6 +22,8 @@ export class BrandController {
     return { message: 'Brand created successfully' };
   }
 
+  @Subject('brand')
+  @Action('update')
   @ApiOkResponse({ description: 'Brand updated successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Put(':id')
@@ -29,12 +36,18 @@ export class BrandController {
     
   }
   
+  @Subject('brand')
+  @Action('delete')
+  @UseGuards(PermissionGuard)
   @Delete(':id')
   async deleteBrandController(@Param('id') id: string) {
     await this.brandService.deleteBrandService(id);
     return { message: 'Brand deleted successfully' };
   }
 
+  @Subject('brand')
+  @Action('read')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Get all brands' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @ApiQuery({ name: 'page', required: false })
@@ -58,6 +71,7 @@ export class BrandController {
       sortOrder
     );
   } 
+
   @ApiOkResponse({ description: 'Get all brands' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @Get('list-brand-client')

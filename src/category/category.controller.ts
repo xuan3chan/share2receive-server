@@ -1,7 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto, UpdateCategoryDto } from '@app/libs/common/dto/category.dto';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { PermissionGuard } from '@app/libs/common/gaurd';
+import { Action, Subject } from '@app/libs/common/decorator';
+import { subject } from '@casl/ability';
 
 @ApiTags('category')
 @ApiBearerAuth()
@@ -9,6 +12,9 @@ import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @Subject('category')
+  @Action('create')
+  @UseGuards(PermissionGuard)
   @ApiCreatedResponse({ description: 'Category created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Post()
@@ -17,6 +23,9 @@ export class CategoryController {
     return { message: 'Category created successfully' };
   }
 
+  @Subject('category')
+  @Action('update')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Category updated successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Put(':id')
@@ -26,6 +35,9 @@ export class CategoryController {
     await this.categoryService.updateCategoryService(id,dto);
     return { message: 'Category created successfully' };
   }
+
+  @Subject('category')
+  @Action('delete')
   @ApiOkResponse({ description: 'Category deleted successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Delete(':id')
@@ -34,6 +46,8 @@ export class CategoryController {
     return { message: 'Category deleted successfully' };
   }
 
+  @Subject('category')
+  @Action('read')
   @ApiOkResponse({ description: 'Get all categories' })
   @ApiBadRequestResponse({ description: 'bad request' })
   @ApiQuery({ name: 'page', required: false })
@@ -51,7 +65,7 @@ export class CategoryController {
   ) {
     return this.categoryService.viewListCategoryService(page, limit, searchKey, sortField, sortOrder);
   }
-
+  
   @Get('list-category-client') 
   async listCategoryForClientController(
   ): Promise<{ data: any }> {

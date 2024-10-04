@@ -14,7 +14,8 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { remove as removeAccents } from 'remove-accents';
 import { EncryptionService } from '../encryption/encryption.service';
 import { MailerService } from 'src/mailer/mailer.service';
-
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 @Injectable()
 export class UsersService {
   constructor(
@@ -83,7 +84,7 @@ export class UsersService {
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; users: User[] }> {
     let query = {};
-  
+
     // Search functionality
     if (searchKey) {
       const preprocessString = (str: string) =>
@@ -94,17 +95,17 @@ export class UsersService {
               .toLowerCase()
           : '';
       const preprocessedSearchKey = preprocessString(searchKey);
-  
+
       const regex = new RegExp(preprocessedSearchKey, 'i');
       query = {
         $or: [{ firstname: regex }, { lastname: regex }, { email: regex }],
       };
     }
-  
+
     // Count total users
     const total = await this.userModel.countDocuments(query).exec();
     const skip = (page - 1) * limit; // Calculate the number of users to skip
-  
+
     // Find and paginate users with sorting
     const users = await this.userModel
       .find(query)
@@ -114,10 +115,10 @@ export class UsersService {
       .sort({ [sortField]: sortOrder }) // Apply sorting
       .lean() // Use lean for performance
       .exec();
-  
+
     return { total, users };
   }
-  
+
   async updateRefreshTokenService(
     account: string,
     refreshToken: string,
@@ -299,5 +300,32 @@ export class UsersService {
     const user = await this.userModel.findOne({ _id: userId }).exec();
 
     return user;
+  }
+
+  async changePasswordService(
+    id: string,
+    newPassword: string,
+    oldPassword: string,
+  ): Promise<{ message: string }> {
+    try {
+      const user = await this.userModel.findOne({ _id: id });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      if (!(await bcrypt.compare(oldPassword, user.password))) {
+        throw new BadRequestException('Old password is incorrect');
+      }
+      if (oldPassword === newPassword) {
+        throw new BadRequestException('New password must be different');
+      }
+      
+      const hashPassword = await bcrypt.hash(newPassword, 10);
+      user.password = hashPassword;
+      await user.save();
+  
+      return { message: 'Password reset successfully' };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 }

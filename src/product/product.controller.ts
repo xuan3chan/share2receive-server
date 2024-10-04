@@ -133,7 +133,34 @@ export class ProductController {
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<any> {
     const userId = this.getUserIdFromToken(request);
-    const data = await this.productService.listProductService(userId);
+    const data = await this.productService.listProductService(userId, page, limit, searchKey, sortField, sortOrder);
+    return data;
+  }
+  //*****************manage product***************** */
+  @ApiTags('Manage product')
+  @ApiOperation({ summary: 'List all products for admin' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'searchKey', required: false, type: String })
+  @ApiQuery({ name: 'sortField', required: false, type: String })
+  @ApiQuery({ name: 'sortOrder', required: false, type: String})
+  @ApiQuery({ name: 'filterField', required: false, type: String,
+    example: 'status:categoryId:brandId:IsDeleted:(approved.isApproved):isBlock:type'
+  })
+  @ApiQuery({ name: 'filterValue', required: false, type: String,
+
+  })
+  @Get('list-all-product')
+  async listAllProductController(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('searchKey') searchKey?: string,
+    @Query('sortField') sortField?: string,
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
+    @Query('filterField') filter?: string,
+    @Query('filterValue') filterValue?: string,
+  ): Promise<any> {
+    const data = await this.productService.listProductForAdminService(page, limit, searchKey, sortField, sortOrder,filter,filterValue);
     return data;
   }
 }

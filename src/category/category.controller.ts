@@ -4,7 +4,6 @@ import { CreateCategoryDto, UpdateCategoryDto } from '@app/libs/common/dto/categ
 import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
-import { subject } from '@casl/ability';
 
 @ApiTags('category')
 @ApiBearerAuth()
@@ -65,7 +64,7 @@ export class CategoryController {
   ) {
     return this.categoryService.viewListCategoryService(page, limit, searchKey, sortField, sortOrder);
   }
-  
+
   @Get('list-category-client') 
   async listCategoryForClientController(
   ): Promise<{ data: any }> {

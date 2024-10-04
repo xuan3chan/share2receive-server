@@ -224,3 +224,24 @@ export class BlockUserDto {
     @IsNotEmpty()
     isBlock: boolean;
 }
+export class ChangePasswordDto {
+  @ApiProperty({
+    description: 'New password',
+    example: '123456',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  @MinLength(6, { message: 'Password must be at least 6 characters' })
+  newPassword: string;
+
+  @ApiProperty({
+    description: 'Old password',
+    example: '123456',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(80)
+  @MinLength(6, { message: 'Password must be at least 6 characters' })
+  oldPassword: string;
+}

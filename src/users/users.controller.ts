@@ -37,6 +37,7 @@ import {
   BlockUserDto,
   UpdateUserProfileDto,
   UserStyleDto,
+  ChangePasswordDto,
 } from '@app/libs/common/dto';
 
 @ApiTags('users')
@@ -182,7 +183,6 @@ export class UsersController {
     const data = await this.usersService.searchUserService(searchKey);
     return { data };
   }
-
   @UseGuards(PermissionGuard)
   @Action('block')
   @Subject('user')
@@ -214,6 +214,19 @@ export class UsersController {
   }
   
 
+  @Patch('change-password')
+  @ApiOkResponse({ description: 'Password changed successfully' })
+  @ApiBadRequestResponse({ description: 'bad request' })
+  @UseGuards(MemberGuard)
+  async changePasswordController(
+    @Req() request: Request,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const userId = this.getUserIdFromToken(request);
+    await this.usersService.changePasswordService(userId,dto.newPassword ,dto.oldPassword);
+    return { message: 'Password changed successfully' };
+  }
+  
   
 
 }

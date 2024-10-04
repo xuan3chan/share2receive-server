@@ -8,6 +8,8 @@ import {
   IsEnum,
   IsMongoId,
   IsOptional,
+  MaxLength,
+  MinLength,
 } from 'class-validator';
 import { SizeE } from '../enum';
 
@@ -36,10 +38,9 @@ export class SizeVariantDto {
     description: 'Colors available for this size variant',
     example: ['red', 'blue'],
   })
-  @IsArray()
-  @IsString({ each: true })
+  @IsString()
   @IsNotEmpty()
-  colors: string[];
+  colors: string;
 
   @ApiProperty({
     description: 'Amount available for this size variant',
@@ -64,12 +65,12 @@ export class CreateProductDto {
     example: [
       {
         size: 'M',
-        colors: ['red', 'blue'],
+        colors: 'red',
         amount: 10,
       },
       {
         size: 'L',
-        colors: ['green', 'black'],
+        colors: 'green',
         amount: 5,
       },
     ],
@@ -169,12 +170,12 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
       example: [
         {
           size: 'M',
-          colors: ['red', 'blue'],
+          colors: 'red',
           amount: 10,
         },
         {
           size: 'L',
-          colors: ['green', 'black'],
+          colors: 'green',
           amount: 5,
         },
       ],
@@ -185,7 +186,7 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
     @ArrayMinSize(1)
     sizeVariants?: {
       size: SizeE;
-      colors: string[];
+      colors: string;
       amount: number;
     }[];
   
@@ -264,3 +265,5 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
     @IsString({ each: true })
     tags?: string[];
   }
+
+  

@@ -23,13 +23,13 @@ export class Product extends Document {
   @Prop([
     {
       size: { type: mongoose.Schema.Types.String, enum: SizeE, required: true },
-      colors: [{ type: mongoose.Schema.Types.String, required: true }],
+      colors: { type: mongoose.Schema.Types.String, required: true },
       amount: { type: mongoose.Schema.Types.Number, required: true },
     },
   ])
   sizeVariants: {
     size: string;
-    colors: string[];
+    colors: string;
     amount: number;
   }[];
 
@@ -57,6 +57,7 @@ export class Product extends Document {
       isApproved: { type: mongoose.Schema.Types.Boolean, default: false },
       date: { type: mongoose.Schema.Types.Date, default: null },
     },
+    default: { isApproved: false, date: null },
   })
   approved: {
     isApproved: boolean;

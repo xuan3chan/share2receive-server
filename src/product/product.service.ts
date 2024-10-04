@@ -214,40 +214,103 @@ export class ProductService {
       );
     }
   }
- async listProductService(
-  userId?: string,
-  page?: number,
-  limit?: number,
-  searchKey?: string,
-  sortField: string = 'lastname',
-  sortOrder: 'asc' | 'desc' = 'asc',
-): Promise<{ data: any; total: number }> {
-  try {
-    const query: any = {
-      isDeleted: false,
-      productName: {
-        $regex: searchKey || '',
-        $options: 'i',
-      },
-    };
+  async listProductService(
+    userId?: string,
+    page?: number,
+    limit?: number,
+    searchKey?: string,
+    sortField: string = 'lastname',
+    sortOrder: 'asc' | 'desc' = 'asc',
+  ): Promise<{ data: any; total: number }> {
+    try {
+      const query: any = {
+        isDeleted: false,
+        productName: {
+          $regex: searchKey || '',
+          $options: 'i',
+        },
+      };
 
-    if (userId) {
-      query.userId = userId;
+      if (userId) {
+        query.userId = userId;
+      }
+
+      const [data, total] = await Promise.all([
+        this.productModel
+          .find(query)
+          .sort({ [sortField]: sortOrder })
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .exec(),
+        this.productModel.countDocuments(query),
+      ]);
+
+      return { data, total };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to get products');
     }
-
-    const [data, total] = await Promise.all([
-      this.productModel
-        .find(query)
-        .sort({ [sortField]: sortOrder })
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .exec(),
-      this.productModel.countDocuments(query),
-    ]);
-
-    return { data, total };
-  } catch (error) {
-    throw new BadRequestException(error.message || 'Failed to get products');
   }
-}
+
+  //*****************manage product***************** */
+  async listProductForAdminService(
+    page: number,
+    limit: number,
+    searchKey?: string,
+    sortField: string = 'productName',
+    sortOrder: 'asc' | 'desc' = 'asc',
+    filterField?: string,  // Trường để lọc
+    filterValue?: string,  // Giá trị lọc
+  ): Promise<{ total: number; products: any[] }> {
+    // Tạo query tìm kiếm theo tên sản phẩm
+    const query: any = {
+      productName: { $regex: searchKey || '', $options: 'i' },
+    };
+  
+    // Áp dụng filterField và filterValue nếu có
+    if (filterField && filterValue) {
+      query[filterField] = filterValue; // Gán filterField với filterValue vào query
+    }
+  
+    // Đếm tổng số sản phẩm phù hợp với query
+    const total = await this.productModel.countDocuments(query).exec();
+  
+    // Truy vấn danh sách sản phẩm dựa trên query, sắp xếp và phân trang
+    const products = await this.productModel
+      .find(query)
+      .populate('categoryId', 'name')
+      .populate('brandId', 'name')
+      .populate('userId', 'firstname lastname')
+      .select('-createdAt -updatedAt -__v -sizeVariants -approved._id')
+      .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortField và sortOrder
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean({ virtuals: true }) // Trả về plain objects thay vì Mongoose documents
+      .exec();
+  
+    // Tái cấu trúc dữ liệu để loại bỏ các object lồng bên trong
+    const structuredProducts = products.map(product => ({
+      _id: product._id,
+      productName: product.productName,
+      imgUrls: product.imgUrls,
+      material: product.material,
+      userId: (product.userId as any)._id,
+      userName: `${(product.userId as any).firstname} ${(product.userId as any).lastname}`, // Ghép tên người dùng
+      categoryName: (product.categoryId as any).name, // Lấy category name ra ngoài
+      brandName: (product.brandId as any ).name, // Lấy brand name ra ngoài
+      approved: product.approved,
+      isDeleted: product.isDeleted,
+      status: product.status,
+      isBlock: product.isBlock,
+      type: product.type,
+      price: product.price,
+      priceNew: product.priceNew,
+      tags: product.tags,
+    }));
+  
+    return { total, products: structuredProducts };
+  }
+  
+  
+  
+  
 }

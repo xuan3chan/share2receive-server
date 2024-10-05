@@ -141,7 +141,7 @@ export class UsersController {
     schema: {
       type: 'object',
       properties: {
-        S: {
+        avatar: {
           type: 'string',
           format: 'binary',
         },
@@ -163,7 +163,7 @@ export class UsersController {
       return { message: 'Avatar updated successfully' };
     } catch (error) {
       // Handle the error appropriately
-      throw new BadRequestException('Failed to update avatar');
+      throw new BadRequestException(error.message);
     }
   }
 

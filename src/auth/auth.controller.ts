@@ -128,16 +128,17 @@ export class AuthController {
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Patch('logout')
   async logoutController(
-    @Body() refreshToken: RefreshTokenDto,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
-    const result = await this.authService.logoutService(
-      refreshToken.refreshToken,
+    const refreshToken = request.cookies.refreshToken;
+    await this.authService.logoutService(
+      refreshToken,
     );
-
-    if (result) {
+    if (refreshToken) {
       response.clearCookie('refreshToken');
       response.clearCookie('accessToken');
+      response.clearCookie('userData');
       return { message: 'Logout successfully' };
     }
     return { message: 'Logout failed' };

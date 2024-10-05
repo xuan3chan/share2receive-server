@@ -45,7 +45,15 @@ export class CloudinaryService {
     if (!file.mimetype.startsWith(type + '/')) {
       throw new BadRequestException(`File is not a ${type}.`);
     }
-
+  
+    if (type === 'image') {
+      const allowedImageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+      const fileExtension = file.originalname.split('.').pop().toLowerCase();
+      if (!allowedImageExtensions.includes(fileExtension)) {
+        throw new BadRequestException(`File extension .${fileExtension} is not allowed for images.`);
+      }
+    }
+  
     const fileSizeInMB = file.size / (1024 * 1024);
     if (fileSizeInMB > maxSizeMB) {
       throw new BadRequestException(`File size exceeds the ${maxSizeMB}MB limit.`);

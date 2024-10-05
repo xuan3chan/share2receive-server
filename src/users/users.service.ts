@@ -230,10 +230,14 @@ export class UsersService {
 
   async updateAvatarService(_id: string, avatar: string): Promise<User> {
     const user = await this.userModel.findOne({ _id }).exec();
+    try{
     const deleteAvatar = this.cloudinaryService.deleteMediaService(user.avatar);
     if (!deleteAvatar) {
       return null;
     }
+  }catch(error){
+    console.log(error);
+  }
     const updatedUser = await this.userModel
       .findOneAndUpdate({ _id }, { avatar }, { new: true })
       .exec();

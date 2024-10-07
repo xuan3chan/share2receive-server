@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, HydratedDocument } from 'mongoose';
 import { SizeE } from '../enum/size.enum';
 import mongoose from 'mongoose';
+import { ApproveStatusE } from '../enum';
 
 @Schema({
   timestamps: true,
@@ -54,13 +55,17 @@ export class Product extends Document {
 
   @Prop({
     type: {
-      isApproved: { type: mongoose.Schema.Types.Boolean, default: false },
+      approveStatus: { type: mongoose.Schema.Types.String, enum: ApproveStatusE, default: 'pending' },
       date: { type: mongoose.Schema.Types.Date, default: null },
+      decisionBy: { type: mongoose.Schema.Types.String, default: null },
+      description: { type: mongoose.Schema.Types.String, default: null },
     },
-    default: { isApproved: false, date: null },
+    default: { approveStatus: 'pending', date: null, description: null, decisionBy: null },
   })
   approved: {
-    isApproved: boolean;
+    approveStatus: ApproveStatusE;
+    decisionBy: string;
+    description: string;
     date: Date;
   };
 

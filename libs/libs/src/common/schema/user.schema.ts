@@ -123,6 +123,10 @@ export class User extends Document {
     default: null,
   })
   userStyle: UserStyle;
+
+  @Prop({ type: mongoose.Schema.Types.String, default: null })
+  typeUser: string;
+  
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

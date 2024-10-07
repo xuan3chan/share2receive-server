@@ -158,7 +158,9 @@ export class UsersService {
     lastname: string,
     refreshToken: string,
     avatar?: string,
+    typeUser?: string,
   ): Promise<any> {
+    console.log(typeUser);
     const userExist = await this.userModel
       .findOne({
         $or: [{ email: email }],
@@ -176,6 +178,7 @@ export class UsersService {
       firstname,
       lastname,
       avatar,
+      typeUser,
       encryptKey: createEncryptKey,
       refreshToken,
     });

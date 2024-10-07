@@ -12,7 +12,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
-  @Subject('brand')
+@Subject('brand')
 @Action('create')
 @UseGuards(PermissionGuard)
 @ApiCreatedResponse({ description: 'Brand created successfully' })

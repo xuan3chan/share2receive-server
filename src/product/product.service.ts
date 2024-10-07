@@ -11,6 +11,7 @@ import {
 } from '@app/libs/common/schema';
 import { CreateProductDto, UpdateProductDto } from '@app/libs/common/dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
 export class ProductService {
@@ -21,6 +22,7 @@ export class ProductService {
     @InjectModel(Category.name)
     private readonly categoryModel: Model<CategoryDocument>,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async createProductService(
@@ -155,7 +157,11 @@ export class ProductService {
           userId,
         },
         {
-          $set: product,
+          $set: product,'approved.approveStatus': 'pending',
+            'approved.decisionBy': null,
+            'approved.date':null,
+            'approved.description': null,
+          
         },
         { new: true },
       );
@@ -230,7 +236,7 @@ export class ProductService {
     }
   }
   async listProductService(
-    userId?: string,
+    userId: string,
     page?: number,
     limit?: number,
     searchKey?: string,
@@ -324,8 +330,71 @@ export class ProductService {
   
     return { total, products: structuredProducts };
   }
+
+   //approved product
+  async approveProductService(
+    productId: string,
+    decisionBy: string,
+    approveStatus: string,
+    description?: string,
+  ): Promise<{ message: string }> {
+    try {
+      if (!decisionBy)      {
+        throw new BadRequestException('Decision by is required');
+      }
+      await this.productModel.findByIdAndUpdate(
+        productId,
+        {
+          $set: {
+            'approved.approveStatus': approveStatus,
+            'approved.decisionBy': decisionBy,
+            'approved.date': Date.now(),
+            'approved.description': description||null,
+          },
+        }
+      ).exec();
+      return { message: 'Product approved successfully' };
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Failed to approve product',
+      );
+    }
+  }
+
+    async blockProductService(
+    productId: string,
+    isBlock: boolean,
+  ): Promise<{ message: string }> {
+    try {
+      const productBlock = await this.productModel.findByIdAndUpdate(
+        productId,
+        {
+          $set: {
+            isBlock,
+          },
+        },
+        { new: true } // Return the updated document
+      ).populate('userId', 'email').exec();
   
+      if (!productBlock) {
+        throw new BadRequestException('Product not found');
+      }
   
+      const email = (productBlock.userId as any).email; // Get the user's email
+      const productName = productBlock.productName; // Get the product name
+      if (isBlock = true) {
+       this.mailerService.sendEmailBlockedProduct(email, productName);
+      }
+      if (isBlock = false) {
+       this.mailerService.sendEmailUnblockedProduct(email, productName);
+      }
+      return { message: 'Product blocked successfully' };
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Failed to block product',
+      );
+    }
+  }
   
   
 }

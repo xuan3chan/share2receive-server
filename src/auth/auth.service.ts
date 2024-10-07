@@ -65,6 +65,7 @@ export class AuthService {
         firstname,
         lastname,
         createRefreshToken,
+      
       );
       if ('message' in user) {
         throw new BadRequestException(user.message);
@@ -125,7 +126,8 @@ export class AuthService {
           firstName,
           lastName,
           createRefreshToken,
-          avatar, // Use Google profile picture
+          avatar, 
+        'google'
         );
       }
       if (user.isBlock == true) {

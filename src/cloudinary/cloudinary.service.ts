@@ -60,7 +60,7 @@ export class CloudinaryService {
     }
   }
 
-  async uploadImageService(
+    async uploadImageService(
     imageName: string,
     files: Express.Multer.File | Express.Multer.File[],
   ): Promise<{
@@ -85,20 +85,24 @@ export class CloudinaryService {
       return this.uploadFile(file, { public_id: publicId });
     };
   
-    // Kiểm tra nếu là nhiều file (mảng)
-    let uploadResults: (UploadApiResponse | UploadApiErrorResponse)[] = [];
-    if (Array.isArray(files)) {
-      // Upload từng ảnh nếu là mảng file
-      uploadResults = await Promise.all(
-        files.map((file) => uploadSingleFile(file, imageName)),
-      );
-    } else {
-      // Upload một ảnh nếu là file đơn
-      const uploadResult = await uploadSingleFile(files, imageName);
-      uploadResults.push(uploadResult);
-    }
+    try {
+      // Kiểm tra nếu là nhiều file (mảng)
+      let uploadResults: (UploadApiResponse | UploadApiErrorResponse)[] = [];
+      if (Array.isArray(files)) {
+        // Upload từng ảnh nếu là mảng file
+        uploadResults = await Promise.all(
+          files.map((file) => uploadSingleFile(file, imageName)),
+        );
+      } else {
+        // Upload một ảnh nếu là file đơn
+        const uploadResult = await uploadSingleFile(files, imageName);
+        uploadResults.push(uploadResult);
+      }
   
-    return { uploadResults };
+      return { uploadResults };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to upload images');
+    }
   }
   
 
@@ -163,9 +167,9 @@ export class CloudinaryService {
 
   async deleteMediaService(url: string): Promise<UploadApiResponse | UploadApiErrorResponse> {
     // Trích xuất publicId từ URL Cloudinary, bỏ qua phần phiên bản (vd: v1727865186)
+    try{
     const publicId = url.split('/upload/')[1].split('.')[0].split('/').slice(1).join('/');
-  
-    // Xóa hình ảnh từ Cloudinary bằng publicId trực tiếp
+
     return new Promise((resolve, reject) => {
       cloudinary.uploader.destroy(publicId, (error, result) => {
         if (error) {
@@ -177,6 +181,12 @@ export class CloudinaryService {
         }
       });
     });
+    }catch(error){
+    
+    }
+    
+  
+    
   }
   
   

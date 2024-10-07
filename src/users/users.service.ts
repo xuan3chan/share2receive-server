@@ -236,7 +236,7 @@ export class UsersService {
       return null;
     }
   }catch(error){
-    console.log(error);
+    // console.log(error);
   }
     const updatedUser = await this.userModel
       .findOneAndUpdate({ _id }, { avatar }, { new: true })

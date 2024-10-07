@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { BrandService } from './brand.service';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateBrandDto, UpdateBrandDto } from '@app/libs/common/dto/brand.dto';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { PermissionGuard } from '@app/libs/common/gaurd';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('brand')
 @ApiBearerAuth()
@@ -12,15 +13,35 @@ export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
   @Subject('brand')
-  @Action('create')
-  @UseGuards(PermissionGuard)
-  @ApiCreatedResponse({ description: 'Brand created successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @Post()
-  async createBrandController(@Body() dto: CreateBrandDto) {
-    await this.brandService.createBrandService(dto);
+@Action('create')
+@UseGuards(PermissionGuard)
+@ApiCreatedResponse({ description: 'Brand created successfully' })
+@ApiBadRequestResponse({ description: 'Bad Request' })
+@ApiConsumes('multipart/form-data') // Để hỗ trợ upload file
+@UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
+@ApiBody({
+  schema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      description: { type: 'string' },
+      status: { type: 'string',enum: ['active', 'inactive'] },
+      imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+    },
+  },
+})
+@Post()
+async createBrandController(
+  @Body() dto: CreateBrandDto,
+  @UploadedFile() file: Express.Multer.File, // Nhận file hình ảnh từ yêu cầu
+) {
+  try {
+    await this.brandService.createBrandService(dto,file);
     return { message: 'Brand created successfully' };
+  } catch (error) {
+    throw new BadRequestException(error.message || 'Failed to create brand');
   }
+}
 
   @Subject('brand')
   @Action('update')

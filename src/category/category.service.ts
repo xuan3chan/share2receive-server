@@ -6,16 +6,18 @@ import {
   CreateCategoryDto,
   UpdateCategoryDto,
 } from '@app/libs/common/dto/category.dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(Product.name) private productModel: Model<Product>,
+    private cloudinaryService: CloudinaryService
   ) {}
 
   async createCategoryService(
-    createCategoryDto: CreateCategoryDto,
+    createCategoryDto: CreateCategoryDto,file: Express.Multer.File,
   ): Promise<Category> {
     const category = await this.categoryModel
       .findOne({
@@ -25,31 +27,48 @@ export class CategoryService {
     if (category) {
       throw new BadRequestException('Category already exists');
     }
+    const imgUrl= this.cloudinaryService.uploadImageService(createCategoryDto.name, file);
     const newCategory = new this.categoryModel(createCategoryDto);
+    newCategory.imgUrl = (await imgUrl).uploadResults[0].url;
     return newCategory.save();
   }
-  async updateCategoryService(
-    id: string,
-    updateCategoryDto: UpdateCategoryDto,
-  ): Promise<Category> {
-    try {
-      // Check for duplicate category name
-      const categoryDuplicate = await this.categoryModel
-        .findOne({ name: updateCategoryDto.name })
-        .exec();
-      if (categoryDuplicate && categoryDuplicate._id.toString() !== id) {
-        throw new BadRequestException('Category already exists');
+     async updateCategoryService(
+      id: string,
+      updateCategoryDto: UpdateCategoryDto,
+      file: Express.Multer.File,
+    ): Promise<Category> {
+      try {
+        // Check for duplicate category name
+        const categoryDuplicate = await this.categoryModel
+          .findOne({ name: updateCategoryDto.name })
+          .exec();
+        if (categoryDuplicate && categoryDuplicate._id.toString() !== id) {
+          throw new BadRequestException('Category already exists');
+        }
+  
+        // Update the category
+        const cateUpdate = await this.categoryModel
+          .findByIdAndUpdate(id, updateCategoryDto, { new: true })
+          .exec();
+    
+        // Update image if file is provided
+        if (file) {
+          const imgUrl = await this.cloudinaryService.uploadImageService(
+            cateUpdate.name,
+            file,
+          );
+          cateUpdate.imgUrl = imgUrl.uploadResults[0].url;
+          await cateUpdate.save(); // Save the updated category with the new image URL
+        }
+    
+        return cateUpdate;
+      } catch (error) {
+        // Handle the error appropriately
+        throw new BadRequestException(
+          error.message || 'Failed to update category',
+        );
       }
-      return this.categoryModel
-        .findByIdAndUpdate(id, updateCategoryDto, { new: true })
-        .exec();
-    } catch (error) {
-      // Handle the error appropriately
-      throw new BadRequestException(
-        error.message || 'Failed to update category',
-      );
     }
-  }
   async deleteCategoryService(id: string): Promise<Category> {
     const product = await this.productModel.findOne({ categoryId: id }).exec();
     if (product) {

@@ -3,12 +3,17 @@ import { Brand } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateBrandDto, UpdateBrandDto } from '@app/libs/common/dto/brand.dto';
+import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class BrandService {
-  constructor(@InjectModel(Brand.name) private brandModel: Model<Brand>) {}
+  constructor(@InjectModel(Brand.name) private brandModel: Model<Brand>,
+              private cloudinaryService: CloudinaryService
+) {}
 
-  async createBrandService(createBrandDto: CreateBrandDto): Promise<Brand> {
+  async createBrandService(createBrandDto: CreateBrandDto,
+    file: Express.Multer.File,
+  ): Promise<Brand> {
     const brand = await this.brandModel
       .findOne({
         name: createBrandDto.name,
@@ -18,6 +23,7 @@ export class BrandService {
       throw new BadRequestException('Brand already exists');
     }
     const newBrand = new this.brandModel(createBrandDto);
+    newBrand.imgUrl = (await this.cloudinaryService.uploadImageService(createBrandDto.name, file)).uploadResults[0].url;
     return newBrand.save();
   }
   async updateBrandService(
@@ -76,4 +82,5 @@ export class BrandService {
   async listBrandForClientService(): Promise<Brand[]> {
     return this.brandModel.find({ status: 'active' }).exec();
   }
+
 }

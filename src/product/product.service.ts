@@ -45,7 +45,11 @@ export class ProductService {
       if (product.brandId && !checkBrand) {
         throw new BadRequestException('Brand not found');
       }
-
+    // plus totalProduct in brand
+        await this.brandModel.findByIdAndUpdate(
+      product.brandId,
+      { $inc: { totalProduct: 1 } }
+    ).exec();
       // Create a new product and assign the uploaded image URLs
       const newProduct = new this.productModel({
         ...product, // Spread the product fields
@@ -172,7 +176,7 @@ export class ProductService {
     productId: string,
   ): Promise<{ message: string }> {
     try {
-      await this.productModel.findOneAndUpdate(
+      const productDelete = await this.productModel.findOneAndUpdate(
         {
           _id: productId,
           userId,
@@ -182,7 +186,18 @@ export class ProductService {
             isDeleted: true,
           },
         },
+        { new: true } // Return the updated document
       );
+  
+      if (!productDelete) {
+        throw new BadRequestException('Product not found or not owned by user');
+      }
+  
+      await this.brandModel.findByIdAndUpdate(
+        productDelete.brandId,
+        { $inc: { totalProduct: -1 } }
+      ).exec();
+  
       return { message: 'Product deleted successfully' };
     } catch (error) {
       throw new BadRequestException(

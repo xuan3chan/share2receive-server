@@ -1,9 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto, UpdateCategoryDto } from '@app/libs/common/dto/category.dto';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { TypeCategoryE } from '@app/libs/common/enum';
 
 @ApiTags('category')
 @ApiBearerAuth()
@@ -17,23 +19,66 @@ export class CategoryController {
   @ApiCreatedResponse({ description: 'Category created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Post()
-  async createCategoryController(@Body() dto: CreateCategoryDto) {
-    await this.categoryService.createCategoryService(dto);
-    return { message: 'Category created successfully' };
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('imgUrl'))
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        type: { type: 'string', enum: Object.values(TypeCategoryE) }, // Update according to your enum
+        status: { type: 'string',enum: ['active', 'inactive'] },
+        imgUrl: { type: 'string', format: 'binary' }
+      },
+    },
+  })
+  async createCategoryController(
+    @Body() dto: CreateCategoryDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      await this.categoryService.createCategoryService(dto,file);
+      return { message: 'Category created successfully' };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
   @Subject('category')
-  @Action('update')
-  @UseGuards(PermissionGuard)
-  @ApiOkResponse({ description: 'Category updated successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
-  @Put(':id')
-  async updateCategoryService(
-    @Param('id') id: string,
-    @Body() dto: UpdateCategoryDto) {
-    await this.categoryService.updateCategoryService(id,dto);
-    return { message: 'Category created successfully' };
+@Action('update')
+@UseGuards(PermissionGuard)
+@ApiOkResponse({ description: 'Category updated successfully' })
+@ApiBadRequestResponse({ description: 'Bad Request' })
+@ApiConsumes('multipart/form-data')
+@UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
+@ApiBody({
+  schema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string' },
+      description: { type: 'string' },
+      type: { type: 'string', enum: Object.values(TypeCategoryE) }, // Cập nhật theo enum của bạn
+      status: { type: 'string' },
+      imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+    },
+  },
+})
+@Put(':id')
+async updateCategoryController(
+  @Param('id') id: string,
+  @Body() dto: UpdateCategoryDto,
+  @UploadedFile() file?: Express.Multer.File, // Nhận file hình ảnh
+) {
+  try {
+  
+
+    await this.categoryService.updateCategoryService(id, dto,file);
+    return { message: 'Category updated successfully' };
+  } catch (error) {
+    throw new BadRequestException(error.message || 'Failed to update category');
   }
+}
 
   @Subject('category')
   @Action('delete')
@@ -71,6 +116,7 @@ export class CategoryController {
     const data = await this.categoryService.listCategoryForClientService();
     return { data };
   }
+  
   
 
 }

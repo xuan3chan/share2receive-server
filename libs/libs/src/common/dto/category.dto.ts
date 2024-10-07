@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDate,
@@ -14,6 +15,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
+import { TypeCategoryE } from '../enum';
 
 export class CreateCategoryDto {
     @ApiProperty({
@@ -37,6 +39,13 @@ export class CreateCategoryDto {
     @IsOptional()
     @MaxLength(100)
     description: string;
+
+    @ApiProperty({
+        description: 'Type of category ',
+        example: TypeCategoryE.Men,
+    })
+    @IsEnum(TypeCategoryE)
+    type:TypeCategoryE;
 
     @ApiProperty({
         description: 'Status of category ',
@@ -68,6 +77,15 @@ export class UpdateCategoryDto {
     @MaxLength(300)
     description: string;
 
+
+    @ApiProperty({
+        description: 'Type of category ',
+        example: TypeCategoryE.Men,
+    })
+    @IsEnum(TypeCategoryE)
+    @IsOptional()
+    type:string
+
     @ApiProperty({
         description: 'Status of category ',
         example: 'active',
@@ -76,4 +94,8 @@ export class UpdateCategoryDto {
     @IsOptional()
     @IsEnum(['active', 'inactive'])
     status: string;
-    }
+
+    
+}
+    
+    

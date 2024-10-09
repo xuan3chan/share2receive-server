@@ -30,9 +30,9 @@ export class SizeVariantDto {
     description: 'Size of the variant',
     example: 'M',
   })
-  @IsEnum(SizeE, { message: 'Size must be S, M, L, XL, XXL' })
-  @IsNotEmpty()
-  size: SizeE;
+  @IsOptional()
+  @IsString()
+  size: string;
 
   @ApiProperty({
     description: 'Colors available for this size variant',
@@ -61,7 +61,8 @@ export class CreateProductDto {
   productName: string;
 
   @ApiProperty({
-    description: 'List of size variants with their respective colors and amounts',
+    description:
+      'List of size variants with their respective colors and amounts',
     example: [
       {
         size: 'M',
@@ -86,6 +87,20 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   material: string;
+
+  @ApiProperty({
+    description: 'Style of the product',
+    example: 'Casual',
+  })
+  @IsString()
+  @IsNotEmpty()
+  style: string;
+  @ApiProperty({
+    description: 'Condition of the product',
+    enum: ['new', 'used'],
+    example: 'new',
+  })
+  condition: string;
 
   @ApiProperty({
     description: 'Category ID for the product',
@@ -139,11 +154,11 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Tags associated with the product',
-    example: ['fashion', 'shirt' ],
-    })
-    @IsArray()
-    @IsString({ each: true })
-    tags: string[];
+    example: ['fashion', 'shirt'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  tags: string[];
 }
 
 export class DeleteImagesDto {
@@ -156,114 +171,132 @@ export class DeleteImagesDto {
   publicIds: string[];
 }
 export class UpdateProductDto extends PartialType(CreateProductDto) {
-    @ApiProperty({
-      description: 'The name of the product',
-      example: 'Stylish Shirt',
-      required: false,
-    })
-    @IsOptional()
-    @IsString()
-    productName?: string;
-  
-    @ApiProperty({
-      description: 'List of size variants with their respective colors and amounts',
-      example: [
-        {
-          size: 'M',
-          colors: 'red',
-          amount: 10,
-        },
-        {
-          size: 'L',
-          colors: 'green',
-          amount: 5,
-        },
-      ],
-      required: false,
-    })
-    @IsOptional()
-    @IsArray()
-    @ArrayMinSize(1)
-    sizeVariants?: {
-      size: SizeE;
-      colors: string;
-      amount: number;
-    }[];
-  
-    @ApiProperty({
-      description: 'The material of the product',
-      example: 'Cotton',
-      required: false,
-    })
-    @IsOptional()
-    @IsString()
-    material?: string;
-  
-    @ApiProperty({
-      description: 'Category ID for the product',
-      example: '64db23f0e421b3144db7f321',
-      required: false,
-    })
-    @IsOptional()
-    @IsMongoId()
-    categoryId?: string;
-  
-    @ApiProperty({
-      description: 'Brand ID for the product',
-      example: '64db23f0e421b3144db7f322',
-      required: false,
-    })
-    @IsOptional()
-    @IsMongoId()
-    brandId?: string;
-  
-    @ApiProperty({
-      description: 'Status of the product',
-      enum: ProductStatus,
-      example: ProductStatus.Active,
-      required: false,
-    })
-    @IsOptional()
-    @IsEnum(ProductStatus)
-    status?: ProductStatus;
-  
-    @ApiProperty({
-      description: 'Type of the product',
-      enum: ProductType,
-      example: ProductType.Sale,
-      required: false,
-    })
-    @IsOptional()
-    @IsEnum(ProductType)
-    type?: ProductType;
-  
-    @ApiProperty({
-      description: 'Price of the product',
-      example: 100,
-      required: false,
-    })
-    @IsOptional()
-    @IsNumber()
-    price?: number;
-  
-    @ApiProperty({
-      description: 'New price of the product',
-      example: 80,
-      required: false,
-    })
-    @IsOptional()
-    @IsNumber()
-    priceNew?: number;
-  
-    @ApiProperty({
-      description: 'Tags associated with the product',
-      example: ['fashion', 'shirt'],
-      required: false,
-    })
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    tags?: string[];
-  }
+  @ApiProperty({
+    description: 'The name of the product',
+    example: 'Stylish Shirt',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  productName?: string;
 
+  @ApiProperty({
+    description:
+      'List of size variants with their respective colors and amounts',
+    example: [
+      {
+        size: 'M',
+        colors: 'red',
+        amount: 10,
+      },
+      {
+        size: 'L',
+        colors: 'green',
+        amount: 5,
+      },
+    ],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
+  sizeVariants?: {
+    size: string;
+    colors: string;
+    amount: number;
+  }[];
+
+  @ApiProperty({
+    description: 'The material of the product',
+    example: 'Cotton',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  material?: string;
+
+  @ApiProperty({
+    description: 'Category ID for the product',
+    example: '64db23f0e421b3144db7f321',
+    required: false,
+  })
+  @IsOptional()
+  @IsMongoId()
+  categoryId?: string;
+
+  @ApiProperty({
+    description: 'Brand ID for the product',
+    example: '64db23f0e421b3144db7f322',
+    required: false,
+  })
+  @IsOptional()
+  @IsMongoId()
+  brandId?: string;
+
+  @ApiProperty({
+    description: 'Status of the product',
+    enum: ProductStatus,
+    example: ProductStatus.Active,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(ProductStatus)
+  status?: ProductStatus;
+
+  @ApiProperty({
+    description: 'Type of the product',
+    enum: ProductType,
+    example: ProductType.Sale,
+    required: false,
+  })
+  @IsOptional()
+  @IsEnum(ProductType)
+  type?: ProductType;
+
+  @ApiProperty({
+    description: 'Price of the product',
+    example: 100,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  price?: number;
+
+  @ApiProperty({
+    description: 'New price of the product',
+    example: 80,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  priceNew?: number;
+
+  @ApiProperty({
+    description: 'Tags associated with the product',
+    example: ['fashion', 'shirt'],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @ApiProperty({
+    description: 'Style of the product',
+    example: 'Casual',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  style?: string;
   
+  @ApiProperty({
+    description: 'Condition of the product',
+    enum: ['new', 'used'],
+    example: 'new',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  condition?: string;
+}

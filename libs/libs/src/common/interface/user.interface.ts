@@ -5,5 +5,6 @@ export interface UserStyle {
     hobby?: string[];
     age?: string;
     zodiacSign?: string;
+    style?: string;
   }
   

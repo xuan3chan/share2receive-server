@@ -106,22 +106,17 @@ export class UserStyleDto {
     description: 'Zodiac sign of user',
     example: 'Leo',
   })
-  @IsEnum([
-    'Aries',
-    'Taurus',
-    'Gemini',
-    'Cancer',
-    'Leo',
-    'Virgo',
-    'Libra',
-    'Scorpio',
-    'Sagittarius',
-    'Capricorn',
-    'Aquarius',
-    'Pisces',
-  ])
+  @IsString()
   @IsOptional()
   zodiacSign?: string;
+
+  @ApiProperty({
+    description: 'User style',
+    example: 'casual',
+  })
+  @IsString()
+  @IsOptional()
+  style?: string;
 }
 
 export class UpdateUserProfileDto {

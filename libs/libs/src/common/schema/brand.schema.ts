@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document,HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
+import { SlugHook } from '@app/libs/common/hook';
 
 @Schema()
 export class Brand extends Document {
@@ -22,3 +23,5 @@ export class Brand extends Document {
 }
 export type BrandDocument = HydratedDocument<Brand>;
 export const BrandSchema = SchemaFactory.createForClass(Brand);
+
+SlugHook(BrandSchema, 'name');

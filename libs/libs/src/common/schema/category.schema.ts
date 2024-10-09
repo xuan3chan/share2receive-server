@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document,HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
 import { TypeCategoryE } from '../enum';
+import { SlugHook } from '@app/libs/common/hook';
 
 @Schema()
 export class Category extends Document {
@@ -23,3 +24,5 @@ export class Category extends Document {
 }
 export type CategoryDocument = HydratedDocument<Category>;
 export const CategorySchema = SchemaFactory.createForClass(Category);
+
+SlugHook(CategorySchema, 'name');

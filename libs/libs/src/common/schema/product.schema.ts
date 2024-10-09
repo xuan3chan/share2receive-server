@@ -3,6 +3,7 @@ import { Document, HydratedDocument } from 'mongoose';
 import { SizeE } from '../enum/size.enum';
 import mongoose from 'mongoose';
 import { ApproveStatusE } from '../enum';
+import {SlugHook} from '@app/libs/common/hook';
 
 @Schema({
   timestamps: true,
@@ -23,7 +24,7 @@ export class Product extends Document {
   // Thay đổi thuộc tính `size` và `color` để chúng liên kết với nhau
   @Prop([
     {
-      size: { type: mongoose.Schema.Types.String, enum: SizeE, required: true },
+      size: { type: mongoose.Schema.Types.String, enum: SizeE },
       colors: { type: mongoose.Schema.Types.String, required: true },
       amount: { type: mongoose.Schema.Types.Number, required: true },
     },
@@ -90,6 +91,17 @@ export class Product extends Document {
 
   @Prop([{ type: mongoose.Schema.Types.String, required: true }])
   tags: string[];
+
+  @Prop({ type: mongoose.Schema.Types.String,reuired:true,enun:['new','used'] })
+  condition: string;
+
+  @Prop({ type: mongoose.Schema.Types.String, required: true })
+  style: string;  
+
+  @Prop({ type: mongoose.Schema.Types.String})
+  slug: string;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);
+
+SlugHook(ProductSchema, 'productName');

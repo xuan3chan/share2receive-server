@@ -95,11 +95,14 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   style: string;
+  
   @ApiProperty({
     description: 'Condition of the product',
     enum: ['new', 'used'],
     example: 'new',
   })
+  @IsString()
+  @IsNotEmpty()
   condition: string;
 
   @ApiProperty({

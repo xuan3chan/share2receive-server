@@ -57,6 +57,7 @@ export class ProductService {
         ...product, // Spread the product fields
         userId, // Assign the userId
       });
+      console.log(newProduct.condition);
 
       return await newProduct.save();
     } catch (error) {
@@ -240,7 +241,7 @@ export class ProductService {
     page?: number,
     limit?: number,
     searchKey?: string,
-    sortField: string = 'lastname',
+    sortField: string = 'productName',
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ data: any; total: number }> {
     try {

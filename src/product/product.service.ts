@@ -57,7 +57,6 @@ export class ProductService {
         ...product, // Spread the product fields
         userId, // Assign the userId
       });
-      console.log(newProduct.condition);
 
       return await newProduct.save();
     } catch (error) {

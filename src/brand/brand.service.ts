@@ -7,11 +7,13 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 
 @Injectable()
 export class BrandService {
-  constructor(@InjectModel(Brand.name) private brandModel: Model<Brand>,
-              private cloudinaryService: CloudinaryService
-) {}
+  constructor(
+    @InjectModel(Brand.name) private brandModel: Model<Brand>,
+    private cloudinaryService: CloudinaryService
+  ) {}
 
-  async createBrandService(createBrandDto: CreateBrandDto,
+  async createBrandService(
+    createBrandDto: CreateBrandDto,
     file: Express.Multer.File,
   ): Promise<Brand> {
     const brand = await this.brandModel
@@ -26,9 +28,11 @@ export class BrandService {
     newBrand.imgUrl = (await this.cloudinaryService.uploadImageService(createBrandDto.name, file)).uploadResults[0].url;
     return newBrand.save();
   }
+
   async updateBrandService(
     id: string,
     updateBrandDto: UpdateBrandDto,
+    file?: Express.Multer.File, // Optional file parameter
   ): Promise<Brand> {
     try {
       // Check for duplicate brand name
@@ -38,14 +42,28 @@ export class BrandService {
       if (brandDuplicate && brandDuplicate._id.toString() !== id) {
         throw new BadRequestException('Brand already exists');
       }
-      return this.brandModel
-        .findByIdAndUpdate(id, updateBrandDto, { new: true })
-        .exec();
+
+      // Find the existing brand
+      const brand = await this.brandModel.findById(id).exec();
+      if (!brand) {
+        throw new BadRequestException('Brand not found');
+      }
+
+      // Update the brand details
+      Object.assign(brand, updateBrandDto);
+
+      // If a new file is provided, upload it and update the imgUrl
+      if (file) {
+        brand.imgUrl = (await this.cloudinaryService.uploadImageService(updateBrandDto.name, file)).uploadResults[0].url;
+      }
+
+      return brand.save();
     } catch (error) {
       // Handle the error appropriately
       throw new BadRequestException(error.message || 'Failed to update brand');
     }
   }
+
   async deleteBrandService(id: string): Promise<Brand> {
     const product = await this.brandModel.findOne({ brandId: id }).exec();
     if (product) {
@@ -82,5 +100,4 @@ export class BrandService {
   async listBrandForClientService(): Promise<Brand[]> {
     return this.brandModel.find({ status: 'active' }).exec();
   }
-
 }

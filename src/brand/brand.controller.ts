@@ -12,51 +12,69 @@ import { FileInterceptor } from '@nestjs/platform-express';
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
-@Subject('brand')
-@Action('create')
-@UseGuards(PermissionGuard)
-@ApiCreatedResponse({ description: 'Brand created successfully' })
-@ApiBadRequestResponse({ description: 'Bad Request' })
-@ApiConsumes('multipart/form-data') // Để hỗ trợ upload file
-@UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
-@ApiBody({
-  schema: {
-    type: 'object',
-    properties: {
-      name: { type: 'string' },
-      description: { type: 'string' },
-      status: { type: 'string',enum: ['active', 'inactive'] },
-      imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+  @Subject('brand')
+  @Action('create')
+  @UseGuards(PermissionGuard)
+  @ApiCreatedResponse({ description: 'Brand created successfully' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiConsumes('multipart/form-data') // Để hỗ trợ upload file
+  @UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        status: { type: 'string', enum: ['active', 'inactive'] },
+        imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+      },
     },
-  },
-})
-@Post()
-async createBrandController(
-  @Body() dto: CreateBrandDto,
-  @UploadedFile() file: Express.Multer.File, // Nhận file hình ảnh từ yêu cầu
-) {
-  try {
-    await this.brandService.createBrandService(dto,file);
-    return { message: 'Brand created successfully' };
-  } catch (error) {
-    throw new BadRequestException(error.message || 'Failed to create brand');
+  })
+  @Post()
+  async createBrandController(
+    @Body() dto: CreateBrandDto,
+    @UploadedFile() file: Express.Multer.File, // Nhận file hình ảnh từ yêu cầu
+  ) {
+    try {
+      await this.brandService.createBrandService(dto, file);
+      return { message: 'Brand created successfully' };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to create brand');
+    }
   }
-}
 
   @Subject('brand')
   @Action('update')
+  @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Brand updated successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
+  @ApiConsumes('multipart/form-data') // Để hỗ trợ upload file
+  @UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        status: { type: 'string', enum: ['active', 'inactive'] },
+        imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+      },
+    },
+  })
   @Put(':id')
-  async updateBrandService(
+  async updateBrandController(
     @Param('id') id: string,
     @Body() dto: UpdateBrandDto,
+    @UploadedFile() file: Express.Multer.File, // Nhận file hình ảnh từ yêu cầu
   ): Promise<{ message: string }> {
-    await this.brandService.updateBrandService(id, dto);
-    return { message: 'Brand updated successfully' };
-    
+    try {
+      await this.brandService.updateBrandService(id, dto, file);
+      return { message: 'Brand updated successfully' };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to update brand');
+    }
   }
-  
+
   @Subject('brand')
   @Action('delete')
   @UseGuards(PermissionGuard)
@@ -101,5 +119,4 @@ async createBrandController(
     const data = await this.brandService.listBrandForClientService();
     return { data };
   }
-
 }

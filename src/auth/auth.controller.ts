@@ -117,7 +117,7 @@ export class AuthController {
       refreshToken.refreshToken,
     );
 
-    setCookie(response, 'refreshToken', result.refreshToken);
+    setCookie(response, 'refreshToken', result.refreshToken,);
     setCookie(response, 'accessToken', result.accessToken);
 
     return { message: 'successfully', data: result };

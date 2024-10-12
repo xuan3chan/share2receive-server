@@ -3,5 +3,6 @@ export enum TypeCategoryE {
     Women = 'women',
     Uniset = 'uniset',
     Item = 'item',
+    Other = 'other',
     
 }

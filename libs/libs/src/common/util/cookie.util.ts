@@ -13,18 +13,17 @@ export function setCookie(
     domain?: string;
   } = {
     httpOnly: true,
-    secure: true, // Set to true for cross-site cookies
+    secure: false, // Set to true in production with HTTPS
     maxAge: 60 * 60 * 1000, // Default 1 hour
-    sameSite: 'none', // Required for cross-site cookies
+    sameSite: 'none',
     path: '/',
+    domain: undefined, // Optional: set a specific domain if required
   },
 ) {
   response.cookie(name, value, {
-    httpOnly: options.httpOnly ?? true, // Use provided option or default to true
-    secure: options.secure ?? true, // Use provided option or default to true
-    maxAge: options.maxAge ?? 60 * 60 * 1000, // Use provided option or default to 1 hour
-    sameSite: options.sameSite ?? 'none', // Use provided option or default to 'none'
-    path: options.path ?? '/', // Use provided option or default to '/'
-    domain: options.domain, // Use provided option or undefined
+    httpOnly: false, // Cookie không thể truy cập từ JS
+    secure: true, // Cookie chỉ được gửi qua HTTPS
+    maxAge: options.maxAge ?? 60 * 60 * 1000, // Cookie tồn tại trong 1 giờ
+    sameSite: 'none', // Cho phép chia sẻ cookie giữa các domain khác nhau
   });
 }

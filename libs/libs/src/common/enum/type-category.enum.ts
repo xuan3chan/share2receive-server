@@ -1,7 +1,7 @@
 export enum TypeCategoryE {
     Men = 'men',
     Women = 'women',
-    Uniset = 'uniset',
+    Unisex = 'unisex',
     Item = 'item',
     Other = 'other',
     

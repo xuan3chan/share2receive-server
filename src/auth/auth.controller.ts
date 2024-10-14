@@ -137,9 +137,9 @@ export class AuthController {
     );
     console.log(refreshToken);
     if (refreshToken) {
-      response.clearCookie('refreshToken');
-      response.clearCookie('accessToken');
-      response.clearCookie('userData');
+      response.cookie('refreshToken', '', { maxAge: 0 });
+      response.cookie('accessToken', '', { maxAge: 0 });
+      response.cookie('userData', '', { maxAge: 0 });
       return { message: 'Logout successfully' };
     }
     return { message: 'Logout failed' };

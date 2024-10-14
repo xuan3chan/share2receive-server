@@ -57,10 +57,10 @@ async googleAuthRedirect(
     const result = await this.authService.googleLogin(googleUserProfile);
     
     // Set cookies for refreshToken, accessToken, and userData
-    await setCookie(response, 'refreshToken', result.refreshToken, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
-    await setCookie(response, 'accessToken', result.accessToken, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
+    await setCookie(response, 'refreshToken', result.refreshToken, { domain: 'onrender.com' });
+    await setCookie(response, 'accessToken', result.accessToken, { domain: 'onrender.com'});
     const userDecode = encodeURIComponent(JSON.stringify(result.user));
-    setCookie(response, 'userData', userDecode, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
+    setCookie(response, 'userData', userDecode, { domain: 'onrender.com', secure: process.env.NODE_ENV === 'production' });
     
     // Redirect to frontend
     await response.redirect(process.env.FRONTEND_URL);

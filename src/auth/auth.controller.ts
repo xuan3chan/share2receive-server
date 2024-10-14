@@ -55,16 +55,10 @@ export class AuthController {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-      setCookie(response, 'refreshToken', result.refreshToken,{
-        path: '/client',
-      })
-      setCookie(response, 'accessToken', result.accessToken,{
-        path: '/client',
-      });
+      setCookie(response, 'refreshToken', result.refreshToken);
+      setCookie(response, 'accessToken', result.accessToken);
       const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      setCookie(response, 'userData', userDecode,{
-        path: '/client',
-      });
+      setCookie(response, 'userData', userDecode);
       return response.redirect(process.env.FRONTEND_URL);
     } catch (err) {
       throw new ForbiddenException('Google login failed: ' + err.message);
@@ -85,16 +79,10 @@ export class AuthController {
       register.firstname,
       register.lastname,
     );
-    setCookie(response, 'refreshToken', result.refreshToken,{
-      path: '/client',
-    })
-    setCookie(response, 'accessToken', result.accessToken,{
-      path: '/client',
-    });
+    setCookie(response, 'refreshToken', result.refreshToken)
+    setCookie(response, 'accessToken', result.accessToken);
     const userDecode = encodeURIComponent(JSON.stringify(result.user));
-    setCookie(response, 'userData', userDecode,{
-      path: '/client',
-    });
+    setCookie(response, 'userData', userDecode);
     return { message: 'successfully', data: result };
   }
 
@@ -143,10 +131,11 @@ export class AuthController {
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
-    const refreshToken = request.cookies.refreshToken;
+    const refreshToken = await request.cookies.refreshToken;
     await this.authService.logoutService(
       refreshToken,
     );
+    console.log(refreshToken);
     if (refreshToken) {
       response.clearCookie('refreshToken');
       response.clearCookie('accessToken');

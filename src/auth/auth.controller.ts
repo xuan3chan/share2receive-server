@@ -55,10 +55,10 @@ export class AuthController {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-      setCookie(response, 'refreshToken', result.refreshToken);
-      setCookie(response, 'accessToken', result.accessToken);
+      await setCookie(response, 'refreshToken', result.refreshToken);
+      await setCookie(response, 'accessToken', result.accessToken);
       const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      setCookie(response, 'userData', userDecode);
+      await setCookie(response, 'userData', userDecode);
       return response.redirect(process.env.FRONTEND_URL);
     } catch (err) {
       throw new ForbiddenException('Google login failed: ' + err.message);

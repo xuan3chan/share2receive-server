@@ -63,7 +63,7 @@ async googleAuthRedirect(
     setCookie(response, 'userData', userDecode, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
     
     // Redirect to frontend
-    response.redirect(process.env.FRONTEND_URL);
+    await response.redirect(process.env.FRONTEND_URL);
     return { message: 'successfully', data: result };
   } catch (err) {
     throw new ForbiddenException('Google login failed: ' + err.message);

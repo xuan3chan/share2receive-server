@@ -21,8 +21,8 @@ export function setCookie(
   },
 ) {
   response.cookie(name, value, {
-    httpOnly: true, // Cookie không thể truy cập từ JS
-    secure: false, // Cookie chỉ được gửi qua HTTPS
+    httpOnly: false, // Cookie không thể truy cập từ JS
+    secure: true, // Cookie chỉ được gửi qua HTTPS
     maxAge: options.maxAge ?? 60 * 60 * 1000, // Cookie tồn tại trong 1 giờ
     sameSite: 'none', // Cho phép chia sẻ cookie giữa các domain khác nhau
   });

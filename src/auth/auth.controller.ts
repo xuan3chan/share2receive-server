@@ -55,10 +55,34 @@ export class AuthController {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-      await setCookie(response, 'refreshToken', result.refreshToken);
-      await setCookie(response, 'accessToken', result.accessToken);
+      response.cookie('refreshToken', result.refreshToken,
+        {
+          httpOnly: false,
+          secure: true,
+          maxAge: 60 * 60 * 1000,
+          sameSite: 'none',
+          domain:'share2receive-client.onrender.com'
+        }
+      );
+      response.cookie('accessToken', result.accessToken,
+        {
+          httpOnly: false,
+          secure: true,
+          maxAge: 60 * 60 * 1000,
+          sameSite: 'none',
+          domain:'share2receive-client.onrender.com'
+        }
+      );
       const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      await setCookie(response, 'userData', userDecode);
+      response.cookie('userData', userDecode,
+        {
+          httpOnly: false,
+          secure: true,
+          maxAge: 60 * 60 * 1000,
+          sameSite: 'none',
+          domain:'share2receive-client.onrender.com'
+        }
+      );
       return response.redirect(process.env.FRONTEND_URL);
     } catch (err) {
       throw new ForbiddenException('Google login failed: ' + err.message);

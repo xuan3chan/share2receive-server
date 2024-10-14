@@ -1,101 +1,105 @@
-import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsDate,
-  MinLength,
-  IsEmail,
-  IsNotEmpty,
   IsString,
+  IsNotEmpty,
   MaxLength,
+  MinLength,
   Matches,
-  IsNumber,
-  ArrayNotEmpty,
-  IsArray,
-  ArrayMinSize,
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { TypeCategoryE } from '../enum';
+import { PriorityE, TypeCategoryE } from '../enum';
 
 export class CreateCategoryDto {
-    @ApiProperty({
-        description: 'Name of category ',
-        example: 'category',
-      })
-      @IsString()
-      @IsNotEmpty()
-      @MaxLength(50)
-      @MinLength(2)
-      // Cho phép chữ cái (bao gồm có dấu), số và khoảng trắng, không có ký tự đặc biệt
-      @Matches(/^[\p{L}0-9 ]+$/u, { message: 'name must only contain letters, numbers, and spaces' })
-      name: string;
-      
-    
-    @ApiProperty({
-        description: 'Description of category ',
-        example: 'category description',
-    })
-    @IsString()
-    @IsOptional()
-    @MaxLength(100)
-    description: string;
+  @ApiProperty({
+    description: 'Name of category',
+    example: 'category',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  @MinLength(2)
+  @Matches(/^[\p{L}0-9 ]+$/u, { message: 'name must only contain letters, numbers, and spaces' })
+  name: string;
 
-    @ApiProperty({
-        description: 'Type of category ',
-        example: TypeCategoryE.Men,
-    })
-    @IsEnum(TypeCategoryE)
-    type:TypeCategoryE;
+  @ApiProperty({
+    description: 'Priority of category',
+    example: 'high',
+  })
+  @IsEnum(PriorityE, { message: 'priority must be one of the following values: veryHigh, high, medium, low' })
+  @IsNotEmpty()
+  priority: PriorityE;
 
-    @ApiProperty({
-        description: 'Status of category ',
-        example: 'active',
-    })
-    @IsString()
-    @IsOptional()
-    @IsEnum(['active', 'inactive'])
-    status: string;
-    }
-export class UpdateCategoryDto {
-    @ApiProperty({
-        description: 'Name of category ',
-        example: 'category',
-    })
-    @IsString()
-    @IsOptional()
-    @MaxLength(50)
-    @MinLength(2)
-    @Matches(/^[\p{L}0-9 ]+$/u, { message: 'name must only contain letters, numbers, and spaces' })
-    name: string;
-    
-    @ApiProperty({
-        description: 'Description of category ',
-        example: 'category description',
-    })
-    @IsString()
-    @IsOptional()
-    @MaxLength(300)
-    description: string;
+  @ApiProperty({
+    description: 'Description of category',
+    example: 'category description',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  description: string;
 
+  @ApiProperty({
+    description: 'Type of category',
+    example: TypeCategoryE.Men,
+  })
+  @IsEnum(TypeCategoryE, { message: 'type must be one of the following values: men, women, unisex, item, other' })
+  type: TypeCategoryE;
 
-    @ApiProperty({
-        description: 'Type of category ',
-        example: TypeCategoryE.Men,
-    })
-    @IsEnum(TypeCategoryE)
-    @IsOptional()
-    type:string
-
-    @ApiProperty({
-        description: 'Status of category ',
-        example: 'active',
-    })
-    @IsString()
-    @IsOptional()
-    @IsEnum(['active', 'inactive'])
-    status: string;
-
-    
+  @ApiProperty({
+    description: 'Status of category',
+    example: 'active',
+  })
+  @IsString()
+  @IsOptional()
+  @IsEnum(['active', 'inactive'])
+  status: string;
 }
-    
-    
+
+export class UpdateCategoryDto {
+  @ApiProperty({
+    description: 'Name of category',
+    example: 'category',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  @MinLength(2)
+  @Matches(/^[\p{L}0-9 ]+$/u, { message: 'name must only contain letters, numbers, and spaces' })
+  name: string;
+
+  @ApiProperty({
+    description: 'Description of category',
+    example: 'category description',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(300)
+  description: string;
+
+  @ApiProperty({
+    description: 'Priority of category',
+    example: 'high',
+  })
+  @IsEnum(PriorityE, { message: 'priority must be one of the following values: veryHigh, high, medium, low' })
+  @IsNotEmpty()
+  @IsOptional()
+  priority: string;
+
+  @ApiProperty({
+    description: 'Type of category',
+    example: TypeCategoryE.Men,
+  })
+  @IsEnum(TypeCategoryE, { message: 'type must be one of the following values: men, women, unisex, item, other' })
+  @IsOptional()
+  type: string;
+
+  @ApiProperty({
+    description: 'Status of category',
+    example: 'active',
+  })
+  @IsString()
+  @IsOptional()
+  @IsEnum(['active', 'inactive'])
+  status: string;
+}

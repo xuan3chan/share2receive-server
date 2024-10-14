@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document,HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
-import { TypeCategoryE } from '../enum';
+import { PriorityE, TypeCategoryE } from '../enum';
 import { SlugHook } from '@app/libs/common/hook';
 
 @Schema()
@@ -14,6 +14,9 @@ export class Category extends Document {
 
     @Prop({ type: mongoose.Schema.Types.String,default:null  })
     description: string;
+        
+    @Prop({ type: mongoose.Schema.Types.String,required: true,enum:PriorityE })
+    priority: string;
     
     @Prop({ type: mongoose.Schema.Types.String,required: true,enum:TypeCategoryE })
     type: TypeCategoryE;

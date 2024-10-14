@@ -1,10 +1,33 @@
-import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { BrandService } from './brand.service';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateBrandDto, UpdateBrandDto } from '@app/libs/common/dto/brand.dto';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { PermissionGuard } from '@app/libs/common/gaurd';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { PriorityE } from '@app/libs/common/enum';
 
 @ApiTags('brand')
 @ApiBearerAuth()
@@ -17,23 +40,24 @@ export class BrandController {
   @UseGuards(PermissionGuard)
   @ApiCreatedResponse({ description: 'Brand created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiConsumes('multipart/form-data') // Để hỗ trợ upload file
-  @UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('imgUrl'))
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
         description: { type: 'string' },
+        priority: { type: 'string', enum: Object.values(PriorityE) },
         status: { type: 'string', enum: ['active', 'inactive'] },
-        imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+        imgUrl: { type: 'string', format: 'binary' },
       },
     },
   })
   @Post()
   async createBrandController(
     @Body() dto: CreateBrandDto,
-    @UploadedFile() file: Express.Multer.File, // Nhận file hình ảnh từ yêu cầu
+    @UploadedFile() file: Express.Multer.File,
   ) {
     try {
       await this.brandService.createBrandService(dto, file);
@@ -48,16 +72,17 @@ export class BrandController {
   @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Brand updated successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiConsumes('multipart/form-data') // Để hỗ trợ upload file
-  @UseInterceptors(FileInterceptor('imgUrl')) // Sử dụng FileInterceptor để upload file
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('imgUrl'))
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         name: { type: 'string' },
         description: { type: 'string' },
+        priority: { type: 'string', enum: Object.values(PriorityE) },
         status: { type: 'string', enum: ['active', 'inactive'] },
-        imgUrl: { type: 'string', format: 'binary' }, // Hỗ trợ upload hình ảnh
+        imgUrl: { type: 'string', format: 'binary' },
       },
     },
   })
@@ -65,7 +90,7 @@ export class BrandController {
   async updateBrandController(
     @Param('id') id: string,
     @Body() dto: UpdateBrandDto,
-    @UploadedFile() file: Express.Multer.File, // Nhận file hình ảnh từ yêu cầu
+    @UploadedFile() file: Express.Multer.File,
   ): Promise<{ message: string }> {
     try {
       await this.brandService.updateBrandService(id, dto, file);
@@ -88,7 +113,7 @@ export class BrandController {
   @Action('read')
   @UseGuards(PermissionGuard)
   @ApiOkResponse({ description: 'Get all brands' })
-  @ApiBadRequestResponse({ description: 'bad request' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'searchKey', required: false })
@@ -107,15 +132,14 @@ export class BrandController {
       limit,
       searchKey,
       sortField,
-      sortOrder
+      sortOrder,
     );
-  } 
+  }
 
   @ApiOkResponse({ description: 'Get all brands' })
-  @ApiBadRequestResponse({ description: 'bad request' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   @Get('list-brand-client')
-  async listBrandForClientController(
-  ): Promise<{ data: any }> {
+  async listBrandForClientController(): Promise<{ data: any }> {
     const data = await this.brandService.listBrandForClientService();
     return { data };
   }

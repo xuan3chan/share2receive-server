@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document,HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
 import { SlugHook } from '@app/libs/common/hook';
+import { PriorityE } from '../enum';
 
 @Schema()
 export class Brand extends Document {
@@ -11,8 +12,8 @@ export class Brand extends Document {
     @Prop({ type: mongoose.Schema.Types.Number,default:0 })
     totalProduct: number;
     
-    @Prop({ type: mongoose.Schema.Types.String,required: true })
-    imgUrl: string;
+    @Prop({ type: mongoose.Schema.Types.String,required: true,enum:PriorityE })
+    priority: string;
     
     @Prop({ type: mongoose.Schema.Types.String,default:null  })
     description: string;

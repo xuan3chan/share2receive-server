@@ -60,7 +60,7 @@ async googleAuthRedirect(
     await setCookie(response, 'refreshToken', result.refreshToken, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
     await setCookie(response, 'accessToken', result.accessToken, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
     const userDecode = encodeURIComponent(JSON.stringify(result.user));
-    setCookie(response, 'userData', userDecode, { domain: 'share2receive-client.vercel.app', secure: process.env.NODE_ENV === 'production' });
+    setCookie(response, 'userData', userDecode, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
     
     // Redirect to frontend
     response.redirect(process.env.FRONTEND_URL);

@@ -79,10 +79,16 @@ export class AuthController {
       register.firstname,
       register.lastname,
     );
-    setCookie(response, 'refreshToken', result.refreshToken)
-    setCookie(response, 'accessToken', result.accessToken);
+    setCookie(response, 'refreshToken', result.refreshToken,{
+      path: '/client',
+    })
+    setCookie(response, 'accessToken', result.accessToken,{
+      path: '/client',
+    });
     const userDecode = encodeURIComponent(JSON.stringify(result.user));
-    setCookie(response, 'userData', userDecode);
+    setCookie(response, 'userData', userDecode,{
+      path: '/client',
+    });
     return { message: 'successfully', data: result };
   }
 

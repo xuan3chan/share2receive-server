@@ -32,7 +32,7 @@ import {
 import { Response,Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthExceptionFilter } from '@app/libs/common/filter/oauth-exception.filter';
-import { setCookie } from '@app/libs/common/util/';
+import { setCookie,clearCookie } from '@app/libs/common/util/';
 
 @ApiTags('authentication')
 @ApiBearerAuth()
@@ -137,9 +137,9 @@ export class AuthController {
     );
     console.log(refreshToken);
     if (refreshToken) {
-      response.cookie('refreshToken', '', { maxAge: 0 });
-      response.cookie('accessToken', '', { maxAge: 0 });
-      response.cookie('userData', '', { maxAge: 0 });
+      clearCookie(response, 'refreshToken');
+      clearCookie(response, 'accessToken');
+      clearCookie(response, 'userData');
       return { message: 'Logout successfully' };
     }
     return { message: 'Logout failed' };

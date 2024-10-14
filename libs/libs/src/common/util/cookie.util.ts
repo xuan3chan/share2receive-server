@@ -22,7 +22,7 @@ export function setCookie(
 ) {
   response.cookie(name, value, {
     httpOnly: options.httpOnly ?? false,
-    secure: options.secure ?? (process.env.NODE_ENV === 'production'),
+    secure: true,
     maxAge: options.maxAge ?? 60 * 60 * 1000,
     sameSite: options.sameSite ?? 'none',
     path: options.path ?? '/',

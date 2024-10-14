@@ -21,9 +21,11 @@ export function setCookie(
   },
 ) {
   response.cookie(name, value, {
-    httpOnly: false, // Cookie không thể truy cập từ JS
-    secure: true, // Cookie chỉ được gửi qua HTTPS
-    maxAge: options.maxAge ?? 60 * 60 * 1000, // Cookie tồn tại trong 1 giờ
-    sameSite: 'none', // Cho phép chia sẻ cookie giữa các domain khác nhau
+    httpOnly: options.httpOnly ?? true, // Allow access by JavaScript if false
+    secure: options.secure ?? true, // Use HTTPS in production
+    maxAge: options.maxAge ?? 60 * 60 * 1000, // 1-hour expiration by default
+    sameSite: options.sameSite ?? 'none', // Allows cross-site cookie sharing
+    path: options.path ?? '/', // Cookie valid for the entire domain
+    domain: options.domain, // Set the domain if provided (e.g., 'example.com')
   });
 }

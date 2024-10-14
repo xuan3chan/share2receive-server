@@ -46,25 +46,30 @@ export class AuthController {
   }
 
   @Get('callback/google')
-  @UseGuards(AuthGuard('google'))
-  @UseFilters(OAuthExceptionFilter)
-  async googleAuthRedirect(
-    @Req() req : Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    try {
-      const googleUserProfile = req.user;
-      const result = await this.authService.googleLogin(googleUserProfile);
-      setCookie(response, 'refreshToken', result.refreshToken);
-      setCookie(response, 'accessToken', result.accessToken);
-      const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      setCookie(response, 'userData', userDecode);
-      response.redirect(process.env.FRONTEND_URL);
-      return { message: 'successfully', data: result };
-    } catch (err) {
-      throw new ForbiddenException('Google login failed: ' + err.message);
-    }
+@UseGuards(AuthGuard('google'))
+@UseFilters(OAuthExceptionFilter)
+async googleAuthRedirect(
+  @Req() req: Request,
+  @Res({ passthrough: true }) response: Response,
+) {
+  try {
+    const googleUserProfile = req.user;
+    const result = await this.authService.googleLogin(googleUserProfile);
+    
+    // Set cookies for refreshToken, accessToken, and userData
+    await setCookie(response, 'refreshToken', result.refreshToken, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
+    await setCookie(response, 'accessToken', result.accessToken, { domain: 'share2receive-client.onrender.com', secure: process.env.NODE_ENV === 'production' });
+    const userDecode = encodeURIComponent(JSON.stringify(result.user));
+    setCookie(response, 'userData', userDecode, { domain: 'share2receive-client.vercel.app', secure: process.env.NODE_ENV === 'production' });
+    
+    // Redirect to frontend
+    response.redirect(process.env.FRONTEND_URL);
+    return { message: 'successfully', data: result };
+  } catch (err) {
+    throw new ForbiddenException('Google login failed: ' + err.message);
   }
+}
+
 
 
   @ApiConsumes('application/json')

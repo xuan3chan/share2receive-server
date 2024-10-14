@@ -55,7 +55,7 @@ export class AuthController {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-      response.cookie('refreshToken', result.refreshToken,
+      await response.cookie('refreshToken', result.refreshToken,
         {
           httpOnly: false,
           secure: true,
@@ -64,7 +64,7 @@ export class AuthController {
           domain:'share2receive-client.onrender.com'
         }
       );
-      response.cookie('accessToken', result.accessToken,
+      await response.cookie('accessToken', result.accessToken,
         {
           httpOnly: false,
           secure: true,
@@ -74,7 +74,7 @@ export class AuthController {
         }
       );
       const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      response.cookie('userData', userDecode,
+      await response.cookie('userData', userDecode,
         {
           httpOnly: false,
           secure: true,

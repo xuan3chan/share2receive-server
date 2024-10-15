@@ -10,7 +10,7 @@ export interface ProductSearchCriteria {
     sizeVariants?: {
       size?: string;
       colors?: string;
-      amount?: { min?: number; max?: number };
+      amount?: number
     }; // T
     style?: string; // Tìm kiếm theo phong cách
   }

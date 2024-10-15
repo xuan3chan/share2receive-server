@@ -21,7 +21,7 @@
   "dependencies": {
     "@casl/ability": "^6.7.1",
     "@casl/mongoose": "^8.0.1",
-    "@elastic/elasticsearch": "^8.14.0",
+    "@elastic/elasticsearch": "^7.17.14",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "@nestjs/cache-manager": "^2.2.2",

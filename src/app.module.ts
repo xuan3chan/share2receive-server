@@ -11,9 +11,11 @@ import { EncryptionModule } from './encryption/encryption.module';
 import { CategoryModule } from './category/category.module';
 import { BrandModule } from './brand/brand.module';
 import { ProductModule } from './product/product.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
+    // SearchModule,
     EncryptionModule,
     CloudinaryModule,
     AdminModule,

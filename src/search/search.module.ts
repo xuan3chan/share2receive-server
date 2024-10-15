@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SearchService } from './search.service'; // Import SearchService
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductSchema } from '@app/libs/common/schema';
+import { SearchController } from './search.controller';
 
 @Module({
   imports: [
@@ -21,14 +22,15 @@ import { ProductSchema } from '@app/libs/common/schema';
           throw new Error('Elasticsearch configuration is missing in environment variables');
         }
 
-        const config: any = {
+        return {
           node,
           auth: { username, password },
         };
-
-        return config;
       },
     }),
+  ],
+  controllers: [
+    SearchController,
   ],
   providers: [SearchService], // Provide SearchService
   exports: [NestElasticsearchModule, SearchService], // Export SearchService

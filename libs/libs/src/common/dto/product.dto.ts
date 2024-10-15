@@ -152,7 +152,7 @@ export class CreateProductDto {
     example: 80,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   priceNew: number;
 
   @ApiProperty({
@@ -302,4 +302,14 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @IsOptional()
   @IsString()
   condition?: string;
+}
+
+export class idMongoDto {
+  @ApiProperty({
+    description: 'ID of the product',
+    example: '64db23f0e421b3144db7f321',
+  })
+  @IsMongoId()
+  @IsNotEmpty()
+  id: string;
 }

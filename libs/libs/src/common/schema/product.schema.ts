@@ -86,7 +86,7 @@ export class Product extends Document {
   @Prop({ type: mongoose.Schema.Types.Number, required: true })
   price: number;
 
-  @Prop({ type: mongoose.Schema.Types.Number, required: true })
+  @Prop({ type: mongoose.Schema.Types.Number })
   priceNew: number;
 
   @Prop([{ type: mongoose.Schema.Types.String, required: true }])

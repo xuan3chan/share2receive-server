@@ -235,12 +235,14 @@ export class ProductService {
       );
     }
   }
-  async listProductService(
+    async listProductService(
     userId: string,
-    page?: number,
-    limit?: number,
+    page: number = 1,
+    limit: number = 10,
     searchKey?: string,
-    sortField: string = 'productName',
+    filterField?: string,
+    filterValue?: string,
+    sortField: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ data: any; total: number }> {
     try {
@@ -251,84 +253,181 @@ export class ProductService {
           $options: 'i',
         },
       };
-
+  
       if (userId) {
         query.userId = userId;
       }
-
+  
+      if (filterField && filterValue) {
+        query[filterField] = filterValue;
+      }
+  
       const [data, total] = await Promise.all([
         this.productModel
           .find(query)
           .sort({ [sortField]: sortOrder })
           .skip((page - 1) * limit)
           .limit(limit)
+          .lean({ virtuals: true })
           .exec(),
         this.productModel.countDocuments(query),
       ]);
-
+  
       return { data, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
+     async listProductForClientService(
+    page: number = 1,
+    limit: number = 10,
+    filterCategory?: string[],
+    filterBrand?: string[],
+    filterStartPrice?: number,
+    filterEndPrice?: number,
+    filterSize?: string[],
+    filterColor?: string[],
+    filterMaterial?: string[],
+    filterCondition?: string[],
+    filterType?: string[],
+    filterStyle?: string[],
+  ): Promise<{ data: any; total: number }> {
+    try {
+      const query: any = {
+        status: 'active',
+        isDeleted: false,
+        'approved.approveStatus': 'approved',
+        isBlock: false,
+      };
+  
+      const addFilter = (field: string, value: any) => {
+        if (value && value.length > 0) {
+          query[field] = { $in: value };
+        }
+      };
+  
+      addFilter('categoryId', filterCategory);
+      addFilter('brandId', filterBrand);
+      addFilter('size', filterSize);
+      addFilter('color', filterColor);
+      addFilter('material', filterMaterial);
+      addFilter('condition', filterCondition);
+      addFilter('type', filterType);
+      addFilter('style', filterStyle);
+  
+      if (filterStartPrice !== undefined || filterEndPrice !== undefined) {
+        query.price = {};
+        if (filterStartPrice !== undefined) {
+          query.price.$gte = filterStartPrice;
+        }
+        if (filterEndPrice !== undefined) {
+          query.price.$lte = filterEndPrice;
+        }
+      }
+  
+      const [products, total] = await Promise.all([
+        this.productModel
+          .find(query)
+          .populate('categoryId', 'name')
+          .populate('brandId', 'name')
+          .populate('userId', 'firstname lastname')
+          .select('-createdAt -updatedAt -__v -sizeVariants -approved -isDeleted -isBlock')
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean({ virtuals: true })
+          .exec(),
+        this.productModel.countDocuments(query),
+      ]);
+  
+      return { data: products, total };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to get products');
+    }
+  }
 
-  //*****************manage product***************** */
+  async getProductDetailService(productId: string): Promise<Product> {
+    try {
+      const product = await this.productModel
+        .findById(productId)
+        .select('-createdAt -updatedAt -__v  -approved -isDeleted -isBlock')
+        .populate('categoryId', 'name')
+        .populate('brandId', 'name')
+        .populate('userId', 'firstname lastname')
+        .lean({ virtuals: true })
+        .exec();
+  
+      if (!product) {
+        throw new BadRequestException('Product not found');
+      }
+  
+      return product;
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Failed to get product detail',
+      );
+    }
+  }
+
+    //*****************manage product***************** */
   async listProductForAdminService(
     page: number,
     limit: number,
     searchKey?: string,
-    sortField: string = 'productName',
+    sortField: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'asc',
     filterField?: string,  // Trường để lọc
     filterValue?: string,  // Giá trị lọc
   ): Promise<{ total: number; products: any[] }> {
-    // Tạo query tìm kiếm theo tên sản phẩm
-    const query: any = {
-      productName: { $regex: searchKey || '', $options: 'i' },
-    };
+    try {
+      // Tạo query tìm kiếm theo tên sản phẩm
+      const query: any = {
+        productName: { $regex: searchKey || '', $options: 'i' },
+      };
   
-    // Áp dụng filterField và filterValue nếu có
-    if (filterField && filterValue) {
-      query[filterField] = filterValue; // Gán filterField với filterValue vào query
+      // Áp dụng filterField và filterValue nếu có
+      if (filterField && filterValue) {
+        query[filterField] = filterValue; // Gán filterField với filterValue vào query
+      }
+  
+      // Đếm tổng số sản phẩm phù hợp với query
+      const total = await this.productModel.countDocuments(query).exec();
+  
+      // Truy vấn danh sách sản phẩm dựa trên query, sắp xếp và phân trang
+      const products = await this.productModel
+        .find(query)
+        .populate('categoryId', 'name')
+        .populate('brandId', 'name')
+        .populate('userId', 'firstname lastname')
+        .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortField và sortOrder
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean({ virtuals: true }) // Trả về plain objects thay vì Mongoose documents
+        .exec();
+  
+      // Tái cấu trúc dữ liệu để loại bỏ các object lồng bên trong
+      const structuredProducts = products.map(product => ({
+        _id: product._id,
+        productName: product.productName,
+        imgUrls: product.imgUrls,
+        material: product.material,
+        userId: product.userId ? (product.userId as any)._id : null,
+        userName: product.userId ? `${(product.userId as any).firstname} ${(product.userId as any).lastname}` : null, // Ghép tên người dùng
+        categoryName: product.categoryId ? (product.categoryId as any).name : null, // Lấy category name ra ngoài
+        brandName: product.brandId ? (product.brandId as any).name : null, // Lấy brand name ra ngoài
+        approved: product.approved,
+        isDeleted: product.isDeleted,
+        status: product.status,
+        isBlock: product.isBlock,
+        type: product.type,
+        price: product.price,
+        priceNew: product.priceNew,
+        tags: product.tags,
+      }));
+  
+      return { total, products: structuredProducts };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to get products');
     }
-  
-    // Đếm tổng số sản phẩm phù hợp với query
-    const total = await this.productModel.countDocuments(query).exec();
-  
-    // Truy vấn danh sách sản phẩm dựa trên query, sắp xếp và phân trang
-    const products = await this.productModel
-      .find(query)
-      .populate('categoryId', 'name')
-      .populate('brandId', 'name')
-      .populate('userId', 'firstname lastname')
-      .select('-createdAt -updatedAt -__v -sizeVariants -approved._id')
-      .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortField và sortOrder
-      .skip((page - 1) * limit)
-      .limit(limit)
-      .lean({ virtuals: true }) // Trả về plain objects thay vì Mongoose documents
-      .exec();
-  
-    // Tái cấu trúc dữ liệu để loại bỏ các object lồng bên trong
-    const structuredProducts = products.map(product => ({
-      _id: product._id,
-      productName: product.productName,
-      imgUrls: product.imgUrls,
-      material: product.material,
-      userId: (product.userId as any)._id,
-      userName: `${(product.userId as any).firstname} ${(product.userId as any).lastname}`, // Ghép tên người dùng
-      categoryName: (product.categoryId as any).name, // Lấy category name ra ngoài
-      brandName: (product.brandId as any ).name, // Lấy brand name ra ngoài
-      approved: product.approved,
-      isDeleted: product.isDeleted,
-      status: product.status,
-      isBlock: product.isBlock,
-      type: product.type,
-      price: product.price,
-      priceNew: product.priceNew,
-      tags: product.tags,
-    }));
-  
-    return { total, products: structuredProducts };
   }
 
    //approved product

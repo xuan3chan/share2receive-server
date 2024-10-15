@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -21,12 +22,14 @@ import { JwtPayload } from 'jsonwebtoken';
 import {
   CreateProductDto,
   DeleteImagesDto,
+  idMongoDto,
   UpdateProductDto,
 } from '@app/libs/common/dto';
 import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiProperty,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
@@ -182,13 +185,13 @@ export class ProductController {
 
   @ApiTags('product')
   @UseGuards(MemberGuard)
-  @ApiOperation({ summary: 'List all products for user' })
+  @ApiOperation({ summary: 'List all products of user' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'searchKey', required: false, type: String })
   @ApiQuery({ name: 'sortField', required: false, type: String })
   @ApiQuery({ name: 'sortOrder', required: false, type: String })
-  @Get('list')
+  @Get('list-product-of-user')
   async listProductController(
     @Req() request: Request,
     @Query('page') page: number = 1,
@@ -208,6 +211,66 @@ export class ProductController {
     );
     return data;
   }
+
+  @ApiTags('product')
+  @ApiOperation({ summary: 'List all products for client' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'filterCategory', required: false, type: [String] })
+  @ApiQuery({ name: 'filterBrand', required: false, type: [String] })
+  @ApiQuery({ name: 'filterStartPrice', required: false, type: Number })
+  @ApiQuery({ name: 'filterEndPrice', required: false, type: Number })
+  @ApiQuery({ name: 'filterSize', required: false, type: [String] })
+  @ApiQuery({ name: 'filterColor', required: false, type: [String] })
+  @ApiQuery({ name: 'filterMaterial', required: false, type: [String] })
+  @ApiQuery({ name: 'filterCondition', required: false, type: [String] })
+  @ApiQuery({ name: 'filterType', required: false, type: [String] })
+  @ApiQuery({ name: 'filterStyle', required: false, type: [String] })
+  @Get('list-product-for-client')
+  async listProductForClientController(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('filterCategory') filterCategory?: string[],
+    @Query('filterBrand') filterBrand?: string[],
+    @Query('filterStartPrice') filterStartPrice?: number,
+    @Query('filterEndPrice') filterEndPrice?: number,
+    @Query('filterSize') filterSize?: string[],
+    @Query('filterColor') filterColor?: string[],
+    @Query('filterMaterial') filterMaterial?: string[],
+    @Query('filterCondition') filterCondition?: string[],
+    @Query('filterType') filterType?: string[],
+    @Query('filterStyle') filterStyle?: string[],
+  ): Promise<{ data: any; total: number }> {
+    try {
+      const { data, total } = await this.productService.listProductForClientService(
+        page,
+        limit,
+        filterCategory,
+        filterBrand,
+        filterStartPrice,
+        filterEndPrice,
+        filterSize,
+        filterColor,
+        filterMaterial,
+        filterCondition,
+        filterType,
+        filterStyle,
+      );
+      return { data, total };
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to get products');
+    }
+  }
+
+  @ApiTags('product')
+  @ApiOperation({ summary: 'Get product detail' })
+  @Get(':id')
+  async getProductDetailService(
+    @Param('id') dto:idMongoDto,
+  ): Promise<{ data: any }> {
+    const data = await this.productService.getProductDetailService(dto.id);
+    return { data };
+  }
   //*****************manage product***************** */
   @Subject('product')
   @Action('read')
@@ -224,7 +287,7 @@ export class ProductController {
     required: false,
     type: String,
     example:
-      'status:categoryId:brandId:IsDeleted:(approved.isApproved):isBlock:type',
+      'status:categoryId:brandId:IsDeleted:(approved.approveStatus):isBlock:type',
   })
   @ApiQuery({ name: 'filterValue', required: false, type: String })
   @Get('list-all-product')
@@ -284,9 +347,9 @@ export class ProductController {
     return { message: 'Product approved successfully' };
   }
 
-  // @Subject('product')
-  // @Action('block')
-  // @UseGuards(PermissionGuard)
+  @Subject('product')
+  @Action('block')
+  @UseGuards(PermissionGuard)
   @ApiTags('Manage product')
   @ApiOperation({ summary: 'Block product' })
   @Patch('update-block/:productId')

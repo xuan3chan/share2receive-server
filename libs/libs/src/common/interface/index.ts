@@ -1,2 +1,3 @@
 export *from './admin.interface';
 export * from './user.interface';
+export * from './product-search.interface'

@@ -261,16 +261,30 @@ export class ProductController {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
-
+  @ApiTags('product')
+  @ApiOperation({ summary: 'User can like product' })
+  @Get('propose')
+  async getProductsByUserStyleController(
+    @Req() request: Request,
+  ): Promise<{ data: any }> {
+    const userId = this.getUserIdFromToken(request);
+    const result = await this.productService.getProductsByUserStyleService(userId);
+     // Có thể bỏ log sau khi xác nhận hoạt động
+    return { data: result }; // Trả về dữ liệu trong một object
+  }
+  
   @ApiTags('product')
   @ApiOperation({ summary: 'Get product detail' })
   @Get(':id')
   async getProductDetailService(
-    @Param('id') dto:idMongoDto,
+    @Param('id') productId: string, // Lấy productId từ params
   ): Promise<{ data: any }> {
-    const data = await this.productService.getProductDetailService(dto.id);
+    const data = await this.productService.getProductDetailService(productId); // Truyền productId vào service
     return { data };
   }
+  
+ 
+  
   //*****************manage product***************** */
   @Subject('product')
   @Action('read')

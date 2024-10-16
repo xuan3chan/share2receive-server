@@ -162,6 +162,16 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   tags: string[];
+
+  @ApiProperty({
+    description: 'Description of the product',
+    example: 'This is a stylish shirt',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  description: string;
+  
 }
 
 export class DeleteImagesDto {
@@ -302,6 +312,15 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @IsOptional()
   @IsString()
   condition?: string;
+  
+  @ApiProperty({
+    description: 'Description of the product',
+    example: 'This is a stylish shirt',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  description: string;
 }
 
 export class idMongoDto {

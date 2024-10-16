@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import {
@@ -8,6 +12,8 @@ import {
   CategoryDocument,
   Product,
   ProductDocument,
+  User,
+  UserDocument,
 } from '@app/libs/common/schema';
 import { CreateProductDto, UpdateProductDto } from '@app/libs/common/dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
@@ -23,6 +29,7 @@ export class ProductService {
     private readonly categoryModel: Model<CategoryDocument>,
     private readonly cloudinaryService: CloudinaryService,
     private readonly mailerService: MailerService,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {}
 
   async createProductService(
@@ -47,11 +54,10 @@ export class ProductService {
       if (product.brandId && !checkBrand) {
         throw new BadRequestException('Brand not found');
       }
-    // plus totalProduct in brand
-        await this.brandModel.findByIdAndUpdate(
-      product.brandId,
-      { $inc: { totalProduct: 1 } }
-    ).exec();
+      // plus totalProduct in brand
+      await this.brandModel
+        .findByIdAndUpdate(product.brandId, { $inc: { totalProduct: 1 } })
+        .exec();
       // Create a new product and assign the uploaded image URLs
       const newProduct = new this.productModel({
         ...product, // Spread the product fields
@@ -157,11 +163,11 @@ export class ProductService {
           userId,
         },
         {
-          $set: product,'approved.approveStatus': 'pending',
-            'approved.decisionBy': null,
-            'approved.date':null,
-            'approved.description': null,
-          
+          $set: product,
+          'approved.approveStatus': 'pending',
+          'approved.decisionBy': null,
+          'approved.date': null,
+          'approved.description': null,
         },
         { new: true },
       );
@@ -192,18 +198,19 @@ export class ProductService {
             isDeleted: true,
           },
         },
-        { new: true } // Return the updated document
+        { new: true }, // Return the updated document
       );
-  
+
       if (!productDelete) {
         throw new BadRequestException('Product not found or not owned by user');
       }
-  
-      await this.brandModel.findByIdAndUpdate(
-        productDelete.brandId,
-        { $inc: { totalProduct: -1 } }
-      ).exec();
-  
+
+      await this.brandModel
+        .findByIdAndUpdate(productDelete.brandId, {
+          $inc: { totalProduct: -1 },
+        })
+        .exec();
+
       return { message: 'Product deleted successfully' };
     } catch (error) {
       throw new BadRequestException(
@@ -235,7 +242,7 @@ export class ProductService {
       );
     }
   }
-    async listProductService(
+  async listProductService(
     userId: string,
     page: number = 1,
     limit: number = 10,
@@ -253,15 +260,15 @@ export class ProductService {
           $options: 'i',
         },
       };
-  
+
       if (userId) {
         query.userId = userId;
       }
-  
+
       if (filterField && filterValue) {
         query[filterField] = filterValue;
       }
-  
+
       const [data, total] = await Promise.all([
         this.productModel
           .find(query)
@@ -272,13 +279,13 @@ export class ProductService {
           .exec(),
         this.productModel.countDocuments(query),
       ]);
-  
+
       return { data, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
-     async listProductForClientService(
+  async listProductForClientService(
     page: number = 1,
     limit: number = 10,
     filterCategory?: string[],
@@ -299,13 +306,13 @@ export class ProductService {
         'approved.approveStatus': 'approved',
         isBlock: false,
       };
-  
+
       const addFilter = (field: string, value: any) => {
         if (value && value.length > 0) {
           query[field] = { $in: value };
         }
       };
-  
+
       addFilter('categoryId', filterCategory);
       addFilter('brandId', filterBrand);
       addFilter('size', filterSize);
@@ -314,7 +321,7 @@ export class ProductService {
       addFilter('condition', filterCondition);
       addFilter('type', filterType);
       addFilter('style', filterStyle);
-  
+
       if (filterStartPrice !== undefined || filterEndPrice !== undefined) {
         query.price = {};
         if (filterStartPrice !== undefined) {
@@ -324,21 +331,23 @@ export class ProductService {
           query.price.$lte = filterEndPrice;
         }
       }
-  
+
       const [products, total] = await Promise.all([
         this.productModel
           .find(query)
           .populate('categoryId', 'name')
           .populate('brandId', 'name')
           .populate('userId', 'firstname lastname')
-          .select('-createdAt -updatedAt -__v -sizeVariants -approved -isDeleted -isBlock')
+          .select(
+            '-createdAt -updatedAt -__v -sizeVariants -approved -isDeleted -isBlock',
+          )
           .skip((page - 1) * limit)
           .limit(limit)
           .lean({ virtuals: true })
           .exec(),
         this.productModel.countDocuments(query),
       ]);
-  
+
       return { data: products, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
@@ -355,11 +364,11 @@ export class ProductService {
         .populate('userId', 'firstname lastname')
         .lean({ virtuals: true })
         .exec();
-  
+
       if (!product) {
         throw new BadRequestException('Product not found');
       }
-  
+
       return product;
     } catch (error) {
       throw new BadRequestException(
@@ -368,31 +377,80 @@ export class ProductService {
     }
   }
 
+  async getProductsByUserStyleService(userId: string): Promise<{ data: any }> {
+    try {
+        // Bước 1: Lấy thông tin người dùng
+        const user = await this.userModel.findById(userId).exec();
 
-    //*****************manage product***************** */
+        // Kiểm tra nếu người dùng không có phong cách hoặc không tồn tại
+        if (!user || !user.userStyle) {
+            throw new NotFoundException('User or user style not found');
+        }
+
+        const { color, material, size, hobby, age, zodiacSign, style } = user.userStyle;
+
+        // Bước 2: Tìm các sản phẩm đang hoạt động và đã được phê duyệt
+        const products = await this.productModel
+            .find({
+                status: 'active', // Chỉ lấy các sản phẩm đang hoạt động
+                'approved.approveStatus': 'approved', // Chỉ lấy các sản phẩm đã được phê duyệt
+                isDeleted: false, // Loại bỏ các sản phẩm đã bị xóa
+                userId: { $ne: userId }, // Loại bỏ các sản phẩm của userId hiện tại
+            })
+            .select('-__v -createdAt -updatedAt') // Projection to exclude unnecessary fields
+            .lean() // Return plain JavaScript objects
+            .exec();
+
+        // Bước 3: Tìm sản phẩm phù hợp nhất
+        const matchedProducts = products.filter((product) => {
+            const sizeMatches = product.sizeVariants.some((variant) => size.includes(variant.size));
+            const colorMatches = product.sizeVariants.some((variant) => color.includes(variant.colors));
+            const materialMatches = material.includes(product.material);
+            const styleMatches = style.includes(product.style);
+            const tagMatches = [hobby, age, zodiacSign].some(tag => typeof tag === 'string' && product.tags.includes(tag));
+
+            // Kiểm tra xem sản phẩm có phù hợp với tất cả các tiêu chí không
+            return sizeMatches && colorMatches && materialMatches && styleMatches && tagMatches;
+        });
+
+        // Bước 4: Sắp xếp các sản phẩm theo tiêu chí
+        // Nếu bạn muốn sắp xếp theo một tiêu chí nào đó, bạn có thể thêm logic sắp xếp ở đây
+        // Ví dụ: matchedProducts.sort((a, b) => /* logic sorting */);
+
+        // Bước 5: Trả về danh sách sản phẩm phù hợp
+        return { data: matchedProducts };
+    } catch (error) {
+        throw new NotFoundException(
+            error.message || 'Failed to get products by user style',
+        );
+    }
+}
+
+
+  //*****************manage product***************** */
   async listProductForAdminService(
     page: number,
     limit: number,
     searchKey?: string,
     sortField: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'asc',
-    filterField?: string,  // Trường để lọc
-    filterValue?: string,  // Giá trị lọc
+    filterField?: string, // Trường để lọc
+    filterValue?: string, // Giá trị lọc
   ): Promise<{ total: number; products: any[] }> {
     try {
       // Tạo query tìm kiếm theo tên sản phẩm
       const query: any = {
         productName: { $regex: searchKey || '', $options: 'i' },
       };
-  
+
       // Áp dụng filterField và filterValue nếu có
       if (filterField && filterValue) {
         query[filterField] = filterValue; // Gán filterField với filterValue vào query
       }
-  
+
       // Đếm tổng số sản phẩm phù hợp với query
       const total = await this.productModel.countDocuments(query).exec();
-  
+
       // Truy vấn danh sách sản phẩm dựa trên query, sắp xếp và phân trang
       const products = await this.productModel
         .find(query)
@@ -404,16 +462,20 @@ export class ProductService {
         .limit(limit)
         .lean({ virtuals: true }) // Trả về plain objects thay vì Mongoose documents
         .exec();
-  
+
       // Tái cấu trúc dữ liệu để loại bỏ các object lồng bên trong
-      const structuredProducts = products.map(product => ({
+      const structuredProducts = products.map((product) => ({
         _id: product._id,
         productName: product.productName,
         imgUrls: product.imgUrls,
         material: product.material,
         userId: product.userId ? (product.userId as any)._id : null,
-        userName: product.userId ? `${(product.userId as any).firstname} ${(product.userId as any).lastname}` : null, // Ghép tên người dùng
-        categoryName: product.categoryId ? (product.categoryId as any).name : null, // Lấy category name ra ngoài
+        userName: product.userId
+          ? `${(product.userId as any).firstname} ${(product.userId as any).lastname}`
+          : null, // Ghép tên người dùng
+        categoryName: product.categoryId
+          ? (product.categoryId as any).name
+          : null, // Lấy category name ra ngoài
         brandName: product.brandId ? (product.brandId as any).name : null, // Lấy brand name ra ngoài
         approved: product.approved,
         isDeleted: product.isDeleted,
@@ -424,14 +486,14 @@ export class ProductService {
         priceNew: product.priceNew,
         tags: product.tags,
       }));
-  
+
       return { total, products: structuredProducts };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
 
-   //approved product
+  //approved product
   async approveProductService(
     productId: string,
     decisionBy: string,
@@ -439,20 +501,19 @@ export class ProductService {
     description?: string,
   ): Promise<{ message: string }> {
     try {
-      if (!decisionBy)      {
+      if (!decisionBy) {
         throw new BadRequestException('Decision by is required');
       }
-      await this.productModel.findByIdAndUpdate(
-        productId,
-        {
+      await this.productModel
+        .findByIdAndUpdate(productId, {
           $set: {
             'approved.approveStatus': approveStatus,
             'approved.decisionBy': decisionBy,
             'approved.date': Date.now(),
-            'approved.description': description||null,
+            'approved.description': description || null,
           },
-        }
-      ).exec();
+        })
+        .exec();
       return { message: 'Product approved successfully' };
     } catch (error) {
       throw new BadRequestException(
@@ -461,40 +522,39 @@ export class ProductService {
     }
   }
 
-    async blockProductService(
+  async blockProductService(
     productId: string,
     isBlock: boolean,
   ): Promise<{ message: string }> {
     try {
-      const productBlock = await this.productModel.findByIdAndUpdate(
-        productId,
-        {
-          $set: {
-            isBlock,
+      const productBlock = await this.productModel
+        .findByIdAndUpdate(
+          productId,
+          {
+            $set: {
+              isBlock,
+            },
           },
-        },
-        { new: true } // Return the updated document
-      ).populate('userId', 'email').exec();
-  
+          { new: true }, // Return the updated document
+        )
+        .populate('userId', 'email')
+        .exec();
+
       if (!productBlock) {
         throw new BadRequestException('Product not found');
       }
-  
+
       const email = (productBlock.userId as any).email; // Get the user's email
       const productName = productBlock.productName; // Get the product name
-      if (isBlock = true) {
-       this.mailerService.sendEmailBlockedProduct(email, productName);
+      if ((isBlock = true)) {
+        this.mailerService.sendEmailBlockedProduct(email, productName);
       }
-      if (isBlock = false) {
-       this.mailerService.sendEmailUnblockedProduct(email, productName);
+      if ((isBlock = false)) {
+        this.mailerService.sendEmailUnblockedProduct(email, productName);
       }
       return { message: 'Product blocked successfully' };
     } catch (error) {
-      throw new BadRequestException(
-        error.message || 'Failed to block product',
-      );
+      throw new BadRequestException(error.message || 'Failed to block product');
     }
   }
-  
-  
 }

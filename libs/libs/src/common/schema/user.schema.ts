@@ -1,9 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
 import { UserStyle } from '@app/libs/common/interface'; // Đường dẫn tới file chứa interface UserStyle
 import {MaterialE} from '@app/libs/common/enum/material.enum';
 import { SizeE } from '../enum';
+
 @Schema({ timestamps: true })
 export class User extends Document {
   [x: string]: any;
@@ -88,6 +89,7 @@ export class User extends Document {
       zodiacSign: {
         type: mongoose.Schema.Types.String,
       },
+      style: [{ type: mongoose.Schema.Types.String }],
     },
     default: null,
   })
@@ -99,3 +101,4 @@ export class User extends Document {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+export type UserDocument = HydratedDocument<User>;

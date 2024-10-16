@@ -100,6 +100,9 @@ export class Product extends Document {
 
   @Prop({ type: mongoose.Schema.Types.String})
   slug: string;
+
+  @Prop({ type: mongoose.Schema.Types.String,required:true})
+  description: string;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

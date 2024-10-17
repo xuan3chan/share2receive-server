@@ -15,7 +15,7 @@ import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
-    SearchModule,
+    // SearchModule,
     EncryptionModule,
     CloudinaryModule,
     AdminModule,

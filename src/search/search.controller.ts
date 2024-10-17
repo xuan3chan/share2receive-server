@@ -1,13 +1,26 @@
-import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  BadRequestException,
+  UseInterceptors,
+  UploadedFile,
+  Patch,
+} from '@nestjs/common';
 import { SearchService } from './search.service';
 import { ProductSearchCriteria } from '@app/libs/common/interface';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Express } from 'express';
+// import { ImageAnalysisService } from '@app/libs/common/util/image-analysis.util';
 
 @Controller('search')
 export class SearchController {
-  constructor(private readonly searchService: SearchService) {}
+  constructor(
+    private readonly searchService: SearchService,
+    // private readonly imageAnalysisService: ImageAnalysisService,
+  ) {}
 
-  
   @ApiTags('product')
   @Get('search-prodcut')
   @ApiQuery({ name: 'productName', required: false, type: String })
@@ -46,15 +59,44 @@ export class SearchController {
         condition,
         tags, // Directly assign the tags array
         material,
-        sizeVariants: size || colors || amount ? { size, colors, amount } : undefined,
+        sizeVariants:
+          size || colors || amount ? { size, colors, amount } : undefined,
         style,
       };
 
       const results = await this.searchService.searchProductsService(criteria);
       return { data: results };
     } catch (error) {
-      throw new BadRequestException(error.message || 'Failed to search products');
+      throw new BadRequestException(
+        error.message || 'Failed to search products',
+      );
     }
   }
-}
 
+//   // find product by img
+//   @Patch('find-product-by-image')
+//   @UseInterceptors(FileInterceptor('image'))
+//   @ApiConsumes('multipart/form-data')
+//   @ApiBody({
+//     schema: {
+//       type: 'object',
+//       properties: {
+//         image: {
+//           type: 'string',
+//           format: 'binary',
+//         },
+//       },
+//     },
+//   })
+//   async findProductByImageController(
+//     @UploadedFile() image: Express.Multer.File,
+//   ) {
+//     try {
+//       const { color, style, material } = await this.imageAnalysisService.analyzeImage(image);
+//       console.log(color, style, material);
+//       return { color, style, material };
+//     } catch (error) {
+//     }
+//   }
+// }
+}

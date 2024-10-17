@@ -6,6 +6,7 @@ import { SearchService } from './search.service'; // Import SearchService
 import { MongooseModule } from '@nestjs/mongoose';
 import { ProductSchema } from '@app/libs/common/schema';
 import { SearchController } from './search.controller';
+// import { ImageAnalysisService } from '@app/libs/common/util';
 
 @Module({
   imports: [

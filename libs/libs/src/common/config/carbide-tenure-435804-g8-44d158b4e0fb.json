@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "carbide-tenure-435804-g8",
+  "private_key_id": "44d158b4e0fbe83d63a26516fc4b8d6df4f6925c",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCzA+JdDQyszolX\n8E0MKHhgTaFEfqpfMsenpOFPBrAEvbipBFkaP9k3+7kZVVZapc1IgJ40EhWK7jfg\n5b99mkxRDMAc0R13tFGc0whZkvV3IJ9/vhCYVnRxNKXK7fEU7fo3xw8fMbMnRzFs\nqPvFs+NLVH1mIEHgXCzFxyr1XBjBBSEllXOipIQSHeD3nw9M2wh10co8xdvyDH5s\nhFhnWcinZGFHJbGerwk9g9HckCEGuCdmkNCItx4iesUGwsBJmSVg6Du3/XE10qMJ\nXKzqRnEyn4aYlIiwbaE4eFp5cz0KLcRfkiAztf8k36hdsAyItiRxSXNTFKhLri8N\nC8YThqB1AgMBAAECggEABhuP0ZTsZcj2LqXoOw32bXK4mdmofm8BGNsrRML5pm/C\nqSGY2KhtBNf1zMN4msclZd/dhfFIAuF1zpqIGgT1rZ49v73yv27Ligo5MrUs4s+e\nIYGel1P7zRD6xx2vKAOmkdicz3emoSRwr0Bktq4Yhy1uydk35iu+61CMSqrFvXAc\nsUhWN3agXCcY6R01V10Mp1gRRNL+EDZFjU20l4sBg2Y66K9vE5zuUxUddKOkrQyR\nVTYnH99RgxMVSLrzTXI6b1YBxI2UPK3fhkT6QzAt0by6GQc8wb/OApgj6dSj2Z9G\nYfJDWlydLZbmRUjPlimnAm86sxCtFwowddAdW4FsAQKBgQDrKBqzuB1uvv9jMs8S\nAcjrbcxRq066tEH6qhAm+5DubQY2WsdWe4ojil7YAXtggGKzSVL6x+3bm2gqHUl4\n0vs3b40sq1Pn0t+qbN/pXkLlic3YH791Z/UWKTWcAxAfURVKG/waowKR9MuDRwFY\nHwh8eEoK59tzgcOLIhMBJOxKQQKBgQDC4eJOXWEXwReACM5VnTretCHLW2VlkY88\nXcmdW1gSvV+8OJRsMOHQLJFzePOg2J/UFQ6gZdSM5rfjSojYl2oxirjQeUYRmams\nktANQnXrnJ7d5iHO7xqwVnTVIoRa1Kxl+VKNggzIEdgrBWKVY5VAAXFPbSB1ZMou\nrf9GlBEBNQKBgDnZIch4UHU/8x96DkqFueGAnzSwCawQT/LUBykv1ZVxqIeSiVsT\nBQZ9MZu9sZYpvx4PuaQLrs3JSzShA8P/UuFuRbJpaziqPW91XRfRom9JGSRDmxvM\nuRP8iz2X20146t3SSJBc7XLuX2op+4CsEbBc/wnzw56Em5AMj9RGOwKBAoGAazhO\nA2F63s/ctxOhOhdUYVznzvOM+PG5xbOwDkRIU58fQfY7Kr9GLfunVsmv+MnWPaAM\nORFtfMwfVg0W91tvEKzK++ANPfe2E31+vBzZtfSor1tDNI/2thgLFYx1F2g1JbGj\nyrlHgPfYX+sJjzmHzvw8ND/NAOmgF0ihz1n9dRUCgYEAwgR/9vi0ouV6kz90GEgs\nC2XuXDrXXKhCsdM+yWgq5jkllu0Z9CqXPi2CxHBbXJJnzm3GrvXl7+EeBqDZkXpL\ndcZ6kVNk+PszRfdKThjfCSksBrkLqWFLaZVG0RonxfU4j0OF8H7cMp0Xa3+oP8a5\nITIoJuuXjTd9YgQ8G8PHnj0=\n-----END PRIVATE KEY-----\n",
+  "client_email": "share2receive@carbide-tenure-435804-g8.iam.gserviceaccount.com",
+  "client_id": "104350192621759406488",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/share2receive%40carbide-tenure-435804-g8.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

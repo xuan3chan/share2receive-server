@@ -377,55 +377,70 @@ export class ProductService {
     }
   }
 
-  async getProductsByUserStyleService(userId: string): Promise<{ data: any }> {
+    async getProductsByUserStyleService(userId: string): Promise<{ data: any }> {
     try {
-        // Bước 1: Lấy thông tin người dùng
-        const user = await this.userModel.findById(userId).exec();
-
-        // Kiểm tra nếu người dùng không có phong cách hoặc không tồn tại
-        if (!user || !user.userStyle) {
-            throw new NotFoundException('User or user style not found');
-        }
-
-        const { color, material, size, hobby, age, zodiacSign, style } = user.userStyle;
-
-        // Bước 2: Tìm các sản phẩm đang hoạt động và đã được phê duyệt
-        const products = await this.productModel
-            .find({
-                status: 'active', // Chỉ lấy các sản phẩm đang hoạt động
-                'approved.approveStatus': 'approved', // Chỉ lấy các sản phẩm đã được phê duyệt
-                isDeleted: false, // Loại bỏ các sản phẩm đã bị xóa
-                userId: { $ne: userId }, // Loại bỏ các sản phẩm của userId hiện tại
-            })
-            .select('-__v -createdAt -updatedAt') // Projection to exclude unnecessary fields
-            .lean() // Return plain JavaScript objects
-            .exec();
-
-        // Bước 3: Tìm sản phẩm phù hợp nhất
-        const matchedProducts = products.filter((product) => {
-            const sizeMatches = product.sizeVariants.some((variant) => size.includes(variant.size));
-            const colorMatches = product.sizeVariants.some((variant) => color.includes(variant.colors));
-            const materialMatches = material.includes(product.material);
-            const styleMatches = style.includes(product.style);
-            const tagMatches = [hobby, age, zodiacSign].some(tag => typeof tag === 'string' && product.tags.includes(tag));
-
-            // Kiểm tra xem sản phẩm có phù hợp với tất cả các tiêu chí không
-            return sizeMatches && colorMatches && materialMatches && styleMatches && tagMatches;
-        });
-
-        // Bước 4: Sắp xếp các sản phẩm theo tiêu chí
-        // Nếu bạn muốn sắp xếp theo một tiêu chí nào đó, bạn có thể thêm logic sắp xếp ở đây
-        // Ví dụ: matchedProducts.sort((a, b) => /* logic sorting */);
-
-        // Bước 5: Trả về danh sách sản phẩm phù hợp
-        return { data: matchedProducts };
-    } catch (error) {
-        throw new NotFoundException(
-            error.message || 'Failed to get products by user style',
+      // Bước 1: Lấy thông tin người dùng
+      const user = await this.userModel.findById(userId).exec();
+  
+      // Kiểm tra nếu người dùng không có phong cách hoặc không tồn tại
+      if (!user || !user.userStyle) {
+        throw new NotFoundException('User or user style not found');
+      }
+  
+      const { color, material, size, hobby, age, zodiacSign, style } =
+        user.userStyle;
+  
+      // Bước 2: Tìm các sản phẩm đang hoạt động và đã được phê duyệt
+      const products = await this.productModel
+        .find({
+          status: 'active', // Chỉ lấy các sản phẩm đang hoạt động
+          'approved.approveStatus': 'approved', // Chỉ lấy các sản phẩm đã được phê duyệt
+          isDeleted: false, // Loại bỏ các sản phẩm đã bị xóa
+          userId: { $ne: userId }, // Loại bỏ các sản phẩm của userId hiện tại
+        })
+        .select('-__v -createdAt -updatedAt') // Projection to exclude unnecessary fields
+        .lean() // Return plain JavaScript objects
+        .exec();
+  
+      // Bước 3: Tìm sản phẩm phù hợp nhất
+      const matchedProducts = products.map((product) => {
+        const sizeMatches = product.sizeVariants.some((variant) =>
+          size.includes(variant.size),
         );
+        const colorMatches = product.sizeVariants.some((variant) =>
+          color.includes(variant.colors),
+        );
+        const materialMatches = material.includes(product.material);
+        const styleMatches = style.includes(product.style);
+        const tagMatches = [hobby, age, zodiacSign].some(
+          (tag) => typeof tag === 'string' && product.tags.includes(tag),
+        );
+  
+        // Calculate score based on matches
+        let score = 0;
+        if (styleMatches) score += 3;
+        if (sizeMatches) score += 2;
+        if (colorMatches) score += 2;
+        if (materialMatches) score += 1;
+        if (tagMatches) score += 1;
+  
+        return { ...product, score };
+      });
+      
+      // Bước 4: Sắp xếp các sản phẩm theo điểm số từ cao đến thấp
+      matchedProducts.sort((a, b) => b.score - a.score);
+  
+      // Bước 5: Lấy 10 sản phẩm có điểm cao nhất
+      const top10Products = matchedProducts.slice(0, 10);
+      
+      // Bước 6: Trả về danh sách sản phẩm phù hợp
+      return { data: top10Products };
+    } catch (error) {
+      throw new NotFoundException(
+        error.message || 'Failed to get products by user style',
+      );
     }
-}
-
+  }
 
   //*****************manage product***************** */
   async listProductForAdminService(

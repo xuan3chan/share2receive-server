@@ -12,6 +12,7 @@ import { CategoryModule } from './category/category.module';
 import { BrandModule } from './brand/brand.module';
 import { ProductModule } from './product/product.module';
 import { SearchModule } from './search/search.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -35,6 +36,12 @@ import { SearchModule } from './search/search.module';
     CategoryModule,
     BrandModule,
     ProductModule,
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: parseInt(process.env.REDIS_PORT),
+      },
+    }),
   ],
 })
 export class AppModule {}

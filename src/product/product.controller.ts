@@ -282,6 +282,8 @@ export class ProductController {
     const data = await this.productService.getProductDetailService(productId); // Truyền productId vào service
     return { data };
   }
+
+  
     
  
   

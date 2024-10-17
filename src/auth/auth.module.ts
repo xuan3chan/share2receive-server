@@ -8,6 +8,8 @@ import { RoleModule } from 'src/role/role.module';
 import { UsersModule } from 'src/users/users.module';
 import {GoogleStrategy}from './google.strategy'
 import { PassportModule } from '@nestjs/passport';
+import { BullModule } from '@nestjs/bull';
+import { MailConsumer } from './mail.consumer';
 
 @Module({
   imports: [
@@ -16,13 +18,16 @@ import { PassportModule } from '@nestjs/passport';
     RoleModule,
     AdminModule,
     MailerModule,
+    BullModule.registerQueue({
+      name: 'send-email',
+    }),
     JwtModule.register({
     global: true,
     secret: process.env.JWT_SECRET,
     signOptions: { expiresIn: '1h' },
   }),],
   controllers: [AuthController],
-  providers: [AuthService,GoogleStrategy],
+  providers: [AuthService,GoogleStrategy,MailConsumer],
   exports: [AuthService]
 })
 export class AuthModule {}

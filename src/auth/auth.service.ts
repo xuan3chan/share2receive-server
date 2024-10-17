@@ -10,6 +10,8 @@ import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { AdminService } from '../admin/admin.service';
 import { RoleService } from '../role/role.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +21,7 @@ export class AuthService {
     private mailerService: MailerService,
     private adminService: AdminService,
     private roleService: RoleService,
+    @InjectQueue('send-email') private readonly sendEmailQueue: Queue,
   ) {}
 
   private async createJwtPayload(
@@ -34,9 +37,7 @@ export class AuthService {
         sub: accountHolder._id,
       };
     } else {
-      const roles = await this.roleService.findRoleService(
-        accountHolder.role
-      );
+      const roles = await this.roleService.findRoleService(accountHolder.role);
       return {
         _id: accountHolder._id,
         adminName: accountHolder.adminName,
@@ -65,12 +66,11 @@ export class AuthService {
         firstname,
         lastname,
         createRefreshToken,
-      
       );
       if ('message' in user) {
         throw new BadRequestException(user.message);
       }
-  
+
       const returnedUser = user
         ? {
             email: user.email,
@@ -88,16 +88,16 @@ export class AuthService {
             userStyle: user.userStyle,
           }
         : null;
-  
+
       if (user) {
         await this.usersService.updateRefreshTokenService(
           user._id,
           createRefreshToken,
         );
       }
-  
+
       const payload = { sub: user._id, email: user.email, role: user.role };
-  
+
       return {
         accessToken: this.jwtService.sign(payload),
         refreshToken: createRefreshToken,
@@ -108,7 +108,9 @@ export class AuthService {
     }
   }
 
-  async googleLogin(profile: any): Promise<{ accessToken: string; refreshToken: string; user: any }> {
+  async googleLogin(
+    profile: any,
+  ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const { email, firstName, lastName, avatar } = profile;
 
     try {
@@ -126,8 +128,8 @@ export class AuthService {
           firstName,
           lastName,
           createRefreshToken,
-          avatar, 
-        'google'
+          avatar,
+          'google',
         );
       }
       if (user.isBlock == true) {
@@ -139,7 +141,10 @@ export class AuthService {
       const payload = await this.createJwtPayload(user, true);
 
       // Update refresh token in the database
-      await this.usersService.updateRefreshTokenService(user.email, createRefreshToken);
+      await this.usersService.updateRefreshTokenService(
+        user.email,
+        createRefreshToken,
+      );
 
       const returnedUser = {
         email: user.email,
@@ -153,7 +158,7 @@ export class AuthService {
         description: user.description,
         gender: user.gender,
         phone: user.phone,
-        userStyle : user.userStyle,
+        userStyle: user.userStyle,
       };
 
       return {
@@ -174,7 +179,8 @@ export class AuthService {
     try {
       const user =
         await this.usersService.findOneEmailOrUsernameService(account);
-      const admin = await this.adminService.findOneAdminAccountNameService(account);
+      const admin =
+        await this.adminService.findOneAdminAccountNameService(account);
       const accountHolder = user || admin;
 
       if (!accountHolder) {
@@ -205,7 +211,7 @@ export class AuthService {
             gender: user.gender,
             nickname: user.nickname,
             phone: user.phone,
-            userStyle : user.userStyle,
+            userStyle: user.userStyle,
           }
         : {
             adminName: admin.adminName,
@@ -239,7 +245,6 @@ export class AuthService {
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      
       const user = await this.usersService.findOneReTokenService(refreshToken);
       const admin =
         await this.adminService.findOneAdminRefreshTokenService(refreshToken);
@@ -317,7 +322,17 @@ export class AuthService {
       if (!saveDate || saveDate === null) {
         throw new BadRequestException('Email not found');
       }
-      await this.mailerService.sendEmailWithCode(email, authCode);
+      // await this.mailerService.sendEmailWithCode(email, authCode);
+      await this.sendEmailQueue.add(
+        'send-email-code',
+        {
+          email,
+          authCode,
+        },
+        {
+          removeOnComplete: true,
+        },
+      );
       return { statusCode: 202, message: 'Email sent successfully' };
     } catch (error) {
       throw new BadRequestException(

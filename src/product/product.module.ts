@@ -7,6 +7,7 @@ import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { AdminModule } from 'src/admin/admin.module';
 import { AbilityFactory } from '@app/libs/common/abilities';
 import { MailerModule } from 'src/mailer/mailer.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -18,7 +19,10 @@ import { MailerModule } from 'src/mailer/mailer.module';
       {name:User.name,schema:UserSchema}
     ]),
     AdminModule,
-    CloudinaryModule
+    CloudinaryModule,
+    // BullModule.registerQueue({
+    //   name: 'product',
+    // }),
   ],
   controllers: [ProductController],
   providers: [ProductService,AbilityFactory],

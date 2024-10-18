@@ -40,8 +40,8 @@ export class BrandController {
   @UseGuards(PermissionGuard)
   @ApiCreatedResponse({ description: 'Brand created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
-  @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('imgUrl'))
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',

@@ -16,17 +16,25 @@ export class BrandService {
     createBrandDto: CreateBrandDto,
     file: Express.Multer.File,
   ): Promise<Brand> {
-    const brand = await this.brandModel
-      .findOne({
-        name: createBrandDto.name,
-      })
-      .exec();
-    if (brand) {
-      throw new BadRequestException('Brand already exists');
+    try {
+      const brand = await this.brandModel
+        .findOne({
+          name: createBrandDto.name,
+        })
+        .exec();
+      if (brand) {
+        throw new BadRequestException('Brand already exists');
+      }
+      const newBrand = new this.brandModel(createBrandDto);
+      newBrand.imgUrl = (await this.cloudinaryService.uploadImageService(createBrandDto.name, file)).uploadResults[0].url;
+      return newBrand.save();
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Error creating brand:', error);
+      throw new BadRequestException('Failed to create brand');
     }
-    const newBrand = new this.brandModel(createBrandDto);
-    newBrand.imgUrl = (await this.cloudinaryService.uploadImageService(createBrandDto.name, file)).uploadResults[0].url;
-    return newBrand.save();
   }
 
   async updateBrandService(
@@ -80,7 +88,7 @@ export class BrandService {
     page: number,
     limit: number,
     searchKey?: string,
-    sortField: string = 'name',
+    sortField: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; brand: Brand[] }> {
     const query = {};

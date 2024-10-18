@@ -12,7 +12,7 @@ export class Brand extends Document {
     @Prop({ type: mongoose.Schema.Types.Number,default:0 })
     totalProduct: number;
 
-    @Prop({ type: mongoose.Schema.Types.Number,required:true})
+    @Prop({ type: mongoose.Schema.Types.String,required:true})
     imgUrl: string;
     
     @Prop({ type: mongoose.Schema.Types.String,required: true,enum:PriorityE })

@@ -18,6 +18,7 @@ export class Brand extends Document {
     @Prop({ type: mongoose.Schema.Types.String,required: true,enum:PriorityE })
     priority: string;
     
+    
     @Prop({ type: mongoose.Schema.Types.String,default:null  })
     description: string;
 

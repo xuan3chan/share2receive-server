@@ -9,7 +9,7 @@ import {SlugHook} from '@app/libs/common/hook';
   timestamps: true,
 })
 export class Product extends Document {
-  @Prop({ type: mongoose.Schema.Types.String, required: true, unique: true })
+  @Prop({ type: mongoose.Schema.Types.String, required: true })
   productName: string;
 
   @Prop({

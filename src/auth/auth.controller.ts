@@ -135,7 +135,6 @@ export class AuthController {
     await this.authService.logoutService(
       refreshToken,
     );
-    console.log(refreshToken);
     if (refreshToken) {
       clearCookie(response, 'refreshToken');
       clearCookie(response, 'accessToken');

@@ -20,8 +20,6 @@ export class Product extends Document {
     },
   })
   imgUrls: string[];
-
-  // Thay đổi thuộc tính `size` và `color` để chúng liên kết với nhau
   @Prop([
     {
       size: { type: mongoose.Schema.Types.String, enum: SizeE },
@@ -72,7 +70,7 @@ export class Product extends Document {
 
   @Prop({
     type: mongoose.Schema.Types.String,
-    enum: ['active', 'inactive','suspend'],
+    enum: ['active', 'inactive','suspend','Exchanged','Sold'],
     default: 'active',
   })
   status: string;
@@ -83,7 +81,7 @@ export class Product extends Document {
   @Prop({ type: mongoose.Schema.Types.String, enum: ['sale', 'barter'] })
   type: string;
 
-  @Prop({ type: mongoose.Schema.Types.Number, required: true })
+  @Prop({ type: mongoose.Schema.Types.Number})
   price: number;
 
   @Prop({ type: mongoose.Schema.Types.Number })

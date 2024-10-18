@@ -13,6 +13,7 @@ import { BrandModule } from './brand/brand.module';
 import { ProductModule } from './product/product.module';
 import { SearchModule } from './search/search.module';
 import { BullModule } from '@nestjs/bull';
+import { ExchangeModule } from './exchange/exchange.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { BullModule } from '@nestjs/bull';
         password: process.env.REDIS_PASSWORD, // Add this line
       },
     }),
+    ExchangeModule,
   ],
 })
 export class AppModule {}

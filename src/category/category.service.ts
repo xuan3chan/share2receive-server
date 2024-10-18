@@ -84,7 +84,7 @@ export class CategoryService {
     page: number,
     limit: number,
     searchKey?: string,
-    sortField: string = 'name',
+    sortField: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; category: Category[] }> {
     const query = {};

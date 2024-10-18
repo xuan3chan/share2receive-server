@@ -127,7 +127,7 @@ export class CreateProductDto {
     example: ProductStatus.Active,
   })
   @IsEnum(ProductStatus)
-  @IsNotEmpty()
+  @IsOptional()
   status: ProductStatus;
 
   @ApiProperty({

@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, HydratedDocument } from 'mongoose';
+import { ExchangeStatusE } from '../enum';
 
 @Schema({
   timestamps: true,
@@ -24,7 +25,7 @@ export class Exchange extends Document {
   // Trạng thái yêu cầu trao đổi (pending, accepted, rejected, canceled)
   @Prop({
     type: mongoose.Schema.Types.String,
-    enum: ['pending', 'accepted', 'rejected', 'canceled'],
+    enum: ExchangeStatusE,
     default: 'pending',
   })
   exchangeStatus: string;

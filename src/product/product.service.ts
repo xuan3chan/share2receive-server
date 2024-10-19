@@ -512,6 +512,8 @@ export class ProductService {
         price: product.price,
         priceNew: product.priceNew,
         tags: product.tags,
+        createdAt: (product as any).createdAt,
+        updatedAt: (product as any).updatedAt,
       }));
 
       return { total, products: structuredProducts };

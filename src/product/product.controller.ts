@@ -355,6 +355,7 @@ export class ProductController {
       properties: {
         approveStatus: {
           type: 'string',
+          enum: ['approved', 'rejected', 'pending'],
         },
         description: {
           type: 'string',

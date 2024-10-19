@@ -136,5 +136,23 @@
     "namePermission": "updatebrand",
     "action": "update",
     "subject": "brand"
+  },
+  {
+    "id":27,
+    "namePermission": "readProduct",
+    "action": "read",
+    "subject": "product"
+  },
+  {
+    "id": 28,
+    "namePermission": "blockProduct",
+    "action": "block",
+    "subject": "product"
+  },
+  {
+    "id": 29,
+    "namePermission": "approveproduct",
+    "action": "approve",
+    "subject": "product"
   }
   ]

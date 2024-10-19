@@ -267,7 +267,7 @@ export class AuthService {
         );
       } else if (admin) {
         await this.adminService.updateRefreshTokenService(
-          admin.email,
+          admin.adminName,
           createRefreshToken,
         );
       }

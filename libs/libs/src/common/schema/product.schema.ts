@@ -44,10 +44,10 @@ export class Product extends Document {
     required: true,
     ref: 'Category',
   })
-  categoryId: string;
+  categoryId: mongoose.Schema.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Brand' })
-  brandId: string;
+  brandId: mongoose.Schema.Types.ObjectId;
 
   @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
   isDeleted: boolean;

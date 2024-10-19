@@ -183,12 +183,14 @@ export class ProductController {
     return { message: 'Product status updated successfully' };
   }
 
-  @ApiTags('product')
+  @ApiTags('product')     
   @UseGuards(MemberGuard)
   @ApiOperation({ summary: 'List all products of user' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'searchKey', required: false, type: String })
+  @ApiQuery({ name: 'filterField', required: false, type: String })
+  @ApiQuery({ name: 'filterValue', required: false, type: String })
   @ApiQuery({ name: 'sortField', required: false, type: String })
   @ApiQuery({ name: 'sortOrder', required: false, type: String })
   @Get('list-product-of-user')
@@ -197,19 +199,30 @@ export class ProductController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('searchKey') searchKey?: string,
-    @Query('sortField') sortField?: string,
+    @Query('filterField') filterField?: string,
+    @Query('filterValue') filterValue?: string,
+    @Query('sortField') sortField: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<any> {
     const userId = this.getUserIdFromToken(request);
-    const data = await this.productService.listProductService(
-      userId,
-      page,
-      limit,
-      searchKey,
-      sortField,
-      sortOrder,
-    );
-    return data;
+
+    try {
+      const data = await this.productService.listProductService(
+        userId,
+        page,
+        limit,
+        searchKey,
+        filterField,
+        filterValue,
+        sortField,
+        sortOrder,
+      );
+      return data;
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Failed to list products',
+      );
+    }
   }
 
   @ApiTags('product')

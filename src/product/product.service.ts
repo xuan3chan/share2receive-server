@@ -134,49 +134,56 @@ export class ProductService {
   ): Promise<Product> {
     try {
       const [checkCategory, checkBrand] = await Promise.all([
-        product.categoryId
-          ? this.categoryModel.findById(product.categoryId)
-          : null,
+        product.categoryId ? this.categoryModel.findById(product.categoryId) : null,
         product.brandId ? this.brandModel.findById(product.brandId) : null,
       ]);
-
+  
       if (product.categoryId && !checkCategory) {
         throw new BadRequestException('Category not found');
       }
       if (product.brandId && !checkBrand) {
         throw new BadRequestException('Brand not found');
       }
-
-      if (product.productName) {
-        const checkExist = await this.productModel.findOne({
-          productName: product.productName,
-        });
-        if (checkExist && checkExist._id.toString() !== productId) {
-          throw new BadRequestException(
-            'Product with this name already exists',
-          );
-        }
-      }
-
-      const updatedProduct = await this.productModel.findByIdAndUpdate(
-        {
-          _id: productId,
-          userId,
-        },
-        {
-          $set: product,
+  
+      // Kiểm tra nếu product.type là 'barter' thì xóa các trường price và priceNew
+      const updateFields: any = { 
+        $set: {
+          ...product, 
           'approved.approveStatus': 'pending',
           'approved.decisionBy': null,
           'approved.date': null,
           'approved.description': null,
         },
+      };
+  
+      if (product.type === 'barter') {
+        updateFields.$unset = { price: '', priceNew: '' };
+      }
+  
+      // Kiểm tra xem productName có trùng với sản phẩm khác không
+      if (product.productName) {
+        const checkExist = await this.productModel.findOne({
+          productName: product.productName,
+        });
+        if (checkExist && checkExist._id.toString() !== productId) {
+          throw new BadRequestException('Product with this name already exists');
+        }
+      }
+  
+      // Cập nhật sản phẩm
+      const updatedProduct = await this.productModel.findByIdAndUpdate(
+        {
+          _id: productId,
+          userId,
+        },
+        updateFields,
         { new: true },
       );
-
+  
       if (!updatedProduct) {
         throw new BadRequestException('Product not found');
       }
-
+  
       return updatedProduct;
     } catch (error) {
       throw new BadRequestException(
@@ -184,6 +191,7 @@ export class ProductService {
       );
     }
   }
+  
   async deleteProductService(
     userId: string,
     productId: string,

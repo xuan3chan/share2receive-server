@@ -81,20 +81,21 @@ export class ProductService {
         _id: productId,
         userId,
       });
-
+  
       if (!product) {
         throw new BadRequestException('Product not found');
       }
+  
       // Upload the images to Cloudinary
       const imageUrls = await this.cloudinaryService.uploadImageService(
         product.productName,
         files,
       );
-      // Assign the uploaded image URLs to the product
-      product.imgUrls = imageUrls.uploadResults.map(
-        (result) => result.secure_url,
-      );
-
+  
+      // Prepend the uploaded image URLs to the existing imgUrls array
+      const newImageUrls = imageUrls.uploadResults.map((result) => result.secure_url);
+      product.imgUrls = [...newImageUrls, ...product.imgUrls];
+  
       await product.save();
     } catch (error) {
       throw new BadRequestException(error.message);

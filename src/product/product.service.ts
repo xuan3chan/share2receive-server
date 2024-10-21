@@ -145,10 +145,10 @@ export class ProductService {
         throw new BadRequestException('Brand not found');
       }
   
-      // Kiểm tra nếu product.type là 'barter' thì xóa các trường price và priceNew
-      const updateFields: any = { 
+      // Prepare update fields
+      const updateFields: any = {
         $set: {
-          ...product, 
+          ...product,
           'approved.approveStatus': 'pending',
           'approved.decisionBy': null,
           'approved.date': null,
@@ -156,14 +156,15 @@ export class ProductService {
         },
       };
   
+      // If product type is 'barter', remove price and priceNew
       if (product.type === 'barter') {
         updateFields.$unset = { price: '', priceNew: '' };
-      } else {
-        // Ensure price and priceNew are not unset if type is not 'barter'
-        delete updateFields.$unset;
+        // Ensure that price and priceNew are not included in $set
+        delete updateFields.$set.price;
+        delete updateFields.$set.priceNew;
       }
   
-      // Kiểm tra xem productName có trùng với sản phẩm khác không
+      // Check if product name already exists
       if (product.productName) {
         const checkExist = await this.productModel.findOne({
           productName: product.productName,
@@ -173,7 +174,7 @@ export class ProductService {
         }
       }
   
-      // Cập nhật sản phẩm
+      // Update the product
       const updatedProduct = await this.productModel.findOneAndUpdate(
         {
           _id: productId,
@@ -194,6 +195,7 @@ export class ProductService {
       );
     }
   }
+  
   
   async deleteProductService(
     userId: string,

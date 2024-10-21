@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document, HydratedDocument } from 'mongoose';
-import { ExchangeStatusE } from '../enum';
+import { ExchangeStatusE, SizeE } from '../enum';
+import { ShippingStatusE } from '../enum/shipping-status.enum';
 
 @Schema({
   timestamps: true,
@@ -14,13 +15,45 @@ export class Exchange extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   receiverId: string;
 
-  // Sản phẩm của người gửi yêu cầu
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true })
-  requesterProductId: string;
+  // Chi tiết sản phẩm của người gửi yêu cầu
+  @Prop({
+    type: {
+      requesterProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+      size: { type: mongoose.Schema.Types.String, enum: SizeE },
+      colors: { type: mongoose.Schema.Types.String, required: true },
+      amount: { type: mongoose.Schema.Types.Number, required: true },
+    },
+  })
+  requestProduct: {
+    requesterProductId: string;
+    size: string;
+    colors: string;
+    amount: number;
+  };
 
-  // Sản phẩm của người nhận yêu cầu
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true })
-  receiverProductId: string;
+  // Trạng thái vận chuyển của sản phẩm của người gửi yêu cầu
+  @Prop({ type: mongoose.Schema.Types.String, enum: ShippingStatusE, default: 'pending' })
+  requesterExchangeStatus: string;
+
+  // Chi tiết sản phẩm của người nhận yêu cầu
+  @Prop({
+    type: {
+      receiverProductId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+      size: { type: mongoose.Schema.Types.String, enum: SizeE },
+      colors: { type: mongoose.Schema.Types.String, required: true },
+      amount: { type: mongoose.Schema.Types.Number, required: true },
+    },
+  })
+  receiveProduct: {
+    receiverProductId: string;
+    size: string;
+    colors: string;
+    amount: number;
+  };
+
+  // Trạng thái vận chuyển của sản phẩm của người nhận yêu cầu
+  @Prop({ type: mongoose.Schema.Types.String, enum: ShippingStatusE, default: 'pending' })
+  receiverExchangeStatus: string;
 
   // Trạng thái yêu cầu trao đổi (pending, accepted, rejected, canceled)
   @Prop({
@@ -30,17 +63,17 @@ export class Exchange extends Document {
   })
   exchangeStatus: string;
 
-  // Lý do từ chối yêu cầu (nếu có)
+  // Phương thức vận chuyển (negotiated, GHN)
+  @Prop({ type: mongoose.Schema.Types.String, default: 'negotiated', enum: ['negotiated', 'GHN'] })
+  shippingMethod: string;
+
+  // Ghi chú tùy chọn
   @Prop({ type: mongoose.Schema.Types.String, default: null })
-  rejectionReason: string;
+  note: string;
 
   // Ngày hoàn thành trao đổi (nếu có)
   @Prop({ type: mongoose.Schema.Types.Date, default: null })
   completedAt: Date;
-
-  // Các yêu cầu trao đổi khác đang chờ xử lý đối với sản phẩm của người nhận
-  @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'Exchange' }])
-  pendingRequests: string[];
 }
 
 export type ExchangeDocument = HydratedDocument<Exchange>;

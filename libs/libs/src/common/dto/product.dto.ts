@@ -10,6 +10,8 @@ import {
   IsOptional,
   MaxLength,
   MinLength,
+  Min,
+  Max,
 } from 'class-validator';
 import { SizeE } from '../enum';
 
@@ -171,6 +173,15 @@ export class CreateProductDto {
   @IsOptional()
   @MaxLength(2000)
   description: string;
+
+  @ApiProperty({
+    description: 'Weight of the product in grams',
+    example: 200,
+  })
+  @IsNumber()
+  @Min(50)
+  @Max(5000)
+  weight: number;
   
 }
 
@@ -321,6 +332,17 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @IsOptional()
   @MaxLength(2000)
   description: string;
+
+  @ApiProperty({
+    description: 'Weight of the product per gram',
+    example: 200,
+  })
+  @IsNumber()
+  @IsOptional()
+  @MinLength(50)
+  @MaxLength(5000)
+  weight: number;
+  
 }
 
 export class idMongoDto {

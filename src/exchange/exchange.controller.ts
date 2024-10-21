@@ -5,46 +5,68 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
-  UploadedFile,
+  Req,
+  UnauthorizedException,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ExchangeService } from './exchange.service';
+import { Request } from 'express';
+import * as jwt from 'jsonwebtoken';
+import { JwtPayload } from 'jsonwebtoken';
 import {
-  CreateCategoryDto,
-  UpdateCategoryDto,
-} from '@app/libs/common/dto/category.dto';
+  CreateExchangeDto,
+  CreateProductDto,
+  DeleteImagesDto,
+  idMongoDto,
+  UpdateProductDto,
+} from '@app/libs/common/dto';
 import {
-  ApiBadRequestResponse,
-  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
-  ApiCreatedResponse,
-  ApiOkResponse,
+  ApiOperation,
+  ApiProperty,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { PermissionGuard } from '@app/libs/common/gaurd';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { Action, Subject } from '@app/libs/common/decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { CreateExchangeDto } from '@app/libs/common/dto';
-import { Exchange } from '@app/libs/common/schema/exchange.schema';
+import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 
-@ApiTags('exchange')
-@ApiBearerAuth()
-@Controller('exchange')
-export class ExchangeController {
+@Controller('Exchange')
+export class ExchangeController{
   constructor(private readonly exchangeService: ExchangeService) {}
 
-  @Post()
-  async createExchangeController(
-    @Body() dto: CreateExchangeDto,
-  ): Promise<{data:any}> {
-     const result = this.exchangeService.createExchangeService(dto);
-     return {data:result}
+  private getUserIdFromToken(request: Request): string {
+    const token = (request.cookies.accessToken as string) || '';
+    if (!token) {
+      throw new UnauthorizedException('Token not found');
+    }
+    try {
+      const decodedToken = jwt.verify(
+        token,
+        process.env.JWT_SECRET,
+      ) as JwtPayload;
+      return decodedToken._id;
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+  }
 
+  @Post()
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Create Exchange' })
+  async createExchange(
+    @Body() createExchangeDto: CreateExchangeDto,
+    @Req() request: Request,
+  ) {
+    const requesterId = this.getUserIdFromToken(request);
+    
+    return this.exchangeService.createExchangeService(requesterId,createExchangeDto);
   }
 }

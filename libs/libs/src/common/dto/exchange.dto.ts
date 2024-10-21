@@ -2,46 +2,74 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
-  MaxLength,
-  MinLength,
-  Matches,
   IsOptional,
   IsEnum,
   IsMongoId,
+  IsNumber,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ExchangeStatusE, SizeE } from '../enum';
 
-export class CreateExchangeDto {
-    @ApiProperty({
-        description: 'ID of requester',
-        example: '60f3b3b3b3b3b3b3b3b3b3b3',
-    })
-    @IsMongoId()
-    @IsNotEmpty()
-    requester: string;
+class ProductDetailsDto {
+  @ApiProperty({
+    description: 'ID of the product',
+    example: '60f3b3b3b3b3b3b3b3b3b3',
+  })
+  @IsMongoId()
+  @IsNotEmpty()
+  productId: string;
 
-    @ApiProperty({
-        description: 'ID of receiver',
-        example: '60f3b3b3b3b3b3b3b3b3b3',
-    })
-    @IsMongoId()
-    @IsNotEmpty()
-    receiver: string;
+  @ApiProperty({
+    description: 'Size of the product',
+    example: 'M',
+  })
+  @IsEnum(SizeE)
+  @IsOptional()
+  size: string;
 
-    @ApiProperty({
-        description: 'ID of requesterProductId',
-        example: '60f3b3b3b3b3b3b3b3b3b3',
-    })
+  @ApiProperty({
+    description: 'Colors of the product',
+    example: 'red',
+  })
+  @IsString()
+  @IsNotEmpty()
+  colors: string;
 
-    @IsMongoId()
-    @IsNotEmpty()
-    requesterProductId: string;
-
-    @ApiProperty({
-        description: 'ID of receiverProductId',
-        example: '60f3b3b3b3b3b3b3b3b3b3',
-    })
-    @IsMongoId()
-    @IsNotEmpty()
-    receiverProductId: string;
+  @ApiProperty({
+    description: 'Amount of the product',
+    example: 1,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  amount: number;
 }
 
+export class CreateExchangeDto {
+
+  @ApiProperty({
+    description: 'Details of the requester product',
+    type: ProductDetailsDto,
+  })
+  @ValidateNested()
+  @Type(() => ProductDetailsDto)
+  @IsNotEmpty()
+  requestProduct: ProductDetailsDto;
+
+  @ApiProperty({
+    description: 'Details of the receiver product',
+    type: ProductDetailsDto,
+  })
+  @ValidateNested()
+  @Type(() => ProductDetailsDto)
+  @IsNotEmpty()
+  receiveProduct: ProductDetailsDto;
+
+  @ApiProperty({
+    description: 'Optional note',
+    example: 'note',
+  })
+  @IsString()
+  @IsOptional()
+  note: string;
+}

@@ -101,6 +101,9 @@ export class Product extends Document {
 
   @Prop({ type: mongoose.Schema.Types.String,required:true})
   description: string;
+
+  @Prop({ type: mongoose.Schema.Types.Number,required:true})
+  weight: number;
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

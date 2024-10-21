@@ -158,6 +158,9 @@ export class ProductService {
   
       if (product.type === 'barter') {
         updateFields.$unset = { price: '', priceNew: '' };
+      } else {
+        // Ensure price and priceNew are not unset if type is not 'barter'
+        delete updateFields.$unset;
       }
   
       // Kiểm tra xem productName có trùng với sản phẩm khác không
@@ -171,7 +174,7 @@ export class ProductService {
       }
   
       // Cập nhật sản phẩm
-      const updatedProduct = await this.productModel.findByIdAndUpdate(
+      const updatedProduct = await this.productModel.findOneAndUpdate(
         {
           _id: productId,
           userId,

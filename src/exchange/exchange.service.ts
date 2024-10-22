@@ -36,6 +36,11 @@ export class ExchangeService {
     if (requesterProduct.isBlock || receiverProduct.isBlock) {
       throw new BadRequestException('Product is blocked');
     }
+    if (receiverProduct.type || requesterProduct.type !== 'barter') {
+      
+        throw new BadRequestException('Product type is not barter');
+      
+    }
     
     if (requesterProduct.userId.toString() === receiverProduct.userId.toString()) {
       throw new BadRequestException('Cannot exchange with yourself');
@@ -68,10 +73,23 @@ export class ExchangeService {
     return exchange;
   }
   
-  async getListExchangeService(userId: string): Promise<ExchangeDocument[]> {
+  async getListExchangeService(userId: string): Promise<any[]> {
     const listExchange = await this.exchangeModel.find({
       $or: [{ requesterId: userId }, { receiverId: userId }],
-    });
-    return listExchange;
+    })
+    .populate('requesterId', 'firstname lastname avatar')
+    .populate('receiverId', 'firstname lastname avatar')
+    .populate('requestProduct.requesterProductId', 'productName imgUrls')
+    .populate('receiveProduct.receiverProductId', 'productName imgUrls')
+    .lean(); // Dùng lean() để trả về plain objects thay vì Mongoose documents
+  
+    // Tái cấu trúc dữ liệu để xác định vai trò của userId
+    const structuredExchanges = listExchange.map((exchange) => ({
+      ...exchange, // Sao chép tất cả các thuộc tính của exchange
+      role: exchange.requesterId.toString() === userId ? 'requester' : 'receiver', // Xác định vai trò
+    }));
+  
+    return structuredExchanges;
   }
+  
 }

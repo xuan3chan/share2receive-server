@@ -18,6 +18,8 @@ import {
 import { CreateProductDto, UpdateProductDto } from '@app/libs/common/dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { MailerService } from 'src/mailer/mailer.service';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 @Injectable()
 export class ProductService {
@@ -30,6 +32,8 @@ export class ProductService {
     private readonly cloudinaryService: CloudinaryService,
     private readonly mailerService: MailerService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectQueue('send-email') private readonly sendEmailQueue: Queue,
+
   ) {}
 
   async createProductService(

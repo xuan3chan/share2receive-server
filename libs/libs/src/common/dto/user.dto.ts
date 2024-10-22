@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
-import { IsDate,MinLength, IsEmail, IsNotEmpty, IsString, MaxLength,Matches, IsOptional, IsBoolean, IsEnum, ValidateNested, Min } from "class-validator";
+import { IsDate,MinLength, IsEmail, IsNotEmpty, IsString, MaxLength,Matches, IsOptional, IsBoolean, IsEnum, ValidateNested, Min, IsArray } from "class-validator";
 
 export class CreateUserDto {
     
@@ -114,9 +114,9 @@ export class UserStyleDto {
     description: 'User style',
     example: 'casual',
   })
-  @IsString()
+  @IsArray()
   @IsOptional()
-  style?: string;
+  style?: string[];
 }
 
 export class UpdateUserProfileDto {

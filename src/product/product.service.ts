@@ -35,7 +35,6 @@ export class ProductService {
     @InjectQueue('send-email') private readonly sendEmailQueue: Queue,
 
   ) {}
-
   async createProductService(
     userId: string,
     product: CreateProductDto,
@@ -544,23 +543,49 @@ export class ProductService {
       if (!decisionBy) {
         throw new BadRequestException('Decision by is required');
       }
-      await this.productModel
-        .findByIdAndUpdate(productId, {
+  
+      const product = await this.productModel.findByIdAndUpdate(
+        productId,
+        {
           $set: {
             'approved.approveStatus': approveStatus,
             'approved.decisionBy': decisionBy,
             'approved.date': Date.now(),
             'approved.description': description || null,
           },
-        })
-        .exec();
+        },
+        { new: true } // Trả về sản phẩm sau khi đã cập nhật
+      ).exec();
+  
+      if (!product) {
+        throw new NotFoundException('Product not found');
+      }
+  
+      const user = await this.userModel.findById(product.userId).select('email').lean().exec();
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+  
+      const email = user.email; // Lấy email của người dùng
+      const productName = product.productName; // Lấy tên sản phẩm  
+      await this.sendEmailQueue.add(
+        'send-email-notification',
+        {
+          email,
+          productName,
+          approveStatus,
+        },
+        {
+          removeOnComplete: true,
+        }
+      );
+  
       return { message: 'Product approved successfully' };
     } catch (error) {
-      throw new BadRequestException(
-        error.message || 'Failed to approve product',
-      );
+      throw new BadRequestException(error.message || 'Failed to approve product');
     }
   }
+  
 
   async blockProductService(
     productId: string,

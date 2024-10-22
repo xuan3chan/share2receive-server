@@ -37,6 +37,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
+import { ExchangeStatusE } from '@app/libs/common/enum';
 
 @ApiTags('Exchange')
 @Controller('Exchange')
@@ -78,4 +79,20 @@ export class ExchangeController{
     const userId = this.getUserIdFromToken(request);
     return this.exchangeService.getListExchangeService(userId);
   }
+  
+  @Patch('approve-exchange/:id')
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Approve Exchange' })
+  @ApiConsumes('multipart/form-data')
+  @ApiQuery({ name: 'status', type: String, enum: ExchangeStatusE, required: true })
+  async updateStatusExchangeController(
+    @Param('id') id: string,
+    @Req() request: Request,
+    @Query('status') status: string,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.exchangeService.updateStatusExchangeService(userId, id, status);
+  }
+
+  // @Patch('update-status-exchange/:id')
 }

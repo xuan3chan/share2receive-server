@@ -6,8 +6,9 @@ import { MailerService } from 'src/mailer/mailer.service';
 export class MailConsumer {
   constructor(private readonly mailerService: MailerService) {}
   @Process('send-email-notification')
-  async sendEmail(job: Job<{ email: string; productName: string }>) {
-    const { email,productName } = job.data;
-    this.mailerService.sendEmailApprovedProduct(email,productName);
+  async sendEmail(job: Job<{ email: string; productName: string,approveStatus:string }>) {
+    const { email, productName, approveStatus } = job.data;
+    console.log('Sending email to', email);
+    this.mailerService.sendEmailApprovedProduct(email,productName,approveStatus);
   }
 }

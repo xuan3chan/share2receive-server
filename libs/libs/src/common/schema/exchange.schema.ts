@@ -31,8 +31,7 @@ export class Exchange extends Document {
     amount: number;
   };
 
-  // Trạng thái vận chuyển của sản phẩm của người gửi yêu cầu
-  @Prop({ type: mongoose.Schema.Types.String, enum: ShippingStatusE, default: 'pending' })
+  @Prop({ type: mongoose.Schema.Types.String, enum: ShippingStatusE })
   requesterExchangeStatus: string;
 
   // Chi tiết sản phẩm của người nhận yêu cầu
@@ -50,9 +49,7 @@ export class Exchange extends Document {
     colors: string;
     amount: number;
   };
-
-  // Trạng thái vận chuyển của sản phẩm của người nhận yêu cầu
-  @Prop({ type: mongoose.Schema.Types.String, enum: ShippingStatusE, default: 'pending' })
+  @Prop({ type: mongoose.Schema.Types.String, enum: ShippingStatusE })
   receiverExchangeStatus: string;
 
   // Trạng thái yêu cầu trao đổi (pending, accepted, rejected, canceled)

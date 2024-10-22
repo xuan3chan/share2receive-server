@@ -58,7 +58,6 @@ export class CreateUserDto {
     address: string;
     
    
-    refreshToken: string;
 
 }
 export class UserStyleDto {
@@ -112,7 +111,7 @@ export class UserStyleDto {
 
   @ApiProperty({
     description: 'User style',
-    example: 'casual',
+    example: ['casual'],
   })
   @IsArray()
   @IsOptional()

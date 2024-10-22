@@ -68,4 +68,10 @@ export class ExchangeService {
     return exchange;
   }
   
+  async getListExchangeService(userId: string): Promise<ExchangeDocument[]> {
+    const listExchange = await this.exchangeModel.find({
+      $or: [{ requesterId: userId }, { receiverId: userId }],
+    });
+    return listExchange;
+  }
 }

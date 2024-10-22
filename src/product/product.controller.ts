@@ -96,7 +96,7 @@ export class ProductController {
     @Query('limit') limit: number = 10,
     @Query('searchKey') searchKey?: string,
     @Query('sortField') sortField?: string,
-    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
     @Query('filterField') filter?: string,
     @Query('filterValue') filterValue?: string,
   ): Promise<any> {

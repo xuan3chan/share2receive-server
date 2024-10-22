@@ -38,6 +38,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 
+@ApiTags('Exchange')
 @Controller('Exchange')
 export class ExchangeController{
   constructor(private readonly exchangeService: ExchangeService) {}
@@ -68,5 +69,13 @@ export class ExchangeController{
     const requesterId = this.getUserIdFromToken(request);
     
     return this.exchangeService.createExchangeService(requesterId,createExchangeDto);
+  }
+
+  @Get('get-list-exchange')
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Get list exchange' })
+  async getListExchange(@Req() request: Request) {
+    const userId = this.getUserIdFromToken(request);
+    return this.exchangeService.getListExchangeService(userId);
   }
 }

@@ -13,5 +13,6 @@ export interface ProductSearchCriteria {
       amount?: number
     }; // T
     style?: string; // Tìm kiếm theo phong cách
+    description?: string; // Tìm kiếm theo mô tả
   }
   

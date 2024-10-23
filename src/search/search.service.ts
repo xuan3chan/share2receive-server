@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -54,6 +54,7 @@ export class SearchService implements OnModuleInit {
               amount: variant.amount as number,
             })) as ProductSearchCriteria['sizeVariants'],
             style: body.style,
+            description: body.description,
           };
   
           if (operationType === 'insert') {
@@ -85,93 +86,37 @@ export class SearchService implements OnModuleInit {
       }
     });
   }
-  async searchProductsService(criteria: ProductSearchCriteria) {
-    const mustQueries = [];
-  
-    // Sử dụng multi_match để tìm kiếm trên nhiều trường, không phân biệt hoa thường và khoảng cách
-    if (criteria.productName) {
-      mustQueries.push({
-        multi_match: {
-          query: criteria.productName,
-          fields: [
-            'productName^3', // Trọng số cao hơn cho productName
-            'categoryName^2', // Trọng số trung bình cho categoryName
-            'brandName', // Trọng số thấp hơn cho brandName
-          ],
-          fuzziness: 'AUTO', // Tìm kiếm với fuzzy để hỗ trợ lỗi chính tả
-          operator: 'and',
-          minimum_should_match: '75%',
-        },
-      });
-    }
-  
-    // Tìm kiếm các trường khác
-    if (criteria.type) {
-      mustQueries.push({
-        match: { type: { query: criteria.type, operator: 'and' } },
-      });
-    }
-  
-    if (criteria.price) {
-      mustQueries.push({
-        range: {
-          price: 
-            { gte: criteria.price }
-        },
-      });
-    }
-  
-    if (criteria.condition) {
-      mustQueries.push({
-        match: { condition: { query: criteria.condition, operator: 'and' } },
-      });
-    }
-  
-    if (criteria.tags) {
-      mustQueries.push({
-        terms: { tags: criteria.tags },
-      });
-    }
-  
-    if (criteria.material) {
-      mustQueries.push({
-        match: { material: { query: criteria.material, operator: 'and' } },
-      });
-    }
-  
-    if (criteria.style) {
-      mustQueries.push({
-        match: { style: { query: criteria.style, operator: 'and' } },
-      });
-    }
-  
-    if (criteria.sizeVariants) {
-      mustQueries.push({
-        nested: {
-          path: 'sizeVariants',
+  async searchProductsService(searchKey: string) {
+    try {
+      const { body } = await this.elasticsearchService.search({
+        index: 'products',
+        body: {
           query: {
-            bool: {
-              must: Array.isArray(criteria.sizeVariants) ? criteria.sizeVariants.map((variant) => ({
-                match: { 'sizeVariants.size': { query: variant.size, operator: 'and' } },
-              })) : [],
+            multi_match: {
+              query: searchKey,
+              fields: [
+                'productName^3',
+                'categoryName^2',
+                'brandName',
+                'tags',
+                'description',
+              ],
+              fuzziness: '1', // Tăng độ fuzziness
+              operator: 'or',
+              minimum_should_match: '1<75%', // Tối thiểu 75% từ trong truy vấn
             },
           },
         },
       });
+  
+      return body.hits.hits.map((hit) => hit._source);
+    } catch (error) {
+      this.logger.error(`Error searching products: ${error.message}`);
+      throw new NotFoundException('Failed to search products');
     }
-  
-    // Tạo truy vấn tìm kiếm
-    const { body } = await this.elasticsearchService.search({
-      index: 'products',
-      body: {
-        query: {
-          bool: {
-            must: mustQueries,
-          },
-        },
-      },
-    });
-  
-    return body.hits.hits.map((hit) => hit._source);
   }
+  
+  
+  
+  
 }

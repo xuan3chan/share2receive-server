@@ -3,68 +3,21 @@ import {
   Get,
   Query,
   BadRequestException,
-  UseInterceptors,
-  UploadedFile,
-  Patch,
 } from '@nestjs/common';
 import { SearchService } from './search.service';
-import { ProductSearchCriteria } from '@app/libs/common/interface';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { Express } from 'express';
-// import { ImageAnalysisService } from '@app/libs/common/util/image-analysis.util';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @Controller('search')
 export class SearchController {
-  constructor(
-    private readonly searchService: SearchService,
-    // private readonly imageAnalysisService: ImageAnalysisService,
-  ) {}
+  constructor(private readonly searchService: SearchService) {}
 
   @ApiTags('product')
-  @Get('search-prodcut')
-  @ApiQuery({ name: 'productName', required: false, type: String })
-  @ApiQuery({ name: 'categoryName', required: false, type: String })
-  @ApiQuery({ name: 'brandName', required: false, type: String })
-  @ApiQuery({ name: 'type', required: false, type: String })
-  @ApiQuery({ name: 'price', required: false, type: Number })
-  @ApiQuery({ name: 'condition', required: false, type: String })
-  @ApiQuery({ name: 'tags', required: false, type: [String] })
-  @ApiQuery({ name: 'material', required: false, type: String })
-  @ApiQuery({ name: 'size', required: false, type: String })
-  @ApiQuery({ name: 'colors', required: false, type: String })
-  @ApiQuery({ name: 'amount', required: false, type: Number })
-  @ApiQuery({ name: 'style', required: false, type: String })
-  async searchProductsController(
-    @Query('productName') productName?: string,
-    @Query('categoryName') categoryName?: string,
-    @Query('brandName') brandName?: string,
-    @Query('type') type?: 'sale' | 'barter',
-    @Query('price') price?: number,
-    @Query('condition') condition?: 'new' | 'used',
-    @Query('tags') tags?: string[],
-    @Query('material') material?: string,
-    @Query('size') size?: string,
-    @Query('colors') colors?: string,
-    @Query('amount') amount?: number,
-    @Query('style') style?: string,
-  ) {
+  @Get('search-product')
+  @ApiQuery({ name: 'searchKey', required: true, type: String })
+  async searchProductsController(@Query('searchKey') searchKey: string) {
     try {
-      const criteria: ProductSearchCriteria = {
-        productName,
-        categoryName,
-        brandName,
-        type,
-        price,
-        condition,
-        tags, // Directly assign the tags array
-        material,
-        sizeVariants:
-          size || colors || amount ? { size, colors, amount } : undefined,
-        style,
-      };
-
-      const results = await this.searchService.searchProductsService(criteria);
+      // Pass the searchKey directly to the service
+      const results = await this.searchService.searchProductsService(searchKey);
       return { data: results };
     } catch (error) {
       throw new BadRequestException(
@@ -72,31 +25,4 @@ export class SearchController {
       );
     }
   }
-
-//   // find product by img
-//   @Patch('find-product-by-image')
-//   @UseInterceptors(FileInterceptor('image'))
-//   @ApiConsumes('multipart/form-data')
-//   @ApiBody({
-//     schema: {
-//       type: 'object',
-//       properties: {
-//         image: {
-//           type: 'string',
-//           format: 'binary',
-//         },
-//       },
-//     },
-//   })
-//   async findProductByImageController(
-//     @UploadedFile() image: Express.Multer.File,
-//   ) {
-//     try {
-//       const { color, style, material } = await this.imageAnalysisService.analyzeImage(image);
-//       console.log(color, style, material);
-//       return { color, style, material };
-//     } catch (error) {
-//     }
-//   }
-// }
 }

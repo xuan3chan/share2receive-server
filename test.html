@@ -3,42 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google OAuth2 Authentication</title>
+  <title>Socket.IO Notification Test</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
 </head>
 <body>
+  <h1>Socket.IO Notification Test</h1>
 
-  <h1>Google OAuth2 Authentication</h1>
+  <div>
+    <h2>General Notifications:</h2>
+    <ul id="general-notifications"></ul>
+  </div>
 
-  <!-- Nút bấm đăng nhập với Google -->
-  <button id="googleAuthBtn">Login with Google</button>
+  <div>
+    <h2>Authenticated Notifications:</h2>
+    <ul id="authenticated-notifications"></ul>
+  </div>
 
-  <!-- Khu vực hiển thị dữ liệu người dùng sau khi xác thực thành công -->
-  <div id="userData"></div>
+  <div>
+    <h2>User Info:</h2>
+    <p id="user-id">User ID: Not connected</p>
+  </div>
 
   <script>
-    // Hàm để lấy query parameters từ URL
-    function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
+    // Hàm lấy cookie từ trình duyệt
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
-    // Lấy dữ liệu người dùng từ URL và hiển thị
-    const userData = getQueryParam('user');
-    if (userData) {
-      const user = JSON.parse(decodeURIComponent(userData));
-      document.getElementById('userData').innerHTML = `
-        <h2>Welcome, ${user.name}!</h2>
-        <p>Email: ${user.email}</p>
-      `;
+    // Lấy accessToken từ cookie
+    const accessToken = getCookie('accessToken');
+
+    if (accessToken) {
+      console.log('Access Token found:', accessToken); // Log access token để kiểm tra
+
+      try {
+        // Giải mã JWT để lấy thông tin từ payload
+        const decodedToken = jwt_decode(accessToken);
+        console.log('Decoded Token:', decodedToken); // Hiển thị token đã giải mã trong console
+
+        // Hiển thị thông tin người dùng (userId) trong giao diện
+        const userIdElement = document.getElementById('user-id');
+        userIdElement.textContent = `User ID: ${decodedToken.sub || decodedToken.userId || 'Unknown'}`;
+      } catch (error) {
+        console.error('Error decoding JWT:', error);
+      }
+    } else {
+      console.log('No access token found in cookies');
     }
 
-    // Thêm sự kiện cho nút "Login with Google"
-    const googleAuthBtn = document.getElementById('googleAuthBtn');
-    googleAuthBtn.addEventListener('click', () => {
-      // Chuyển hướng người dùng đến server để bắt đầu quá trình OAuth2
-      window.location.href = 'http://127.0.0.1:3000/api/auth/google';
-    });
+    let socket;
+    let isSocketConnected = false; // Biến cờ để theo dõi trạng thái kết nối
+
+    function connectSocket() {
+      if (!isSocketConnected) { // Kiểm tra nếu socket chưa được kết nối
+        console.log('Attempting to connect to WebSocket...'); // Log thử kết nối
+
+        socket = io('http://127.0.0.1:3000', {
+          withCredentials: true, // Enable cookies to be sent along with the handshake
+        });
+
+        // Listen for general notifications
+        socket.on('generalNotification', (message) => {
+          const notificationList = document.getElementById('general-notifications');
+          const listItem = document.createElement('li');
+          listItem.textContent = message;
+          notificationList.appendChild(listItem);
+        });
+
+        // Listen for authenticated notifications
+        socket.on('authenticatedNotification', (message) => {
+          const notificationList = document.getElementById('authenticated-notifications');
+          const listItem = document.createElement('li');
+          listItem.textContent = message;
+          notificationList.appendChild(listItem);
+        });
+
+        // Log connection success
+        socket.on('connect', () => {
+          console.log('Connected to the WebSocket server');
+          isSocketConnected = true; // Đánh dấu rằng socket đã kết nối
+        });
+
+        // Log any errors
+        socket.on('error', (error) => {
+          console.error('WebSocket error:', error);
+        });
+
+        // Handle socket disconnect
+        socket.on('disconnect', () => {
+          console.log('Socket disconnected:', socket.id);
+          isSocketConnected = false; // Đánh dấu rằng socket đã ngắt kết nối
+        });
+      } else {
+        console.log('Socket already connected:', socket.id); // Log nếu đã kết nối
+      }
+    }
+
+    // Gọi hàm kết nối một lần khi tài liệu đã tải
+      document.addEventListener('DOMContentLoaded', connectSocket);
   </script>
-
 </body>
 </html>

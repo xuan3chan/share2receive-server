@@ -14,6 +14,7 @@ import { ProductModule } from './product/product.module';
 import { SearchModule } from './search/search.module';
 import { BullModule } from '@nestjs/bull';
 import { ExchangeModule } from './exchange/exchange.module';
+import { EventGateway } from '../libs/libs/src/common/util/event.gateway';
 
 @Module({
   imports: [
@@ -45,6 +46,8 @@ import { ExchangeModule } from './exchange/exchange.module';
       },
     }),
     ExchangeModule,
+    
   ],
+  providers: [EventGateway],
 })
 export class AppModule {}

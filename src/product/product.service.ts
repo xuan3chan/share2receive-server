@@ -356,7 +356,7 @@ export class ProductService {
           .populate('brandId', 'name')
           .populate('userId', 'firstname lastname')
           .select(
-            '-createdAt -updatedAt -__v -sizeVariants -approved -isDeleted -isBlock',
+            '-createdAt -updatedAt -__v  -approved -isDeleted -isBlock',
           )
           .skip((page - 1) * limit)
           .limit(limit)

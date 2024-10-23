@@ -146,7 +146,7 @@ export class CreateProductDto {
     example: 100,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   price: number;
 
   @ApiProperty({

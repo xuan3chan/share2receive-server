@@ -4,9 +4,12 @@ import { ExchangeController } from './exchange.controller';
 import { Exchange, ExchangeSchema } from '@app/libs/common/schema/exchange.schema';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema, User, UserSchema } from '@app/libs/common/schema';
+import { EventGateway } from '@app/libs/common/util/event.gateway';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     MongooseModule.forFeature([
       { name: Exchange.name, schema: ExchangeSchema },
       { name: Product.name, schema: ProductSchema },
@@ -14,6 +17,6 @@ import { Product, ProductSchema, User, UserSchema } from '@app/libs/common/schem
     ]),
   ],
   controllers: [ExchangeController],
-  providers: [ExchangeService],
+  providers: [ExchangeService,EventGateway],
 })
 export class ExchangeModule {}

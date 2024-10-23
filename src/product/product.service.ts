@@ -354,7 +354,7 @@ export class ProductService {
           .find(query)
           .populate('categoryId', 'name')
           .populate('brandId', 'name')
-          .populate('userId', 'firstname lastname')
+          .populate('userId', 'firstname lastname avatar')
           .select(
             '-createdAt -updatedAt -__v  -approved -isDeleted -isBlock',
           )

@@ -26,25 +26,21 @@
   </div>
 
   <script>
-    // Hàm lấy cookie từ trình duyệt
+    // Function to get cookie from the browser
     function getCookie(name) {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
-    // Lấy accessToken từ cookie
+    // Retrieve accessToken from cookie
     const accessToken = getCookie('accessToken');
 
     if (accessToken) {
-      console.log('Access Token found:', accessToken); // Log access token để kiểm tra
-
+      console.log('Access Token found:', accessToken);
       try {
-        // Giải mã JWT để lấy thông tin từ payload
         const decodedToken = jwt_decode(accessToken);
-        console.log('Decoded Token:', decodedToken); // Hiển thị token đã giải mã trong console
-
-        // Hiển thị thông tin người dùng (userId) trong giao diện
+        console.log('Decoded Token:', decodedToken);
         const userIdElement = document.getElementById('user-id');
         userIdElement.textContent = `User ID: ${decodedToken.sub || decodedToken.userId || 'Unknown'}`;
       } catch (error) {
@@ -55,17 +51,19 @@
     }
 
     let socket;
-    let isSocketConnected = false; // Biến cờ để theo dõi trạng thái kết nối
+    let isSocketConnected = false;
 
     function connectSocket() {
-      if (!isSocketConnected) { // Kiểm tra nếu socket chưa được kết nối
-        console.log('Attempting to connect to WebSocket...'); // Log thử kết nối
+      if (!isSocketConnected) {
+        console.log('Attempting to connect to WebSocket...');
 
         socket = io('http://127.0.0.1:3000', {
-          withCredentials: true, // Enable cookies to be sent along with the handshake
+          withCredentials: true,
+          reconnection: true, // Enable reconnection attempts
+          reconnectionAttempts: 5, // Max number of reconnection attempts
+          reconnectionDelay: 1000, // Delay between reconnection attempts
         });
 
-        // Listen for general notifications
         socket.on('generalNotification', (message) => {
           const notificationList = document.getElementById('general-notifications');
           const listItem = document.createElement('li');
@@ -73,7 +71,6 @@
           notificationList.appendChild(listItem);
         });
 
-        // Listen for authenticated notifications
         socket.on('authenticatedNotification', (message) => {
           const notificationList = document.getElementById('authenticated-notifications');
           const listItem = document.createElement('li');
@@ -81,29 +78,27 @@
           notificationList.appendChild(listItem);
         });
 
-        // Log connection success
         socket.on('connect', () => {
           console.log('Connected to the WebSocket server');
-          isSocketConnected = true; // Đánh dấu rằng socket đã kết nối
+          isSocketConnected = true;
         });
 
-        // Log any errors
         socket.on('error', (error) => {
           console.error('WebSocket error:', error);
         });
 
-        // Handle socket disconnect
         socket.on('disconnect', () => {
           console.log('Socket disconnected:', socket.id);
-          isSocketConnected = false; // Đánh dấu rằng socket đã ngắt kết nối
+          isSocketConnected = false;
+          // Optionally try to reconnect here
+          setTimeout(connectSocket, 2000); // Try to reconnect after 2 seconds
         });
       } else {
-        console.log('Socket already connected:', socket.id); // Log nếu đã kết nối
+        console.log('Socket already connected:', socket.id);
       }
     }
 
-    // Gọi hàm kết nối một lần khi tài liệu đã tải
-      document.addEventListener('DOMContentLoaded', connectSocket);
+    document.addEventListener('DOMContentLoaded', connectSocket);
   </script>
 </body>
 </html>

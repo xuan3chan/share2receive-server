@@ -98,9 +98,16 @@ export class AuthController {
       user.account,
       user.password,
     );
-
-    setCookie(response, 'refreshToken', loginResult.refreshToken);
-    setCookie(response, 'accessToken', loginResult.accessToken);
+    if(loginResult.user.role != 'user'){
+    setCookie(response, 'refreshToken', loginResult.refreshToken,{
+      domain: 'https://share2receive-admin.vercel.app/'
+    });
+    setCookie(response, 'accessToken', loginResult.accessToken,{
+      domain: 'https://share2receive-admin.vercel.app/'
+    });
+  }
+  setCookie(response, 'refreshToken', loginResult.refreshToken);
+  setCookie(response, 'accessToken', loginResult.accessToken);
 
     return { message: 'successfully', data: loginResult };
   }

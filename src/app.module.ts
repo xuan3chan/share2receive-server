@@ -18,7 +18,7 @@ import { EventGateway } from '../libs/libs/src/common/util/event.gateway';
 
 @Module({
   imports: [
-    // SearchModule,
+    SearchModule,
     EncryptionModule,
     CloudinaryModule,
     AdminModule,

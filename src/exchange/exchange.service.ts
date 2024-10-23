@@ -49,8 +49,6 @@ export class ExchangeService {
       throw new BadRequestException('Product is blocked');
     }
     if (receiverProduct.type !== 'barter' || requesterProduct.type !== 'barter') {
-      console.log(receiverProduct.type);
-      console.log(requesterProduct.type);
       throw new BadRequestException('Product type is not barter');
     }
     
@@ -100,8 +98,8 @@ export class ExchangeService {
       .find({
         $or: [{ requesterId: userId }, { receiverId: userId }],
       })
-      .populate('requesterId', 'firstname lastname avatar')
-      .populate('receiverId', 'firstname lastname avatar')
+      .populate('requesterId', 'firstname lastname avatar email')
+      .populate('receiverId', 'firstname lastname avatar email')
       .populate('requestProduct.requesterProductId', 'productName imgUrls')
       .populate('receiveProduct.receiverProductId', 'productName imgUrls')
       .lean(); // Dùng lean() để trả về plain objects thay vì Mongoose documents
@@ -126,7 +124,6 @@ export class ExchangeService {
     session.startTransaction();
 
     try {
-      // Find the exchange with the session
       const exchange = await this.exchangeModel
         .findById(exchangeId)
         .session(session);
@@ -142,7 +139,6 @@ export class ExchangeService {
         throw new BadRequestException('You are not the receiver');
       }
 
-      // Check for stock availability for both products
       const [requesterProductUpdate, receiverProductUpdate] = await Promise.all(
         [
           this.productModel
@@ -162,7 +158,6 @@ export class ExchangeService {
         ],
       );
 
-      // Function to validate stock for a product
       const validateStock = (productUpdate, exchangeProduct) => {
         const variant = productUpdate?.sizeVariants.find(
           (v) =>
@@ -181,13 +176,11 @@ export class ExchangeService {
         );
       }
 
-      // Update exchange status
       if (status === 'accepted') {
         exchange.exchangeStatus = 'accepted';
         exchange.requesterExchangeStatus = 'pending';
         exchange.receiverExchangeStatus = 'pending';
 
-        // Update stock for both products in parallel
         await Promise.all([
           this.productModel.updateOne(
             {
@@ -217,7 +210,6 @@ export class ExchangeService {
           ),
         ]);
 
-        // Set status to 'Exchanged' if stock hits 0 for either product
         const updateExchangedStatus = async (productUpdate, productId) => {
           if (
             productUpdate.sizeVariants.every((variant) => variant.amount === 0)
@@ -240,17 +232,33 @@ export class ExchangeService {
             exchange.receiveProduct.receiverProductId,
           ),
         ]);
+
+        // Send notification to the requester
+        const product = await this.productModel.findById(exchange.requestProduct.requesterProductId).lean();
+        if (product) {
+          this.eventGateway.sendAuthenticatedNotification(
+            exchange.requesterId.toString(),
+            `Giao dịch cho sản phẩm"${product.productName}" đã được chấp nhận.`,
+          );
+        }
       } else if (status === 'rejected') {
         exchange.exchangeStatus = 'rejected';
+
+        // Send notification to the requester
+        const product = await this.productModel.findById(exchange.requestProduct.requesterProductId).lean();
+        if (product) {
+          this.eventGateway.sendAuthenticatedNotification(
+            exchange.requesterId.toString(),
+            `Giao dịch cho sản phẩm"${product.productName}" đã bị từ chối.`,
+          );
+        }
       } else {
         throw new BadRequestException('Invalid status');
       }
 
-      // Save exchange and commit transaction
       await exchange.save({ session });
       await session.commitTransaction();
 
-      // Convert to plain object and return
       return exchange.toObject();
     } catch (error) {
       await session.abortTransaction();
@@ -269,7 +277,10 @@ export class ExchangeService {
     session.startTransaction();
   
     try {
-      const exchange = await this.exchangeModel.findById(exchangeId).session(session);
+      const exchange = await this.exchangeModel.findById(exchangeId)
+      .populate('requesterId', 'firstname lastname')  // Populate requesterId to get the name
+      .populate('receiverId', 'firstname lastname')
+      .session(session);
       if (!exchange) {
         throw new BadRequestException('Exchange not found');
       }
@@ -280,22 +291,24 @@ export class ExchangeService {
   
       // Ensure that the user is either the requester or the receiver
       if (
-        exchange.requesterId.toString() !== userId &&
-        exchange.receiverId.toString() !== userId
+        (exchange.requesterId as any)._id.toString() !== userId &&
+        (exchange.receiverId as any)._id.toString() !== userId
       ) {
         throw new BadRequestException('You are not the requester or receiver');
       }
   
-      // Update the status based on the user role
+      // Determine if the user is the requester or receiver and update status
+      let otherPartyId;
       if (exchange.requesterId.toString() === userId) {
         exchange.requesterExchangeStatus = status;
+        otherPartyId = exchange.receiverId;  // Notify the receiver
       } else {
         exchange.receiverExchangeStatus = status;
+        otherPartyId = exchange.requesterId;  // Notify the requester
       }
   
       // If either party cancels, restore product amounts and mark exchange as canceled
       if (status === 'canceled') {
-        // Restore stock for both products
         await Promise.all([
           this.productModel.updateOne(
             {
@@ -325,7 +338,6 @@ export class ExchangeService {
           ),
         ]);
   
-        // Set exchange status to canceled
         exchange.exchangeStatus = 'canceled';
       }
   
@@ -336,9 +348,22 @@ export class ExchangeService {
       ) {
         exchange.exchangeStatus = 'completed';
       }
-      console.log(userId);
+  
+      // Save the exchange status and commit transaction
       await exchange.save({ session });
       await session.commitTransaction();
+      const product = await this.productModel.findById(exchange.requestProduct.requesterProductId).lean();
+      const updatingUser =
+      exchange.requesterId.toString() === userId
+        ? (exchange.requesterId as any).firstname + ' ' + (exchange.requesterId as any).lastname
+        : (exchange.receiverId as any).firstname + ' ' + (exchange.receiverId as any).lastname;
+    
+    // Create the notification message with the user's full name
+    const notificationMessage = `Giao dịch cho sản phẩm "${product?.productName}" đã được cập nhật thành "${status}" bởi người dùng ${updatingUser}.`;
+    
+    // Send notification to the other party about the status update
+    console.log('Sending notification to:', otherPartyId._id);
+    await this.eventGateway.sendAuthenticatedNotification(otherPartyId._id.toString(), notificationMessage);
       return exchange.toObject();
     } catch (error) {
       await session.abortTransaction();
@@ -347,6 +372,7 @@ export class ExchangeService {
       session.endSession();
     }
   }
+  
   
 
 }

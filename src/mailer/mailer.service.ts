@@ -8,7 +8,6 @@ export class MailerService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
-      from: 'support@daiquangia.com',
       auth: {
         user: process.env.MAIL_USER,
         pass: process.env.MAIL_PASSWORD,

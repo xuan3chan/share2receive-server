@@ -436,43 +436,49 @@ export class ProductService {
     }
   }
 
-    async getProductsByUserStyleService(userId: string): Promise<{ data: any }> {
+  async getProductsByUserStyleService(userId: string): Promise<{ data: any }> {
     try {
-      // Bước 1: Lấy thông tin người dùng
+      // Step 1: Retrieve user information
       const user = await this.userModel.findById(userId).exec();
   
-      // Kiểm tra nếu người dùng không có phong cách hoặc không tồn tại
       if (!user || !user.userStyle) {
         throw new NotFoundException('User or user style not found');
       }
   
-      const { color, material, size, hobby, age, zodiacSign, style } =
+      const { color, material, size, hobby, age, zodiacSign, style, gender } =
         user.userStyle;
   
-      // Bước 2: Tìm các sản phẩm đang hoạt động và đã được phê duyệt
+      // Step 2: Fetch products and populate the category to access its type
       const products = await this.productModel
         .find({
-          status: 'active', // Chỉ lấy các sản phẩm đang hoạt động
-          'approved.approveStatus': 'approved', // Chỉ lấy các sản phẩm đã được phê duyệt
-          isDeleted: false, // Loại bỏ các sản phẩm đã bị xóa
-          userId: { $ne: userId }, // Loại bỏ các sản phẩm của userId hiện tại
+          status: 'active', // Only active products
+          'approved.approveStatus': 'approved', // Only approved products
+          isDeleted: false, // Exclude deleted products
+          userId: { $ne: userId }, // Exclude the current user's products
         })
-        .select('-__v -createdAt -updatedAt') // Projection to exclude unnecessary fields
+        .populate('categoryId', 'type') // Populate categoryId to access type field
+        .select('-__v -createdAt -updatedAt') // Exclude unnecessary fields
         .lean() // Return plain JavaScript objects
         .exec();
   
-      // Bước 3: Tìm sản phẩm phù hợp nhất
-      const matchedProducts = products.map((product) => {
-        const sizeMatches = product.sizeVariants.some((variant) =>
-          size.includes(variant.size),
+      // Step 3: Filter products based on gender or unisex
+      const filteredProducts = products.filter(
+        (product) =>
+          (product.categoryId as any).type === gender || (product.categoryId as any).type === 'unisex',
+      );
+  
+      // Step 4: Calculate matching score for each product
+      const matchedProducts = filteredProducts.map((product) => {
+        const sizeMatches = product.sizeVariants?.some((variant) =>
+          size?.includes(variant.size),
         );
-        const colorMatches = product.sizeVariants.some((variant) =>
-          color.includes(variant.colors),
+        const colorMatches = product.sizeVariants?.some((variant) =>
+          color?.includes(variant.colors),
         );
-        const materialMatches = material.includes(product.material);
-        const styleMatches = style.includes(product.style);
+        const materialMatches = material?.includes(product.material);
+        const styleMatches = style?.includes(product.style);
         const tagMatches = [hobby, age, zodiacSign].some(
-          (tag) => typeof tag === 'string' && product.tags.includes(tag),
+          (tag) => typeof tag === 'string' && product.tags?.includes(tag),
         );
   
         // Calculate score based on matches
@@ -485,14 +491,14 @@ export class ProductService {
   
         return { ...product, score };
       });
-      
-      // Bước 4: Sắp xếp các sản phẩm theo điểm số từ cao đến thấp
+  
+      // Step 5: Sort by score in descending order
       matchedProducts.sort((a, b) => b.score - a.score);
   
-      // Bước 5: Lấy 10 sản phẩm có điểm cao nhất
+      // Step 6: Select the top 10 products
       const top10Products = matchedProducts.slice(0, 10);
-      
-      // Bước 6: Trả về danh sách sản phẩm phù hợp
+  
+      // Step 7: Return the list of top matched products
       return { data: top10Products };
     } catch (error) {
       throw new NotFoundException(
@@ -500,6 +506,9 @@ export class ProductService {
       );
     }
   }
+  
+  
+  
 
   
   

@@ -6,5 +6,6 @@ export interface UserStyle {
     age?: string;
     zodiacSign?: string;
     style?: string[];
+    gender?: string;
   }
   

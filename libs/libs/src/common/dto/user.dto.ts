@@ -116,6 +116,14 @@ export class UserStyleDto {
   @IsArray()
   @IsOptional()
   style?: string[];
+
+  @ApiProperty({
+    description: 'gender of user',
+    example:'male'
+  })
+  @IsString()
+  @IsOptional()
+  gender?: string;
 }
 
 export class UpdateUserProfileDto {

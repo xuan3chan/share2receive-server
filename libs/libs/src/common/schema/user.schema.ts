@@ -90,6 +90,7 @@ export class User extends Document {
         type: mongoose.Schema.Types.String,
       },
       style: [{ type: mongoose.Schema.Types.String }],
+      gender: { type: mongoose.Schema.Types.String },
     },
     default: null,
   })

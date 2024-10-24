@@ -317,19 +317,19 @@ export class ProductService {
     filterStyle?: string[],
   ): Promise<{ data: any; total: number }> {
     try {
-      const match: any = {
+      const query: any = {
         status: 'active',
         isDeleted: false,
         'approved.approveStatus': 'approved',
         isBlock: false,
       };
-  
+
       const addFilter = (field: string, value: any) => {
         if (value && value.length > 0) {
-          match[field] = { $in: value };
+          query[field] = { $in: value };
         }
       };
-  
+
       addFilter('categoryId', filterCategory);
       addFilter('brandId', filterBrand);
       addFilter('size', filterSize);
@@ -338,78 +338,38 @@ export class ProductService {
       addFilter('condition', filterCondition);
       addFilter('type', filterType);
       addFilter('style', filterStyle);
-  
+
       if (filterStartPrice !== undefined || filterEndPrice !== undefined) {
-        match.price = {};
+        query.price = {};
         if (filterStartPrice !== undefined) {
-          match.price.$gte = filterStartPrice;
+          query.price.$gte = filterStartPrice;
         }
         if (filterEndPrice !== undefined) {
-          match.price.$lte = filterEndPrice;
+          query.price.$lte = filterEndPrice;
         }
       }
-  
-      const result = await this.productModel.aggregate([
-        { $match: match }, // Lọc dữ liệu
-        {
-          $facet: {
-            data: [
-              { $skip: (page - 1) * limit },
-              { $limit: limit },
-              {
-                $lookup: {
-                  from: 'categories',
-                  localField: 'categoryId',
-                  foreignField: '_id',
-                  as: 'category',
-                },
-              },
-              { $unwind: '$category' },
-              {
-                $lookup: {
-                  from: 'brands',
-                  localField: 'brandId',
-                  foreignField: '_id',
-                  as: 'brand',
-                },
-              },
-              { $unwind: '$brand' },
-              {
-                $lookup: {
-                  from: 'users',
-                  localField: 'userId',
-                  foreignField: '_id',
-                  as: 'user',
-                },
-              },
-              { $unwind: '$user' },
-              {
-                $project: {
-                  name: 1,
-                  price: 1,
-                  categoryName: '$category.name',
-                  brandName: '$brand.name',
-                  userName: { $concat: ['$user.firstname', ' ', '$user.lastname'] },
-                },
-              },
-            ],
-            total: [{ $count: 'total' }], // Đếm tổng số lượng
-          },
-        },
-        {
-          $project: {
-            data: 1,
-            total: { $arrayElemAt: ['$total.total', 0] }, // Lấy tổng số lượng
-          },
-        },
+
+      const [products, total] = await Promise.all([
+        this.productModel
+          .find(query)
+          .populate('categoryId', 'name')
+          .populate('brandId', 'name')
+          .populate('userId', 'firstname lastname avatar')
+          .select(
+            '-createdAt -updatedAt -__v  -approved -isDeleted -isBlock',
+          )
+          .skip((page - 1) * limit)
+          .limit(limit)
+          .lean({ virtuals: true })
+          .exec(),
+        this.productModel.countDocuments(query),
       ]);
-  
-      return { data: result[0].data, total: result[0].total || 0 };
+
+      return { data: products, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
-  
 
   async getProductDetailService(productId: string): Promise<Product> {
     try {

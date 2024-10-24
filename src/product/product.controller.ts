@@ -36,6 +36,7 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
+import { TypeCategoryE } from '@app/libs/common/enum';
 
 @Controller('product')
 export class ProductController {
@@ -279,6 +280,7 @@ export class ProductController {
   @ApiQuery({ name: 'filterCondition', required: false, type: [String] })
   @ApiQuery({ name: 'filterType', required: false, type: [String] })
   @ApiQuery({ name: 'filterStyle', required: false, type: [String] })
+  @ApiQuery({ name: 'filterTypeCategory', required: false, type: [String],enum:TypeCategoryE })
   @Get('list-product-for-client')
   async listProductForClientController(
     @Query('page') page: number = 1,
@@ -293,6 +295,7 @@ export class ProductController {
     @Query('filterCondition') filterCondition?: string[],
     @Query('filterType') filterType?: string[],
     @Query('filterStyle') filterStyle?: string[],
+    @Query('filterTypeCategory') filterTypeCategory?: string[],
   ): Promise<{ data: any; total: number }> {
     try {
       const { data, total } = await this.productService.listProductForClientService(
@@ -305,6 +308,7 @@ export class ProductController {
         filterSize,
         filterColor,
         filterMaterial,
+        filterTypeCategory,
         filterCondition,
         filterType,
         filterStyle,

@@ -309,9 +309,10 @@ export class ProductService {
     filterBrand?: string[],
     filterStartPrice?: number,
     filterEndPrice?: number,
-    filterSize?: string | string[],  // Accept string or array
-    filterColor?: string | string[], // Accept string or array
+    filterSize?: string | string[],
+    filterColor?: string | string[],
     filterMaterial?: string[],
+    filterTypeCategory?: string[], // New filter for category type
     filterCondition?: string[],
     filterType?: string[],
     filterStyle?: string[],
@@ -327,11 +328,14 @@ export class ProductService {
       // Function to add filter criteria
       const addFilter = (field: string, value: string | string[]) => {
         if (value) {
-          query[field] = { $in: Array.isArray(value) ? value : [value] };  // Ensure value is always an array
+          const valuesArray = Array.isArray(value) ? value : [value];
+          if (valuesArray.length > 0) {
+            query[field] = { $in: valuesArray };
+          }
         }
       };
   
-      // Apply filters for other fields
+      // Apply filters for fields
       addFilter('categoryId', filterCategory);
       addFilter('brandId', filterBrand);
       addFilter('material', filterMaterial);
@@ -339,16 +343,37 @@ export class ProductService {
       addFilter('type', filterType);
       addFilter('style', filterStyle);
   
+      // Filter for typeCategory
+      if (filterTypeCategory) {
+        const typeCategoryArray = Array.isArray(filterTypeCategory) ? filterTypeCategory : [filterTypeCategory];
+  
+        // Get category IDs for the specified type
+        const categoryIds = await this.categoryModel
+          .find({ type: { $in: typeCategoryArray } })
+          .distinct('_id');
+  
+        // Add category ID filter only if category IDs are found
+        if (categoryIds.length > 0) {
+          query.categoryId = { $in: categoryIds };
+        } else {
+          // If no category IDs match, return an empty result
+          query.categoryId = null; // Ensure no products will match
+        }
+      }
+  
       // Filter for size
       if (filterSize) {
         const sizes = Array.isArray(filterSize) ? filterSize : [filterSize];
-        query.sizeVariants = { $elemMatch: { size: { $in: sizes } } }; // Match size in the sizeVariants array
+        query.sizeVariants = { $elemMatch: { size: { $in: sizes } } };
       }
   
       // Filter for color
       if (filterColor) {
         const colors = Array.isArray(filterColor) ? filterColor : [filterColor];
-        query.sizeVariants = { ...query.sizeVariants, $elemMatch: { colors: { $in: colors } } }; // Match colors if needed
+        query.sizeVariants = {
+          ...query.sizeVariants,
+          $elemMatch: { colors: { $in: colors } },
+        };
       }
   
       // Price range filter
@@ -362,15 +387,14 @@ export class ProductService {
         }
       }
   
+      // Fetch data and count total
       const [products, total] = await Promise.all([
         this.productModel
           .find(query)
           .populate('categoryId', 'name type')
           .populate('brandId', 'name')
           .populate('userId', 'firstname lastname avatar')
-          .select(
-            '-createdAt -updatedAt -__v  -approved -isDeleted -isBlock',
-          )
+          .select('-createdAt -updatedAt -__v -approved -isDeleted -isBlock')
           .skip((page - 1) * limit)
           .limit(limit)
           .lean({ virtuals: true })
@@ -383,6 +407,10 @@ export class ProductService {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
+  
+  
+  
+  
   
   async getProductDetailService(productId: string): Promise<Product> {
     try {

@@ -365,7 +365,7 @@ export class ProductService {
       const [products, total] = await Promise.all([
         this.productModel
           .find(query)
-          .populate('categoryId', 'name')
+          .populate('categoryId', 'name type')
           .populate('brandId', 'name')
           .populate('userId', 'firstname lastname avatar')
           .select(
@@ -384,18 +384,12 @@ export class ProductService {
     }
   }
   
-  
-  
-  
-  
-  
-
   async getProductDetailService(productId: string): Promise<Product> {
     try {
       const product = await this.productModel
         .findById(productId)
         .select('-createdAt -updatedAt -__v  -approved -isDeleted -isBlock')
-        .populate('categoryId', 'name')
+        .populate('categoryId', 'name type')
         .populate('brandId', 'name')
         .populate('userId', 'firstname lastname')
         .lean({ virtuals: true })
@@ -418,7 +412,7 @@ export class ProductService {
       const product = await this.productModel
         .findOne({ slug })
         .select('-createdAt -updatedAt -__v  -approved -isDeleted -isBlock')
-        .populate('categoryId', 'name')
+        .populate('categoryId', 'name type')
         .populate('brandId', 'name')
         .populate('userId', 'firstname lastname')
         .lean({ virtuals: true })
@@ -540,7 +534,7 @@ export class ProductService {
       // Truy vấn danh sách sản phẩm dựa trên query, sắp xếp và phân trang
       const products = await this.productModel
         .find(query)
-        .populate('categoryId', 'name')
+        .populate('categoryId', 'name type')
         .populate('brandId', 'name')
         .populate('userId', 'firstname lastname')
         // Sắp xếp theo sortField và sortOrder, mặc định là createdAt giảm dần

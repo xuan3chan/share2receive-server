@@ -309,8 +309,8 @@ export class ProductService {
     filterBrand?: string[],
     filterStartPrice?: number,
     filterEndPrice?: number,
-    filterSize?: string[],
-    filterColor?: string[],
+    filterSize?: string | string[],  // Có thể là chuỗi hoặc mảng
+    filterColor?: string | string[], // Có thể là chuỗi hoặc mảng
     filterMaterial?: string[],
     filterCondition?: string[],
     filterType?: string[],
@@ -323,22 +323,25 @@ export class ProductService {
         'approved.approveStatus': 'approved',
         isBlock: false,
       };
-
+  
+      // Thêm kiểm tra kỹ lưỡng cho mỗi bộ lọc và chuyển thành mảng nếu cần
       const addFilter = (field: string, value: any) => {
-        if (value && value.length > 0) {
-          query[field] = { $in: value };
+        if (value) {
+          query[field] = { $in: Array.isArray(value) ? value : [value] };  // Chuyển đổi thành mảng
         }
       };
-
+  
+      // Kiểm tra tất cả các filter
       addFilter('categoryId', filterCategory);
       addFilter('brandId', filterBrand);
-      addFilter('size', filterSize);
-      addFilter('color', filterColor);
+      addFilter('size', filterSize);  // Kiểm tra và xử lý filterSize
+      addFilter('color', filterColor); // Kiểm tra và xử lý filterColor
       addFilter('material', filterMaterial);
       addFilter('condition', filterCondition);
       addFilter('type', filterType);
       addFilter('style', filterStyle);
-
+  
+      // Kiểm tra điều kiện lọc giá
       if (filterStartPrice !== undefined || filterEndPrice !== undefined) {
         query.price = {};
         if (filterStartPrice !== undefined) {
@@ -348,7 +351,7 @@ export class ProductService {
           query.price.$lte = filterEndPrice;
         }
       }
-
+  
       const [products, total] = await Promise.all([
         this.productModel
           .find(query)
@@ -364,12 +367,16 @@ export class ProductService {
           .exec(),
         this.productModel.countDocuments(query),
       ]);
-
+  
       return { data: products, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
+  
+  
+  
+  
 
   async getProductDetailService(productId: string): Promise<Product> {
     try {
@@ -390,6 +397,29 @@ export class ProductService {
     } catch (error) {
       throw new BadRequestException(
         error.message || 'Failed to get product detail',
+      );
+    }
+  }
+
+  async getProductBySlugService(slug: string): Promise<Product> {
+    try {
+      const product = await this.productModel
+        .findOne({ slug })
+        .select('-createdAt -updatedAt -__v  -approved -isDeleted -isBlock')
+        .populate('categoryId', 'name')
+        .populate('brandId', 'name')
+        .populate('userId', 'firstname lastname')
+        .lean({ virtuals: true })
+        .exec();
+
+      if (!product) {
+        throw new BadRequestException('Product not found');
+      }
+
+      return product;
+    } catch (error) {
+      throw new BadRequestException(
+        error.message || 'Failed to get product by slug',
       );
     }
   }

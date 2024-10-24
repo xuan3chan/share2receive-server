@@ -279,6 +279,7 @@ export class ProductController {
   @ApiQuery({ name: 'filterCondition', required: false, type: [String] })
   @ApiQuery({ name: 'filterType', required: false, type: [String] })
   @ApiQuery({ name: 'filterStyle', required: false, type: [String] })
+  @ApiConsumes('multipart/form-data')
   @Get('list-product-for-client')
   async listProductForClientController(
     @Query('page') page: number = 1,
@@ -295,6 +296,7 @@ export class ProductController {
     @Query('filterStyle') filterStyle?: string[],
   ): Promise<{ data: any; total: number }> {
     try {
+      console.log(typeof filterSize,'dx');
       const { data, total } = await this.productService.listProductForClientService(
         page,
         limit,
@@ -309,6 +311,7 @@ export class ProductController {
         filterType,
         filterStyle,
       );
+      console.log(typeof filterSize,'dx');
       return { data, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');
@@ -335,6 +338,16 @@ export class ProductController {
     const data = await this.productService.getProductDetailService(productId); // Truyền productId vào service
     return { data };
   }
+  @ApiTags('product')
+  @ApiOperation({ summary: 'Get product detail' })
+  @Get('get-product-by-slug/:slug')
+  async getProductBySlugService(
+    @Param('slug') slug: string, // Lấy slug từ params
+  ): Promise<{ data: any }> {
+    const data = await this.productService.getProductBySlugService(slug); // Truyền slug vào service
+    return { data };
+  }
+ 
 
   
     

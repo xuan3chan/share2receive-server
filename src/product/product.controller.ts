@@ -295,7 +295,6 @@ export class ProductController {
     @Query('filterStyle') filterStyle?: string[],
   ): Promise<{ data: any; total: number }> {
     try {
-      console.log(typeof filterSize,'dx');
       const { data, total } = await this.productService.listProductForClientService(
         page,
         limit,
@@ -310,7 +309,6 @@ export class ProductController {
         filterType,
         filterStyle,
       );
-      console.log(typeof filterSize,'dx');
       return { data, total };
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get products');

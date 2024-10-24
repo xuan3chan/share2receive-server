@@ -279,7 +279,6 @@ export class ProductController {
   @ApiQuery({ name: 'filterCondition', required: false, type: [String] })
   @ApiQuery({ name: 'filterType', required: false, type: [String] })
   @ApiQuery({ name: 'filterStyle', required: false, type: [String] })
-  @ApiConsumes('multipart/form-data')
   @Get('list-product-for-client')
   async listProductForClientController(
     @Query('page') page: number = 1,

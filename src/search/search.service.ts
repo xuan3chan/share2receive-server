@@ -47,6 +47,7 @@ export class SearchService implements OnModuleInit {
             condition: body.condition === 'new' || body.condition === 'used' ? body.condition : undefined,
             tags: body.tags,
             material: body.material,
+            imgUrls: body.imgUrls, // Add imgUrl here
             sizeVariants: body.sizeVariants?.map((variant: any) => ({
               size: variant.size as string,
               colors: variant.colors as string,
@@ -104,6 +105,7 @@ export class SearchService implements OnModuleInit {
           brandName: (body.brandId as any)?.name,
           type: body.type === 'sale' || body.type === 'barter' ? body.type : undefined,
           price: body.price,
+          imgUrls: body.imgUrls,  // Add imgUrl here
           condition: body.condition === 'new' || body.condition === 'used' ? body.condition : undefined,
           tags: body.tags,
           material: body.material,

@@ -4,6 +4,7 @@ export interface ProductSearchCriteria {
     brandName?: string; // Tìm kiếm theo thương hiệu
     type?: 'sale' | 'barter'; // Lọc theo loại sản phẩm (bán hoặc trao đổi)
     price?: number
+    imgUrls?: string[]; // Tìm kiếm theo ảnh sản phẩm
     condition?: 'new' | 'used'; // Lọc theo điều kiện của sản phẩm (mới hoặc đã sử dụng)
     tags?: string[]; // Lọc theo các tags
     material?: string; // Tìm kiếm theo chất liệu sản phẩm

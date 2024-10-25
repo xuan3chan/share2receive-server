@@ -281,6 +281,7 @@ export class ProductController {
   @ApiQuery({ name: 'filterType', required: false, type: [String] })
   @ApiQuery({ name: 'filterStyle', required: false, type: [String] })
   @ApiQuery({ name: 'filterTypeCategory', required: false, type: [String],enum:TypeCategoryE })
+  @ApiQuery({ name: 'searchKey', required: false, type: String })
   @Get('list-product-for-client')
   async listProductForClientController(
     @Query('page') page: number = 1,
@@ -296,6 +297,7 @@ export class ProductController {
     @Query('filterType') filterType?: string[],
     @Query('filterStyle') filterStyle?: string[],
     @Query('filterTypeCategory') filterTypeCategory?: string[],
+    @Query('searchKey') searchKey?: string,
   ): Promise<{ data: any; total: number }> {
     try {
       const { data, total } = await this.productService.listProductForClientService(
@@ -312,6 +314,7 @@ export class ProductController {
         filterCondition,
         filterType,
         filterStyle,
+        searchKey
       );
       return { data, total };
     } catch (error) {

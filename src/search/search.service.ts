@@ -2,10 +2,8 @@ import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/com
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ProductDocument } from '@app/libs/common/schema'; // Đường dẫn schema Product
-import {ProductSearchCriteria} from '@app/libs/common/interface'
-
-
+import { ProductDocument } from '@app/libs/common/schema'; // Adjust the path accordingly
+import { ProductSearchCriteria } from '@app/libs/common/interface';
 
 @Injectable()
 export class SearchService implements OnModuleInit {
@@ -18,10 +16,11 @@ export class SearchService implements OnModuleInit {
 
   // Khởi động khi module bắt đầu
   async onModuleInit() {
-    this.syncWithElasticsearch();
+    await this.syncWithElasticsearch(); // Sync new changes
+    await this.reindexAllProducts();    // Reindex all existing products
   }
 
-
+  // Sync new changes to Elasticsearch
   async syncWithElasticsearch() {
     const changeStream = this.productModel.watch(); // Lắng nghe các sự kiện trên Product collection
   
@@ -86,37 +85,92 @@ export class SearchService implements OnModuleInit {
       }
     });
   }
+
+  // Method to reindex all existing products
+  async reindexAllProducts() {
+    try {
+      const products = await this.productModel
+        .find({})
+        .populate('categoryId', 'name')
+        .populate('brandId', 'name')
+        .lean();
+  
+      for (const product of products) {
+        const { _id, ...body } = product;
+  
+        const productSearchCriteria: ProductSearchCriteria = {
+          productName: body.productName,
+          categoryName: (body.categoryId as any).name,
+          brandName: (body.brandId as any)?.name,
+          type: body.type === 'sale' || body.type === 'barter' ? body.type : undefined,
+          price: body.price,
+          condition: body.condition === 'new' || body.condition === 'used' ? body.condition : undefined,
+          tags: body.tags,
+          material: body.material,
+          sizeVariants: body.sizeVariants?.map((variant: any) => ({
+            size: variant.size as string,
+            colors: variant.colors as string,
+            amount: variant.amount as number,
+          })) as ProductSearchCriteria['sizeVariants'],
+          style: body.style,
+          description: body.description,
+        };
+  
+        // Index each product
+        await this.elasticsearchService.index({
+          index: 'products',
+          body: productSearchCriteria,
+          id: _id.toString(),
+        });
+        this.logger.log(`Product reindexed: ${_id}`);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to reindex products: ${error.message}`);
+    }
+  }
+
+  // Search method
   async searchProductsService(searchKey: string) {
     try {
       const { body } = await this.elasticsearchService.search({
         index: 'products',
         body: {
           query: {
-            multi_match: {
-              query: searchKey,
-              fields: [
-                'productName^3',
-                'categoryName^2',
-                'brandName',
-                'tags',
-                'description',
+            bool: {
+              should: [
+                {
+                  multi_match: {
+                    query: searchKey,
+                    fields: [
+                      'productName^3',
+                      'categoryName^2',
+                      'brandName',
+                      'tags',
+                      'description',
+                    ],
+                    fuzziness: '1', // Increase fuzziness
+                    operator: 'or',
+                    minimum_should_match: '1<75%', // Minimum 75% match
+                  },
+                },
+                {
+                  match: {
+                    productName: {
+                      query: searchKey,
+                      boost: 5, // Higher boost for productName
+                    },
+                  },
+                },
               ],
-              fuzziness: '1', // Tăng độ fuzziness
-              operator: 'or',
-              minimum_should_match: '1<75%', // Tối thiểu 75% từ trong truy vấn
             },
           },
         },
       });
-  
+
       return body.hits.hits.map((hit) => hit._source);
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
-  
-  
-  
-  
 }

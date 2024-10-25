@@ -20,6 +20,7 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { MailerService } from 'src/mailer/mailer.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { SearchService } from 'src/search/search.service';
 
 @Injectable()
 export class ProductService {
@@ -33,7 +34,7 @@ export class ProductService {
     private readonly mailerService: MailerService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectQueue('send-email') private readonly sendEmailQueue: Queue,
-
+    private readonly searchService: SearchService,
   ) {}
   async createProductService(
     userId: string,
@@ -316,6 +317,7 @@ export class ProductService {
     filterCondition?: string[],
     filterType?: string[],
     filterStyle?: string[],
+    searchKey?: string, // Search key added here
   ): Promise<{ data: any; total: number }> {
     try {
       const query: any = {
@@ -324,6 +326,32 @@ export class ProductService {
         'approved.approveStatus': 'approved',
         isBlock: false,
       };
+  
+      // If searchKey is provided, search using Elasticsearch and filter results accordingly
+      if (searchKey) {
+        const searchResults = await this.searchService.searchProductsService(searchKey);
+        
+        // If filters are applied, we filter the search results further
+        const filteredResults = searchResults.filter(product => {
+          // Add filter conditions based on filters such as category, brand, etc.
+          return (
+            (!filterCategory || filterCategory.includes(product.categoryName)) &&
+            (!filterBrand || filterBrand.includes(product.brandName)) &&
+            (!filterStartPrice || product.price >= filterStartPrice) &&
+            (!filterEndPrice || product.price <= filterEndPrice) &&
+            (!filterCondition || filterCondition.includes(product.condition)) &&
+            (!filterMaterial || filterMaterial.includes(product.material)) &&
+            (!filterStyle || filterStyle.includes(product.style))
+          );
+        });
+  
+        const paginatedResults = filteredResults.slice((page - 1) * limit, page * limit);
+  
+        return {
+          data: paginatedResults,
+          total: filteredResults.length,
+        };
+      }
   
       // Function to add filter criteria
       const addFilter = (field: string, value: string | string[]) => {
@@ -346,18 +374,14 @@ export class ProductService {
       // Filter for typeCategory
       if (filterTypeCategory) {
         const typeCategoryArray = Array.isArray(filterTypeCategory) ? filterTypeCategory : [filterTypeCategory];
-  
-        // Get category IDs for the specified type
         const categoryIds = await this.categoryModel
           .find({ type: { $in: typeCategoryArray } })
           .distinct('_id');
   
-        // Add category ID filter only if category IDs are found
         if (categoryIds.length > 0) {
           query.categoryId = { $in: categoryIds };
         } else {
-          // If no category IDs match, return an empty result
-          query.categoryId = null; // Ensure no products will match
+          query.categoryId = null;
         }
       }
   
@@ -407,9 +431,6 @@ export class ProductService {
       throw new BadRequestException(error.message || 'Failed to get products');
     }
   }
-  
-  
-  
   
   
   async getProductDetailService(productId: string): Promise<Product> {

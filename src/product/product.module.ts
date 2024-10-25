@@ -9,6 +9,7 @@ import { AbilityFactory } from '@app/libs/common/abilities';
 import { MailerModule } from 'src/mailer/mailer.module';
 import { BullModule } from '@nestjs/bull';
 import { MailConsumer } from './mail.consumer';
+import { SearchModule } from 'src/search/search.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { MailConsumer } from './mail.consumer';
     BullModule.registerQueue({
       name: 'send-email',
     }),
+    SearchModule,
     
   ],
   controllers: [ProductController],

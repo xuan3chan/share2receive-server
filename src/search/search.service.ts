@@ -26,6 +26,7 @@ export class SearchService implements OnModuleInit {
         _id: variant._id.toString(), // Nếu bạn cần lưu _id cho sizeVariants
       })),
       material: product.material,
+      approveStatus: product.approved.approveStatus,
       userId: {
         _id: product.userId?._id.toString(), // Kiểm tra xem userId có tồn tại không
         firstname: product.userId?.firstname,
@@ -42,6 +43,8 @@ export class SearchService implements OnModuleInit {
         name: product.brandId?.name,
       },
       status: product.status,
+      isDeleted: product.isDeleted,
+      isBlocked: product.isBlocked,
       type: product.type,
       price: product.price,
       priceNew: product.priceNew,
@@ -176,8 +179,11 @@ async syncWithElasticsearch() {
           },
         },
       });
-
-      return body.hits.hits.map((hit) => hit._source);
+        //print when approveStatus = approved and isDeleted = false and isBlock = false and status = active
+      const products = body.hits.hits
+        .map((hit) => hit._source)
+        .filter((product) => product.approveStatus === 'approved' && !product.isDeleted && !product.isBlocked && product.status === 'active');
+      return products;
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');

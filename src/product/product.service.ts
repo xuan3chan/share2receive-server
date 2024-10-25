@@ -327,31 +327,45 @@ export class ProductService {
         isBlock: false,
       };
   
-      // If searchKey is provided, search using Elasticsearch and filter results accordingly
-      if (searchKey) {
-        const searchResults = await this.searchService.searchProductsService(searchKey);
-        
-        // If filters are applied, we filter the search results further
-        const filteredResults = searchResults.filter(product => {
-          // Add filter conditions based on filters such as category, brand, etc.
-          return (
-            (!filterCategory || filterCategory.includes(product.categoryName)) &&
-            (!filterBrand || filterBrand.includes(product.brandName)) &&
-            (!filterStartPrice || product.price >= filterStartPrice) &&
-            (!filterEndPrice || product.price <= filterEndPrice) &&
-            (!filterCondition || filterCondition.includes(product.condition)) &&
-            (!filterMaterial || filterMaterial.includes(product.material)) &&
-            (!filterStyle || filterStyle.includes(product.style))
-          );
-        });
   
-        const paginatedResults = filteredResults.slice((page - 1) * limit, page * limit);
-  
-        return {
-          data: paginatedResults,
-          total: filteredResults.length,
-        };
-      }
+    // Initialize search results
+    let searchResults: any[] = [];
+
+    // If searchKey is provided, search using Elasticsearch
+    if (searchKey) {
+      searchResults = await this.searchService.searchProductsService(searchKey);
+    } else {
+      // If no searchKey, fetch all active products without search
+      searchResults = await this.productModel.find(query)
+        .populate('categoryId', 'name type')
+        .populate('brandId', 'name')
+        .populate('userId', 'firstname lastname avatar')
+        .select('-createdAt -updatedAt -__v -approved -isDeleted -isBlock')
+        .lean({ virtuals: true })
+        .exec();
+    }
+
+    // If filters are applied, filter the search results further
+    const filteredResults = searchResults.filter(product => {
+      // Add filter conditions based on filters such as category, brand, etc.
+      return (
+        (!filterCategory || filterCategory.includes(product.categoryName)) &&
+        (!filterBrand || filterBrand.includes(product.brandName)) &&
+        (!filterStartPrice || product.price >= filterStartPrice) &&
+        (!filterEndPrice || product.price <= filterEndPrice) &&
+        (!filterCondition || filterCondition.includes(product.condition)) &&
+        (!filterMaterial || filterMaterial.includes(product.material)) &&
+        (!filterStyle || filterStyle.includes(product.style))
+      );
+    });
+
+    // Implement pagination
+    const paginatedResults = filteredResults.slice((page - 1) * limit, page * limit);
+
+    return {
+      data: paginatedResults,
+      total: filteredResults.length,
+    };
   
       // Function to add filter criteria
       const addFilter = (field: string, value: string | string[]) => {

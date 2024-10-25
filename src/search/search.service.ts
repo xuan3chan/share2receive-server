@@ -43,6 +43,7 @@ export class SearchService implements OnModuleInit {
         name: product.brandId?.name,
       },
       status: product.status,
+      _id:product._id,
       isDeleted: product.isDeleted,
       isBlocked: product.isBlocked,
       type: product.type,

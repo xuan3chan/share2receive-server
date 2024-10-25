@@ -160,7 +160,7 @@ async syncWithElasticsearch() {
                     ],
                     fuzziness: '1', // Increase fuzziness
                     operator: 'or',
-                    minimum_should_match: '1<75%', // Minimum 75% match
+                    minimum_should_match: '1<85%', // Minimum 75% match
                   },
                 },
                 {

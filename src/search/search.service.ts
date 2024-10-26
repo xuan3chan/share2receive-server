@@ -14,7 +14,7 @@ export class SearchService implements OnModuleInit {
     @InjectModel('Product') private productModel: Model<ProductDocument>,
   ) {}
 
-  // Chuyển đổi một sản phẩm từ MongoDB sang định dạng mong muốn
+  // Transforms a product from MongoDB into the desired format
   private transformProduct(product: any) {
     return {
       productName: product.productName,
@@ -23,27 +23,26 @@ export class SearchService implements OnModuleInit {
         size: variant.size,
         colors: variant.colors,
         amount: variant.amount,
-        _id: variant._id.toString(), // Nếu bạn cần lưu _id cho sizeVariants
+        _id: variant._id.toString(),
       })),
       material: product.material,
       approveStatus: product.approved.approveStatus,
       userId: {
-        _id: product.userId?._id.toString(), // Kiểm tra xem userId có tồn tại không
+        _id: product.userId?._id.toString(),
         firstname: product.userId?.firstname,
         lastname: product.userId?.lastname,
         avatar: product.userId?.avatar,
       },
       categoryId: {
-        _id: product.categoryId?._id.toString(), // Kiểm tra xem categoryId có tồn tại không
+        _id: product.categoryId?._id.toString(),
         name: product.categoryId?.name,
         type: product.categoryId?.type,
       },
       brandId: {
-        _id: product.brandId?._id.toString(), // Kiểm tra xem brandId có tồn tại không
+        _id: product.brandId?._id.toString(),
         name: product.brandId?.name,
       },
       status: product.status,
-      _id:product._id,
       isDeleted: product.isDeleted,
       isBlocked: product.isBlocked,
       type: product.type,
@@ -58,83 +57,77 @@ export class SearchService implements OnModuleInit {
     };
   }
 
-  // Khởi động khi module bắt đầu
+  // Runs when the module initializes
   async onModuleInit() {
     await this.syncWithElasticsearch(); // Sync new changes
     await this.reindexAllProducts();    // Reindex all existing products
   }
 
-  // Sync new changes to Elasticsearch
-  // Cập nhật phương thức đồng bộ
-async syncWithElasticsearch() {
-  const changeStream = this.productModel.watch(); // Lắng nghe các sự kiện trên Product collection
+  // Syncs new changes to Elasticsearch
+  async syncWithElasticsearch() {
+    const changeStream = this.productModel.watch(); // Watches for events on Product collection
 
-  changeStream.on('change', async (change) => {
-    const { operationType, documentKey } = change;
+    changeStream.on('change', async (change) => {
+      const { operationType, documentKey } = change;
 
-    try {
-      if (operationType === 'insert' || operationType === 'update') {
-        // Lấy đầy đủ document từ MongoDB với populate
-        const fullDocument = await this.productModel
-          .findById(documentKey._id)
-          .populate('categoryId', 'name type') // Populate trường categoryId chỉ lấy name và type
-          .populate('brandId', 'name') // Populate trường brandId chỉ lấy name
-          .populate('userId', 'firstname lastname avatar') // Populate userId để lấy thông tin người dùng
-          .lean(); // Chuyển đổi thành object thông thường để tối ưu hóa
+      try {
+        if (operationType === 'insert' || operationType === 'update') {
+          const fullDocument = await this.productModel
+            .findById(documentKey._id)
+            .populate('categoryId', 'name type')
+            .populate('brandId', 'name')
+            .populate('userId', 'firstname lastname avatar')
+            .lean();
 
-        // Định dạng sản phẩm
-        const productSearchCriteria = this.transformProduct(fullDocument);
+          const productSearchCriteria = this.transformProduct(fullDocument);
 
-        if (operationType === 'insert') {
-          await this.elasticsearchService.index({
+          if (operationType === 'insert') {
+            await this.elasticsearchService.index({
+              index: 'products',
+              body: productSearchCriteria,
+              id: documentKey._id.toString(),
+            });
+            this.logger.log(`Product indexed: ${documentKey._id}`);
+          } else if (operationType === 'update') {
+            await this.elasticsearchService.update({
+              index: 'products',
+              id: documentKey._id.toString(),
+              body: {
+                doc: productSearchCriteria,
+              },
+            });
+            this.logger.log(`Product updated: ${documentKey._id}`);
+          }
+        } else if (operationType === 'delete') {
+          await this.elasticsearchService.delete({
             index: 'products',
-            body: productSearchCriteria,
             id: documentKey._id.toString(),
           });
-          this.logger.log(`Product indexed: ${documentKey._id}`);
-        } else if (operationType === 'update') {
-          await this.elasticsearchService.update({
-            index: 'products',
-            id: documentKey._id.toString(),
-            body: {
-              doc: productSearchCriteria, // Cập nhật document mà không có _id trong body
-            },
-          });
-          this.logger.log(`Product updated: ${documentKey._id}`);
+          this.logger.log(`Product deleted from Elasticsearch: ${documentKey._id}`);
         }
-      } else if (operationType === 'delete') {
-        await this.elasticsearchService.delete({
-          index: 'products',
-          id: documentKey._id.toString(),
-        });
-        this.logger.log(`Product deleted from Elasticsearch: ${documentKey._id}`);
+      } catch (error) {
+        this.logger.error(`Error syncing document ${documentKey._id} with Elasticsearch`, error);
       }
-    } catch (error) {
-      this.logger.error(`Error syncing document ${documentKey._id} with Elasticsearch`, error);
-    }
-  });
-}
+    });
+  }
 
-
-  // Method to reindex all existing products
+  // Reindexes all existing products
   async reindexAllProducts() {
     try {
       const fullDocuments = await this.productModel
         .find({})
-        .populate('categoryId', 'name type') // Populate thêm type nếu cần
-        .populate('brandId', 'name') // Chỉ lấy name cho brandId
-        .populate('userId', 'firstname lastname avatar') // Populate thêm thông tin người dùng
-        .lean(); // Chuyển đổi thành object thông thường
-  
+        .populate('categoryId', 'name type')
+        .populate('brandId', 'name')
+        .populate('userId', 'firstname lastname avatar')
+        .lean();
+
       for (const product of fullDocuments) {
-        // Gọi transformProduct với tất cả thông tin cần thiết
         const productSearchCriteria = this.transformProduct(product);
-  
-        // Index each product, setting _id as a parameter
+
         await this.elasticsearchService.index({
           index: 'products',
-          body: productSearchCriteria, // Không có _id trong body
-          id: product._id.toString(), // Sử dụng _id để lập chỉ mục
+          body: productSearchCriteria,
+          id: product._id.toString(),
         });
         this.logger.log(`Product reindexed: ${product._id}`);
       }
@@ -143,7 +136,7 @@ async syncWithElasticsearch() {
     }
   }
 
-  // Search method
+  // Search method for products
   async searchProductsService(searchKey: string) {
     try {
       const { body } = await this.elasticsearchService.search({
@@ -162,16 +155,16 @@ async syncWithElasticsearch() {
                       'tags',
                       'description',
                     ],
-                    fuzziness: '1', // Increase fuzziness
+                    fuzziness: '1',
                     operator: 'or',
-                    minimum_should_match: '1<85%', // Minimum 75% match
+                    minimum_should_match: '1<85%',
                   },
                 },
                 {
                   match: {
                     productName: {
                       query: searchKey,
-                      boost: 5, // Higher boost for productName
+                      boost: 5,
                     },
                   },
                 },
@@ -180,7 +173,8 @@ async syncWithElasticsearch() {
           },
         },
       });
-        //print when approveStatus = approved and isDeleted = false and isBlock = false and status = active
+
+      // Filter products with specific conditions
       const products = body.hits.hits
         .map((hit) => hit._source)
         .filter((product) => product.approveStatus === 'approved' && !product.isDeleted && !product.isBlocked && product.status === 'active');

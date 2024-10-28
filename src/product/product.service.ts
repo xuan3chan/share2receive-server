@@ -62,6 +62,9 @@ export class ProductService {
       await this.brandModel
         .findByIdAndUpdate(product.brandId, { $inc: { totalProduct: 1 } })
         .exec();
+      await this.categoryModel.findByIdAndUpdate(
+        product.categoryId, { $inc: { totalProduct: 1 } }
+      ).exec();
       // Create a new product and assign the uploaded image URLs
       const newProduct = new this.productModel({
         ...product, // Spread the product fields
@@ -137,9 +140,20 @@ export class ProductService {
     product: UpdateProductDto,
   ): Promise<Product> {
     try {
+      // Fetch the existing product once to check current brand and category associations
+      const existingProduct = await this.productModel.findById(productId);
+      if (!existingProduct) {
+        throw new BadRequestException('Product not found');
+      }
+  
+      // Validate category and brand existence if IDs are provided and changed
       const [checkCategory, checkBrand] = await Promise.all([
-        product.categoryId ? this.categoryModel.findById(product.categoryId) : null,
-        product.brandId ? this.brandModel.findById(product.brandId) : null,
+        product.categoryId && product.categoryId !== existingProduct.categoryId?.toString()
+          ? this.categoryModel.findById(product.categoryId)
+          : null,
+        product.brandId && product.brandId !== existingProduct.brandId?.toString()
+          ? this.brandModel.findById(product.brandId)
+          : null,
       ]);
   
       if (product.categoryId && !checkCategory) {
@@ -149,7 +163,7 @@ export class ProductService {
         throw new BadRequestException('Brand not found');
       }
   
-      // Prepare update fields
+      // Prepare fields to update
       const updateFields: any = {
         $set: {
           ...product,
@@ -163,20 +177,47 @@ export class ProductService {
       // If product type is 'barter', remove price and priceNew
       if (product.type === 'barter') {
         updateFields.$unset = { price: '', priceNew: '' };
-        // Ensure that price and priceNew are not included in $set
         delete updateFields.$set.price;
         delete updateFields.$set.priceNew;
       }
   
-      // Check if product name already exists
+      // Check for existing product with the same name
       if (product.productName) {
         const checkExist = await this.productModel.findOne({
           productName: product.productName,
+          _id: { $ne: productId },
         });
-        if (checkExist && checkExist._id.toString() !== productId) {
+        if (checkExist) {
           throw new BadRequestException('Product with this name already exists');
         }
       }
+  
+      // Handle brand and category count adjustments if they have changed
+      const updatePromises = [];
+      if (product.brandId && product.brandId !== existingProduct.brandId?.toString()) {
+        updatePromises.push(
+          this.brandModel.findByIdAndUpdate(existingProduct.brandId, {
+            $inc: { totalProduct: -1 },
+          }),
+          this.brandModel.findByIdAndUpdate(product.brandId, {
+            $inc: { totalProduct: 1 },
+          })
+        );
+      }
+  
+      if (product.categoryId && product.categoryId !== existingProduct.categoryId?.toString()) {
+        updatePromises.push(
+          this.categoryModel.findByIdAndUpdate(existingProduct.categoryId, {
+            $inc: { totalProduct: -1 },
+          }),
+          this.categoryModel.findByIdAndUpdate(product.categoryId, {
+            $inc: { totalProduct: 1 },
+          })
+        );
+      }
+  
+      // Execute brand/category updates in parallel
+      await Promise.all(updatePromises);
   
       // Update the product
       const updatedProduct = await this.productModel.findOneAndUpdate(
@@ -201,11 +242,13 @@ export class ProductService {
   }
   
   
+  
   async deleteProductService(
     userId: string,
     productId: string,
   ): Promise<{ message: string }> {
     try {
+      // Mark the product as deleted
       const productDelete = await this.productModel.findOneAndUpdate(
         {
           _id: productId,
@@ -218,17 +261,33 @@ export class ProductService {
         },
         { new: true }, // Return the updated document
       );
-
+  
       if (!productDelete) {
         throw new BadRequestException('Product not found or not owned by user');
       }
-
-      await this.brandModel
-        .findByIdAndUpdate(productDelete.brandId, {
-          $inc: { totalProduct: -1 },
-        })
-        .exec();
-
+  
+      // Adjust total product count for both brand and category if applicable
+      const updatePromises = [];
+      
+      if (productDelete.brandId) {
+        updatePromises.push(
+          this.brandModel.findByIdAndUpdate(productDelete.brandId, {
+            $inc: { totalProduct: -1 },
+          })
+        );
+      }
+  
+      if (productDelete.categoryId) {
+        updatePromises.push(
+          this.categoryModel.findByIdAndUpdate(productDelete.categoryId, {
+            $inc: { totalProduct: -1 },
+          })
+        );
+      }
+  
+      // Execute brand and category updates in parallel
+      await Promise.all(updatePromises);
+  
       return { message: 'Product deleted successfully' };
     } catch (error) {
       throw new BadRequestException(
@@ -236,6 +295,7 @@ export class ProductService {
       );
     }
   }
+  
   async updateStatusService(
     userId: string,
     productId: string,

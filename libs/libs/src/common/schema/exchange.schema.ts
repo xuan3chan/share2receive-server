@@ -39,7 +39,7 @@ export class Exchange extends Document {
     type: {
       exchangeStatus: {
         type: mongoose.Schema.Types.String,
-        enum: ExchangeStatusE,
+        enum: ShippingStatusE,
       },
       confirmStatus: {
         type: mongoose.Schema.Types.String,
@@ -80,7 +80,7 @@ export class Exchange extends Document {
     type: {
       exchangeStatus: {
         type: mongoose.Schema.Types.String,
-        enum: ExchangeStatusE,
+        enum: ShippingStatusE,
       },
       confirmStatus: {
         type: mongoose.Schema.Types.String,

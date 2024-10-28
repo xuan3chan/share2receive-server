@@ -336,13 +336,13 @@ export class ExchangeService {
       exchange = await this.exchangeModel
         .findById(exchangeId)
         .session(session);
-  
       // Confirm both statuses are "pending" before allowing cancellation
       if (status === 'canceled') {
         if (
           exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending ||
           exchange.requestStatus.exchangeStatus !== ShippingStatusE.pending
         ) {
+
           throw new BadRequestException('Both parties are not pending');
         }
   
@@ -451,6 +451,12 @@ export class ExchangeService {
       if (!exchange) {
         throw new BadRequestException('Exchange not found');
       }
+      if(
+        exchange.allExchangeStatus !== 'accepted'
+      ){
+        throw new BadRequestException('Exchange status is not accepted')
+      }
+      
 
       // Ensure that the user is either the requester or the receiver
       const isRequester =

@@ -1,4 +1,4 @@
-export enum   ExchangeStatusE {
+export enum  ExchangeStatusE {
     PENDING = 'pending',
     ACCEPTED = 'accepted',
     REJECTED = 'rejected',

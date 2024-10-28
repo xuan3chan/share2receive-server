@@ -558,6 +558,7 @@ export class ProductService {
           status: 'active', // Only active products
           'approved.approveStatus': 'approved', // Only approved products
           isDeleted: false, // Exclude deleted products
+          isBlock: false, // Exclude blocked products
           userId: { $ne: userId }, // Exclude the current user's products
         })
         .populate('categoryId', 'type') // Populate categoryId to access type field

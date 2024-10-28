@@ -43,7 +43,7 @@ export class CreateCategoryDto {
     description: 'Type of category',
     example: TypeCategoryE.Male,
   })
-  @IsEnum(TypeCategoryE, { message: 'type must be one of the following values: men, women, unisex, item, other' })
+  @IsEnum(TypeCategoryE, { message: 'type must be one of the following values: male, female, unisex, item, other' })
   type: TypeCategoryE;
 
   @ApiProperty({

@@ -25,7 +25,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { MemberGuard } from '@app/libs/common/gaurd';
-import { ExchangeStatusE } from '@app/libs/common/enum';
+import { ConfirmStatusE, ExchangeStatusE } from '@app/libs/common/enum';
 import { ShippingStatusE } from '@app/libs/common/enum/shipping-status.enum';
 
 @ApiTags('Exchange')
@@ -91,5 +91,21 @@ export class ExchangeController {
   ) {
     const userId = this.getUserIdFromToken(request);
     return this.exchangeService.updateExchangeStatuswhenShippingService(id, userId, status);
+  }
+
+  @Patch('update-confirm-status-exchange/:id')
+  @UseGuards(MemberGuard)
+  @ApiOperation({
+  summary: 'Update Exchange Confirm Status (Confirm or Reject Exchange)',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiQuery({ name: 'confirmStatus', type: String, enum: ConfirmStatusE, required: true })
+  async updateConfirmStatusExchangeController(
+    @Param('id') id: string,
+    @Req() request: Request,
+    @Query('confirmStatus') confirmStatus: string,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.exchangeService.updateExchangeConfirmStatusService(userId, id, confirmStatus);
   }
 }

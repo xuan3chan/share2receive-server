@@ -283,7 +283,6 @@ export class ExchangeService {
       return exchange.toObject();
     } catch (error) {
       await session.abortTransaction();
-      console.log(error);
       throw error;
     } finally {
       session.endSession();
@@ -314,35 +313,27 @@ export class ExchangeService {
         throw new BadRequestException('Exchange status is not accepted');
       }
   
-      // Ensure that the user is either the requester or the receiver
-      const isRequester =
-        (exchange.requesterId as any)._id.toString() === userId;
+      // Determine the role of the user (requester or receiver)
+      const isRequester = (exchange.requesterId as any)._id.toString() === userId;
       const isReceiver = (exchange.receiverId as any)._id.toString() === userId;
+  
       if (!isRequester && !isReceiver) {
         throw new BadRequestException('You are not the requester or receiver');
       }
   
-      // Determine if the user is the requester or receiver and update status
-      let otherPartyId;
+      // Update only the relevant status based on the user role
       if (isRequester) {
         exchange.requestStatus.exchangeStatus = status;
-        otherPartyId = exchange.receiverId;
-      } else {
+      } else if (isReceiver) {
         exchange.receiverStatus.exchangeStatus = status;
-        otherPartyId = exchange.requesterId;
       }
   
-      // Reload the exchange document within the transaction to ensure latest data
-      exchange = await this.exchangeModel
-        .findById(exchangeId)
-        .session(session);
-      // Confirm both statuses are "pending" before allowing cancellation
+      // If status is "canceled", verify both statuses are pending
       if (status === 'canceled') {
         if (
-          exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending ||
+          exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending &&
           exchange.requestStatus.exchangeStatus !== ShippingStatusE.pending
         ) {
-
           throw new BadRequestException('Both parties are not pending');
         }
   
@@ -386,11 +377,11 @@ export class ExchangeService {
       // Handle completion status, setting confirmStatus for the opposite party
       if (status === 'completed') {
         if (isRequester) {
-          exchange.receiverStatus.exchangeStatus = status;
-          exchange.requestStatus.confirmStatus = 'pending';
-        } else {
           exchange.requestStatus.exchangeStatus = status;
           exchange.receiverStatus.confirmStatus = 'pending';
+        } else {
+          exchange.receiverStatus.exchangeStatus = status;
+          exchange.requestStatus.confirmStatus = 'pending';
         }
       }
   
@@ -414,9 +405,13 @@ export class ExchangeService {
       const notificationMessage = `Giao dịch cho sản phẩm "${product?.productName}" đã được cập nhật thành "${status}" bởi người dùng ${updatingUser}.`;
   
       // Send notification to the other party about the status update
-      console.log('Sending notification to:', (otherPartyId as any)._id);
+      const otherPartyId = isRequester
+        ? (exchange.receiverId as any)._id
+        : (exchange.requesterId as any)._id;
+  
+      console.log('Sending notification to:', otherPartyId);
       await this.eventGateway.sendAuthenticatedNotification(
-        (otherPartyId as any)._id.toString(),
+        otherPartyId.toString(),
         notificationMessage,
       );
   
@@ -430,6 +425,8 @@ export class ExchangeService {
       session.endSession();
     }
   }
+  
+  
   
   
 
@@ -456,7 +453,6 @@ export class ExchangeService {
       ){
         throw new BadRequestException('Exchange status is not accepted')
       }
-      
 
       // Ensure that the user is either the requester or the receiver
       const isRequester =

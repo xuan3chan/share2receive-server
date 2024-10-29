@@ -298,7 +298,7 @@ export class ExchangeService {
     session.startTransaction();
   
     try {
-      // Reload the document to ensure up-to-date data
+      // Tải lại tài liệu để đảm bảo dữ liệu mới nhất
       let exchange = await this.exchangeModel
         .findById(exchangeId)
         .populate('requesterId', 'firstname lastname')
@@ -313,7 +313,7 @@ export class ExchangeService {
         throw new BadRequestException('Exchange status is not accepted');
       }
   
-      // Determine the role of the user (requester or receiver)
+      // Xác định vai trò của người dùng (requester hoặc receiver)
       const isRequester = (exchange.requesterId as any)._id.toString() === userId;
       const isReceiver = (exchange.receiverId as any)._id.toString() === userId;
   
@@ -321,26 +321,35 @@ export class ExchangeService {
         throw new BadRequestException('You are not the requester or receiver');
       }
   
-      // Update only the relevant status based on the user role
+      // Cập nhật trạng thái tương ứng với vai trò của người dùng
       if (isRequester) {
         exchange.requestStatus.exchangeStatus = status;
       } else if (isReceiver) {
         exchange.receiverStatus.exchangeStatus = status;
       }
   
-      // If status is "canceled", verify both statuses are pending
+      // Kiểm tra riêng cho trạng thái "canceled"
       if (status === 'canceled') {
-        if (
-          exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending &&
-          exchange.requestStatus.exchangeStatus !== ShippingStatusE.pending
-        ) {
-          throw new BadRequestException('Both parties are not pending');
+        if (isRequester) {
+          // Chỉ cho phép requester hủy khi receiver vẫn đang ở trạng thái pending
+          if (exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending) {
+            throw new BadRequestException('Receiver is not pending');
+          }
+        } else if (isReceiver) {
+          // Chỉ cho phép receiver hủy khi requester vẫn đang ở trạng thái pending
+          if (exchange.requestStatus.exchangeStatus !== ShippingStatusE.pending) {
+            throw new BadRequestException('Requester is not pending');
+          }
         }
   
-        // Set both statuses to "canceled"
-        exchange.receiverStatus.exchangeStatus = 'canceled';
-        exchange.requestStatus.exchangeStatus = 'canceled';
+        // Nếu điều kiện thỏa mãn, cập nhật trạng thái "canceled" chỉ cho người dùng hiện tại
+        if (isRequester) {
+          exchange.requestStatus.exchangeStatus = 'canceled';
+        } else if (isReceiver) {
+          exchange.receiverStatus.exchangeStatus = 'canceled';
+        }
   
+        // Đưa sản phẩm về trạng thái ban đầu (ví dụ: khôi phục số lượng)
         await Promise.all([
           this.productModel.updateOne(
             {
@@ -374,18 +383,18 @@ export class ExchangeService {
         exchange.allExchangeStatus = 'canceled';
       }
   
-      // Handle completion status, setting confirmStatus for the opposite party
+      // Xử lý trạng thái hoàn thành, chỉ cập nhật confirmStatus của bên còn lại
       if (status === 'completed') {
         if (isRequester) {
           exchange.requestStatus.exchangeStatus = status;
           exchange.receiverStatus.confirmStatus = 'pending';
-        } else {
+        } else if (isReceiver) {
           exchange.receiverStatus.exchangeStatus = status;
           exchange.requestStatus.confirmStatus = 'pending';
         }
       }
   
-      // Save the exchange status and commit transaction
+      // Lưu trạng thái cập nhật và commit giao dịch
       await exchange.save({ session });
       await session.commitTransaction();
   
@@ -401,10 +410,10 @@ export class ExchangeService {
           ' ' +
           (exchange.receiverId as any).lastname;
   
-      // Create the notification message with the user's full name
+      // Tạo thông báo với tên đầy đủ của người dùng
       const notificationMessage = `Giao dịch cho sản phẩm "${product?.productName}" đã được cập nhật thành "${status}" bởi người dùng ${updatingUser}.`;
   
-      // Send notification to the other party about the status update
+      // Gửi thông báo cho bên còn lại
       const otherPartyId = isRequester
         ? (exchange.receiverId as any)._id
         : (exchange.requesterId as any)._id;
@@ -427,8 +436,7 @@ export class ExchangeService {
   }
   
   
-  
-  
+
 
   async updateExchangeConfirmStatusService(
     userId: string,
@@ -477,6 +485,7 @@ export class ExchangeService {
         exchange.receiverStatus.confirmStatus === 'confirmed'
       ) {
         exchange.allExchangeStatus = 'completed';
+        exchange.completedAt = new Date();
       }
 
       // Save the exchange status and commit transaction

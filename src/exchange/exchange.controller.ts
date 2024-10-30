@@ -108,4 +108,15 @@ export class ExchangeController {
     const userId = this.getUserIdFromToken(request);
     return this.exchangeService.updateExchangeConfirmStatusService(userId, id, confirmStatus);
   }
+
+  @Get('get-exchange-detail/:id')
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Get Exchange Detail' })
+  async getExchangeDetailController(
+    @Param('id') id: string,
+    @Req() request: Request,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.exchangeService.getExchangeDetailService(userId, id);
+  }
 }

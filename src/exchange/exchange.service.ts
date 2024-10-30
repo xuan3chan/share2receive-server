@@ -122,6 +122,38 @@ export class ExchangeService {
     return structuredExchanges;
   }
 
+  async getExchangeDetailService(
+    userId: string,
+    exchangeId: string,
+  ): Promise<any> {
+    const exchange = await this.exchangeModel
+      .findById(exchangeId)
+      .populate('requesterId', 'firstname lastname avatar email')
+      .populate('receiverId', 'firstname lastname avatar email')
+      .populate('requestProduct.requesterProductId', 'productName imgUrls')
+      .populate('receiveProduct.receiverProductId', 'productName imgUrls')
+      .lean();
+
+    if (!exchange) {
+      throw new BadRequestException('Exchange not found');
+    }
+
+    // Xác định vai trò của userId trong exchange (requester hoặc receiver)
+    let role = '';
+    if ((exchange.requesterId as any)._id.toString() === userId) {
+      role = 'requester';
+    } else if ((exchange.receiverId as any)._id.toString() === userId) {
+      role = 'receiver';
+    } else {
+      throw new BadRequestException('You are not a participant in this exchange');
+    }
+
+    return {
+      ...exchange,
+      role,
+    };
+  }
+
   async updateStatusExchangeService(
     userId: string,
     exchangeId: string,
@@ -344,7 +376,7 @@ export class ExchangeService {
   
         // Nếu điều kiện thỏa mãn, cập nhật trạng thái "canceled" chỉ 2 bên
        exchange.receiverStatus.exchangeStatus = 'canceled';
-        exchange.requestStatus.exchangeStatus = 'canceled';
+       
   
         // Đưa sản phẩm về trạng thái ban đầu (ví dụ: khôi phục số lượng)
         await Promise.all([

@@ -342,12 +342,9 @@ export class ExchangeService {
           }
         }
   
-        // Nếu điều kiện thỏa mãn, cập nhật trạng thái "canceled" chỉ cho người dùng hiện tại
-        if (isRequester) {
-          exchange.requestStatus.exchangeStatus = 'canceled';
-        } else if (isReceiver) {
-          exchange.receiverStatus.exchangeStatus = 'canceled';
-        }
+        // Nếu điều kiện thỏa mãn, cập nhật trạng thái "canceled" chỉ 2 bên
+       exchange.receiverStatus.exchangeStatus = 'canceled';
+        exchange.requestStatus.exchangeStatus = 'canceled';
   
         // Đưa sản phẩm về trạng thái ban đầu (ví dụ: khôi phục số lượng)
         await Promise.all([

@@ -60,7 +60,7 @@ export class ExchangeController {
   @Get('get-list-exchange')
   @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Limit per page', example: 10 })
-  @ApiQuery({ name: 'filterUserId', required: false, description: 'Filter by user id', example: 'userId1,userId2' })
+  @ApiQuery({ name: 'filterUserId', required: false, description: 'Filter by user id' })
   @UseGuards(MemberGuard)
   @ApiOperation({ summary: 'Get list of exchanges' })
   async getListExchange(

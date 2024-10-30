@@ -105,7 +105,7 @@ export class ExchangeService {
     filterUserId?: string[],
     page: number = 1,
     limit: number = 10,
-  ): Promise<any[]> {
+  ): Promise<{ total: number; data: any[] }> {
     const queryConditions = {
       $or: [
         { requesterId: userId, ...(filterUserId ? { receiverId: { $in: filterUserId } } : {}) },
@@ -113,6 +113,10 @@ export class ExchangeService {
       ],
     };
   
+    // Get total count of documents matching the query (without pagination)
+    const total = await this.exchangeModel.countDocuments(queryConditions);
+  
+    // Get paginated list of exchanges
     const listExchange = await this.exchangeModel
       .find(queryConditions)
       .populate('requesterId', 'firstname lastname avatar email')
@@ -131,8 +135,12 @@ export class ExchangeService {
           : 'receiver',
     }));
   
-    return structuredExchanges;
+    return {
+      total,
+      data: structuredExchanges,
+    };
   }
+  
   
 
   async getExchangeDetailService(

@@ -99,8 +99,12 @@ export class User extends Document {
   @Prop({ type: mongoose.Schema.Types.String, default: null })
   typeUser: string;
 
-  @Prop({ type: mongoose.Schema.Types.String, default: 0 })
+  @Prop({ type: mongoose.Schema.Types.Number, default: 0 })
   averageRating: number;
+  
+  @Prop({ type: mongoose.Schema.Types.Number, default: 0 })
+  numberOfRating: number;
+  
   
 }
 

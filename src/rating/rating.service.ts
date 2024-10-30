@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { RatingDocument, ExchangeDocument } from '@app/libs/common/schema';
+import { RatingDocument, ExchangeDocument,UserDocument } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateRatingDto } from '@app/libs/common/dto';
@@ -18,55 +18,70 @@ export class RatingService {
     createRatingDto: CreateRatingDto,
   ): Promise<RatingDocument> {
     const { targetType, targetId, rating, comment } = createRatingDto;
-
+  
     if (targetType === 'Product') {
       const product = await this.productModel.findById(targetId);
-      if (!product) {
-        throw new Error('Product not found');
-      }
-      if (product.userId === userId) {
-        throw new Error('You cannot rate your own product');
-      }
+      if (!product) throw new Error('Product not found');
+      if (product.userId === userId) throw new Error('You cannot rate your own product');
     } else if (targetType === 'exchange') {
       const exchange = await this.exchangeModel.findById(targetId).lean();
-      if (!exchange) {
-        throw new Error('Exchange not found');
-      }
-
+      if (!exchange) throw new Error('Exchange not found');
+  
       // Kiểm tra trạng thái hoàn thành trước khi cho phép đánh giá
-      if ((exchange as ExchangeDocument).allExchangeStatus !== 'completed') {
-        throw new BadRequestException(
-          'Cannot rate this exchange before it is completed',
-        );
+      if (exchange.allExchangeStatus !== 'completed') {
+        throw new BadRequestException('Cannot rate this exchange before it is completed');
       }
-
-      // Kiểm tra xem user là requester hay receiver trong giao dịch này
-      const isRequester = (exchange as any).requesterId.toString() === userId;
-      const isReceiver = exchange.receiverId.toString() === userId;
-      if (!isRequester && !isReceiver) {
+  
+      // Xác định người đánh giá và người được đánh giá
+      const isRequester = exchange.requesterId.toString() === userId;
+      const ratedUserId = isRequester ? exchange.receiverId : exchange.requesterId;
+  
+      if (!isRequester && exchange.receiverId.toString() !== userId) {
         throw new BadRequestException('You are not a participant in this exchange');
       }
-
+  
       // Kiểm tra xem user đã đánh giá chưa
       const existingRating = await this.ratingModel.findOne({
         userId,
         targetId,
         targetType: 'exchange',
       });
-      if (existingRating) {
-        throw new BadRequestException('You have already rated this exchange');
-      }
+      if (existingRating) throw new BadRequestException('You have already rated this exchange');
+  
+      // Tạo và lưu đánh giá mới
+      const createdRating = new this.ratingModel({
+        userId,
+        targetId, // ID của exchange
+        ratedUserId, // ID của người được đánh giá
+        targetType,
+        rating,
+        comment,
+      });
+      
+      // Đồng thời cập nhật điểm trung bình và số lượng đánh giá của người dùng được đánh giá
+      const user = await this.userModel.findById(ratedUserId) as UserDocument;
+      if (!user) throw new Error('User not found');
+      
+      const newNumberOfRatings = (user.numberOfRating || 0) + 1;
+      const newAverageRating = ((user.averageRating * user.numberOfRating || 0) + rating) / newNumberOfRatings;
+  
+      // Sử dụng Promise.all để thực hiện lưu đánh giá và cập nhật user song song
+      await Promise.all([
+        createdRating.save(),
+        this.userModel.findByIdAndUpdate(ratedUserId, {
+          averageRating: newAverageRating,
+          numberOfRating: newNumberOfRatings,
+        }, { new: true })
+      ]);
+  
+      return createdRating;
     }
-
-    const createdRating = new this.ratingModel({
-      userId,
-      targetId,
-      targetType,
-      rating,
-      comment,
-    });
-    return createdRating.save();
+  
+    throw new BadRequestException('Invalid target for rating');
   }
+  
+  
+  
 
   async getRatingForExchangeService(
     userId: string,

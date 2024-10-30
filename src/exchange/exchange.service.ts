@@ -100,27 +100,40 @@ export class ExchangeService {
     return exchange;
   }
 
-  async getListExchangeService(userId: string): Promise<any[]> {
+  async getListExchangeService(
+    userId: string,
+    filterUserId?: string[],
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<any[]> {
+    const queryConditions = {
+      $or: [
+        { requesterId: userId, ...(filterUserId ? { receiverId: { $in: filterUserId } } : {}) },
+        { receiverId: userId, ...(filterUserId ? { requesterId: { $in: filterUserId } } : {}) },
+      ],
+    };
+  
     const listExchange = await this.exchangeModel
-      .find({
-        $or: [{ requesterId: userId }, { receiverId: userId }],
-      })
+      .find(queryConditions)
       .populate('requesterId', 'firstname lastname avatar email')
       .populate('receiverId', 'firstname lastname avatar email')
       .populate('requestProduct.requesterProductId', 'productName imgUrls')
       .populate('receiveProduct.receiverProductId', 'productName imgUrls')
-      .lean(); // Dùng lean() để trả về plain objects thay vì Mongoose documents
-    // Tái cấu trúc dữ liệu để xác định vai trò của userId
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+  
     const structuredExchanges = listExchange.map((exchange) => ({
-      ...exchange, // Sao chép tất cả các thuộc tính của exchange
+      ...exchange,
       role:
         (exchange.requesterId as any)._id.toString() === userId
           ? 'requester'
-          : 'receiver', // Xác định vai trò
+          : 'receiver',
     }));
-
+  
     return structuredExchanges;
   }
+  
 
   async getExchangeDetailService(
     userId: string,

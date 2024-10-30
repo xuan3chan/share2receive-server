@@ -58,12 +58,21 @@ export class ExchangeController {
   }
 
   @Get('get-list-exchange')
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Limit per page', example: 10 })
+  @ApiQuery({ name: 'filterUserId', required: false, description: 'Filter by user id', example: 'userId1,userId2' })
   @UseGuards(MemberGuard)
   @ApiOperation({ summary: 'Get list of exchanges' })
-  async getListExchange(@Req() request: Request) {
+  async getListExchange(
+    @Req() request: Request,
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('filterUserId') filterUserId: string[],
+  ) {
     const userId = this.getUserIdFromToken(request);
-    return this.exchangeService.getListExchangeService(userId);
+    return this.exchangeService.getListExchangeService(userId, filterUserId, page, limit);
   }
+  
 
   @Patch('approve-exchange/:id')
   @UseGuards(MemberGuard)

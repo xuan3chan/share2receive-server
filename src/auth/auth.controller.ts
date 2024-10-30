@@ -123,7 +123,7 @@ export class AuthController {
     const result = await this.authService.refreshTokenService(
       refreshToken.refreshToken,
     );
-
+    
     setCookie(response, 'refreshToken', result.refreshToken,);
     setCookie(response, 'accessToken', result.accessToken);
 

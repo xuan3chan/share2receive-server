@@ -243,43 +243,61 @@ export class AuthService {
 
   async refreshTokenService(
     refreshToken: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     try {
       const user = await this.usersService.findOneReTokenService(refreshToken);
-      const admin =
-        await this.adminService.findOneAdminRefreshTokenService(refreshToken);
+      const admin = await this.adminService.findOneAdminRefreshTokenService(refreshToken);
       const accountHolder = user || admin;
-
+  
       if (!accountHolder) {
-        throw new Error('refresh Token not found');
+        throw new UnauthorizedException('Refresh token not found');
       }
+  
       if (accountHolder.isBlock) {
         throw new UnauthorizedException('Account is blocked');
       }
-
+  
       const createRefreshToken = randomBytes(32).toString('hex');
       const payload = await this.createJwtPayload(accountHolder, !!user);
-
+  
+      const returnedUser = user
+        ? {
+            email: user.email,
+            role: user.role,
+            _id: user._id,
+            avatar: user.avatar,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            address: user.address,
+            dateOfBirth: user.dateOfBirth,
+            description: user.description,
+            gender: user.gender,
+            nickname: user.nickname,
+            phone: user.phone,
+            userStyle: user.userStyle,
+          }
+        : {
+            adminName: admin.adminName,
+            role: await this.roleService.findRoleService(admin.role.toString()),
+            _id: admin._id,
+          };
+  
       if (user) {
-        await this.usersService.updateRefreshTokenService(
-          user.email,
-          createRefreshToken,
-        );
+        await this.usersService.updateRefreshTokenService(user.email, createRefreshToken);
       } else if (admin) {
-        await this.adminService.updateRefreshTokenService(
-          admin.adminName,
-          createRefreshToken,
-        );
+        await this.adminService.updateRefreshTokenService(admin.adminName, createRefreshToken);
       }
-
+  
       return {
         accessToken: this.jwtService.sign(payload),
         refreshToken: createRefreshToken,
+        user: returnedUser,
       };
     } catch (error) {
       throw new BadRequestException(error.message);
     }
   }
+  
 
   async logoutService(refreshToken: string): Promise<{ message: string }> {
     try {

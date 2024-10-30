@@ -16,6 +16,7 @@ export class ExchangeService {
     @InjectModel(Exchange.name) private exchangeModel: Model<Exchange>,
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('Rating') private ratingModel: Model<ExchangeDocument>,
     private eventGateway: EventGateway,
   ) {}
 
@@ -154,11 +155,11 @@ export class ExchangeService {
       .populate('requestProduct.requesterProductId', 'productName imgUrls')
       .populate('receiveProduct.receiverProductId', 'productName imgUrls')
       .lean();
-
+  
     if (!exchange) {
       throw new BadRequestException('Exchange not found');
     }
-
+  
     // Xác định vai trò của userId trong exchange (requester hoặc receiver)
     let role = '';
     if ((exchange.requesterId as any)._id.toString() === userId) {
@@ -168,12 +169,30 @@ export class ExchangeService {
     } else {
       throw new BadRequestException('You are not a participant in this exchange');
     }
-
+  
+    // Lấy thông tin đánh giá của cả requester và receiver cho giao dịch này
+    const requesterRating = await this.ratingModel.findOne({
+      userId: (exchange.requesterId as any)._id,
+      targetId: exchangeId,
+      targetType: 'exchange',
+    }).lean();
+  
+    const receiverRating = await this.ratingModel.findOne({
+      userId: (exchange.receiverId as any)._id,
+      targetId: exchangeId,
+      targetType: 'exchange',
+    }).lean();
+  
     return {
       ...exchange,
       role,
+      ratings: {
+        requesterRating: requesterRating || null,
+        receiverRating: receiverRating || null,
+      },
     };
   }
+  
 
   async updateStatusExchangeService(
     userId: string,
@@ -574,4 +593,52 @@ export class ExchangeService {
       );
     }
   }
+
+  //************************ manage */
+  async getListExchangeForManageService(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ total: number; data: any[] }> {
+    const total = await this.exchangeModel.countDocuments();
+    const listExchange = await this.exchangeModel
+      .find()
+      .populate('requesterId', 'firstname lastname email')
+      .populate('receiverId', 'firstname lastname email')
+      .populate('requestProduct.requesterProductId', 'productName')
+      .populate('receiveProduct.receiverProductId', 'productName')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+  
+    // Sử dụng Promise.all để lấy đánh giá của mỗi giao dịch trong listExchange song song
+    const dataWithRatings = await Promise.all(
+      listExchange.map(async (exchange) => {
+        const requesterRating = await this.ratingModel.findOne({
+          userId: exchange.requesterId,
+          targetId: exchange._id,
+          targetType: 'exchange',
+        }).lean();
+  
+        const receiverRating = await this.ratingModel.findOne({
+          userId: exchange.receiverId,
+          targetId: exchange._id,
+          targetType: 'exchange',
+        }).lean();
+  
+        return {
+          ...exchange,
+          ratings: {
+            requesterRating: requesterRating || null,
+            receiverRating: receiverRating || null,
+          },
+        };
+      })
+    );
+  
+    return {
+      total,
+      data: dataWithRatings,
+    };
+  }
+  
 }

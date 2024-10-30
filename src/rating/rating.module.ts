@@ -15,5 +15,6 @@ import { Rating, RatingSchema } from '@app/libs/common/schema/rating.schema';
   ],
   controllers: [RatingController],
   providers: [RatingService],
+  exports: [RatingService],
 })
 export class RatingModule {}

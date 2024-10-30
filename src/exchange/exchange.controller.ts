@@ -128,4 +128,15 @@ export class ExchangeController {
     const userId = this.getUserIdFromToken(request);
     return this.exchangeService.getExchangeDetailService(userId, id);
   }
+  //***********manage */
+  @Get('get-list-exchange-manage')
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Limit per page', example: 10 })
+  @ApiOperation({ summary: 'Get list of exchanges' })
+  async getListExchangeManage(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+  ) {
+    return this.exchangeService.getListExchangeForManageService(page, limit);
+  }
 }

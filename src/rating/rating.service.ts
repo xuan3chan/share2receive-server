@@ -17,68 +17,72 @@ export class RatingService {
     userId: string,
     createRatingDto: CreateRatingDto,
   ): Promise<RatingDocument> {
-    const { targetType, targetId, rating, comment } = createRatingDto;
+    try {
+      const { targetType, targetId, rating, comment } = createRatingDto;
   
-    if (targetType === 'Product') {
-      const product = await this.productModel.findById(targetId);
-      if (!product) throw new Error('Product not found');
-      if (product.userId === userId) throw new Error('You cannot rate your own product');
-    } else if (targetType === 'exchange') {
-      const exchange = await this.exchangeModel.findById(targetId).lean();
-      if (!exchange) throw new Error('Exchange not found');
+      if (targetType === 'Product') {
+        const product = await this.productModel.findById(targetId);
+        if (!product) throw new BadRequestException('Product not found');
+        if (product.userId === userId) throw new BadRequestException('You cannot rate your own product');
+      } else if (targetType === 'exchange') {
+        const exchange = await this.exchangeModel.findById(targetId).lean();
+        if (!exchange) throw new BadRequestException('Exchange not found');
   
-      // Kiểm tra trạng thái hoàn thành trước khi cho phép đánh giá
-      if (exchange.allExchangeStatus !== 'completed') {
-        throw new BadRequestException('Cannot rate this exchange before it is completed');
+        // Kiểm tra trạng thái hoàn thành trước khi cho phép đánh giá
+        if (exchange.allExchangeStatus !== 'completed') {
+          throw new BadRequestException('Cannot rate this exchange before it is completed');
+        }
+  
+        // Xác định người đánh giá và người được đánh giá
+        const isRequester = exchange.requesterId.toString() === userId;
+        const ratedUserId = isRequester ? exchange.receiverId : exchange.requesterId;
+  
+        if (!isRequester && exchange.receiverId.toString() !== userId) {
+          throw new BadRequestException('You are not a participant in this exchange');
+        }
+  
+        // Kiểm tra xem user đã đánh giá chưa
+        const existingRating = await this.ratingModel.findOne({
+          userId,
+          targetId,
+          targetType: 'exchange',
+        });
+        if (existingRating) throw new BadRequestException('You have already rated this exchange');
+  
+        // Tạo và lưu đánh giá mới
+        const createdRating = new this.ratingModel({
+          userId,
+          targetId, // ID của exchange
+          targetType,
+          rating,
+          comment,
+        });
+  
+        // Đồng thời cập nhật điểm trung bình và số lượng đánh giá của người dùng được đánh giá
+        const user = await this.userModel.findById(ratedUserId) as UserDocument;
+        if (!user) throw new BadRequestException('User not found');
+  
+        const newNumberOfRatings = (user.numberOfRating || 0) + 1;
+        const newAverageRating = ((user.averageRating * user.numberOfRating || 0) + rating) / newNumberOfRatings;
+  
+        // Sử dụng Promise.all để thực hiện lưu đánh giá và cập nhật user song song
+        await Promise.all([
+          createdRating.save(),
+          this.userModel.findByIdAndUpdate(ratedUserId, {
+            averageRating: newAverageRating,
+            numberOfRating: newNumberOfRatings,
+          }, { new: true })
+        ]);
+  
+        return createdRating;
       }
   
-      // Xác định người đánh giá và người được đánh giá
-      const isRequester = exchange.requesterId.toString() === userId;
-      const ratedUserId = isRequester ? exchange.receiverId : exchange.requesterId;
-  
-      if (!isRequester && exchange.receiverId.toString() !== userId) {
-        throw new BadRequestException('You are not a participant in this exchange');
-      }
-  
-      // Kiểm tra xem user đã đánh giá chưa
-      const existingRating = await this.ratingModel.findOne({
-        userId,
-        targetId,
-        targetType: 'exchange',
-      });
-      if (existingRating) throw new BadRequestException('You have already rated this exchange');
-  
-      // Tạo và lưu đánh giá mới
-      const createdRating = new this.ratingModel({
-        userId,
-        targetId, // ID của exchange
-        ratedUserId, // ID của người được đánh giá
-        targetType,
-        rating,
-        comment,
-      });
-      
-      // Đồng thời cập nhật điểm trung bình và số lượng đánh giá của người dùng được đánh giá
-      const user = await this.userModel.findById(ratedUserId) as UserDocument;
-      if (!user) throw new Error('User not found');
-      
-      const newNumberOfRatings = (user.numberOfRating || 0) + 1;
-      const newAverageRating = ((user.averageRating * user.numberOfRating || 0) + rating) / newNumberOfRatings;
-  
-      // Sử dụng Promise.all để thực hiện lưu đánh giá và cập nhật user song song
-      await Promise.all([
-        createdRating.save(),
-        this.userModel.findByIdAndUpdate(ratedUserId, {
-          averageRating: newAverageRating,
-          numberOfRating: newNumberOfRatings,
-        }, { new: true })
-      ]);
-  
-      return createdRating;
+      throw new BadRequestException('Invalid target for rating');
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to create rating');
     }
-  
-    throw new BadRequestException('Invalid target for rating');
   }
+  
   
   
   

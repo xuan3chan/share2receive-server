@@ -553,8 +553,6 @@ export class ExchangeService {
         throw new BadRequestException('You are not the requester or receiver');
       }
 
-      // Check if the requester is updating and receiver status must be "completed"
-      // Check if the requester is updating and receiver's status must be "completed"
       if (
         isRequester &&
         exchange.receiverStatus.exchangeStatus !== 'completed'

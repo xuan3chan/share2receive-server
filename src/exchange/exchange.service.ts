@@ -539,7 +539,7 @@ export class ExchangeService {
   ): Promise<any> {
     const session = await this.exchangeModel.db.startSession();
     session.startTransaction();
-
+    console.log('exchangeId', confirmStatus);
     try {
       const exchange = await this.exchangeModel
         .findById(exchangeId)

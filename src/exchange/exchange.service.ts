@@ -108,20 +108,27 @@ export class ExchangeService {
     page: number = 1,
     limit: number = 10,
   ): Promise<{ total: number; data: any[] }> {
-    const baseConditions = filterRole === 'requester'
-      ? { requesterId: userId }
-      : filterRole === 'receiver'
-      ? { receiverId: userId }
-      : { $or: [{ requesterId: userId }, { receiverId: userId }] };
-  
+    const baseConditions =
+      filterRole === 'requester'
+        ? { requesterId: userId }
+        : filterRole === 'receiver'
+          ? { receiverId: userId }
+          : { $or: [{ requesterId: userId }, { receiverId: userId }] };
+
     const queryConditions = {
       ...baseConditions,
-      ...(filterUserId ? { [filterRole === 'requester' ? 'receiverId' : 'requesterId']: { $in: filterUserId } } : {}),
+      ...(filterUserId
+        ? {
+            [filterRole === 'requester' ? 'receiverId' : 'requesterId']: {
+              $in: filterUserId,
+            },
+          }
+        : {}),
     };
-  
+
     // Get total count of documents matching the query (without pagination)
     const total = await this.exchangeModel.countDocuments(queryConditions);
-  
+
     // Get paginated list of exchanges
     const listExchange = await this.exchangeModel
       .find(queryConditions)
@@ -132,20 +139,20 @@ export class ExchangeService {
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-  
+
     const structuredExchanges = listExchange.map((exchange) => ({
       ...exchange,
-      role: (exchange.requesterId as any)._id.toString() === userId ? 'requester' : 'receiver',
+      role:
+        (exchange.requesterId as any)._id.toString() === userId
+          ? 'requester'
+          : 'receiver',
     }));
-  
+
     return {
       total,
       data: structuredExchanges,
     };
   }
-  
-  
-  
 
   async getExchangeDetailService(
     userId: string,
@@ -158,11 +165,11 @@ export class ExchangeService {
       .populate('requestProduct.requesterProductId', 'productName imgUrls')
       .populate('receiveProduct.receiverProductId', 'productName imgUrls')
       .lean();
-  
+
     if (!exchange) {
       throw new BadRequestException('Exchange not found');
     }
-  
+
     // Xác định vai trò của userId trong exchange (requester hoặc receiver)
     let role = '';
     if ((exchange.requesterId as any)._id.toString() === userId) {
@@ -170,22 +177,28 @@ export class ExchangeService {
     } else if ((exchange.receiverId as any)._id.toString() === userId) {
       role = 'receiver';
     } else {
-      throw new BadRequestException('You are not a participant in this exchange');
+      throw new BadRequestException(
+        'You are not a participant in this exchange',
+      );
     }
-  
+
     // Lấy thông tin đánh giá của cả requester và receiver cho giao dịch này
-    const requesterRating = await this.ratingModel.findOne({
-      userId: (exchange.requesterId as any)._id,
-      targetId: exchangeId,
-      targetType: 'exchange',
-    }).lean();
-  
-    const receiverRating = await this.ratingModel.findOne({
-      userId: (exchange.receiverId as any)._id,
-      targetId: exchangeId,
-      targetType: 'exchange',
-    }).lean();
-  
+    const requesterRating = await this.ratingModel
+      .findOne({
+        userId: (exchange.requesterId as any)._id,
+        targetId: exchangeId,
+        targetType: 'exchange',
+      })
+      .lean();
+
+    const receiverRating = await this.ratingModel
+      .findOne({
+        userId: (exchange.receiverId as any)._id,
+        targetId: exchangeId,
+        targetType: 'exchange',
+      })
+      .lean();
+
     return {
       ...exchange,
       role,
@@ -195,7 +208,6 @@ export class ExchangeService {
       },
     };
   }
-  
 
   async updateStatusExchangeService(
     userId: string,
@@ -260,17 +272,17 @@ export class ExchangeService {
 
       if (status === 'accepted') {
         exchange.allExchangeStatus = 'accepted';
-        //add field 
+        //add field
         exchange.receiverStatus = {
           exchangeStatus: 'pending',
           confirmStatus: null,
-          statusDate: new Date()
-        }
+          statusDate: new Date(),
+        };
         exchange.requestStatus = {
           exchangeStatus: 'pending',
           confirmStatus: null,
-          statusDate: new Date()
-        }
+          statusDate: new Date(),
+        };
 
         await Promise.all([
           this.productModel.updateOne(
@@ -345,8 +357,8 @@ export class ExchangeService {
         if (product) {
           this.eventGateway.sendAuthenticatedNotification(
             exchange.requesterId.toString(),
-            `Giao dịch cho sản phẩm '${product.productName}' đã bị từ chối.`
-          );          
+            `Giao dịch cho sản phẩm '${product.productName}' đã bị từ chối.`,
+          );
         }
       } else {
         throw new BadRequestException('Invalid status');
@@ -371,7 +383,7 @@ export class ExchangeService {
   ): Promise<any> {
     const session = await this.exchangeModel.db.startSession();
     session.startTransaction();
-  
+
     try {
       // Tải lại tài liệu để đảm bảo dữ liệu mới nhất
       let exchange = await this.exchangeModel
@@ -379,48 +391,52 @@ export class ExchangeService {
         .populate('requesterId', 'firstname lastname')
         .populate('receiverId', 'firstname lastname')
         .session(session);
-  
+
       if (!exchange) {
         throw new BadRequestException('Exchange not found');
       }
-  
+
       if (exchange.allExchangeStatus !== 'accepted') {
         throw new BadRequestException('Exchange status is not accepted');
       }
-  
+
       // Xác định vai trò của người dùng (requester hoặc receiver)
-      const isRequester = (exchange.requesterId as any)._id.toString() === userId;
+      const isRequester =
+        (exchange.requesterId as any)._id.toString() === userId;
       const isReceiver = (exchange.receiverId as any)._id.toString() === userId;
-  
+
       if (!isRequester && !isReceiver) {
         throw new BadRequestException('You are not the requester or receiver');
       }
-  
+
       // Cập nhật trạng thái tương ứng với vai trò của người dùng
       if (isRequester) {
         exchange.requestStatus.exchangeStatus = status;
       } else if (isReceiver) {
         exchange.receiverStatus.exchangeStatus = status;
       }
-  
+
       // Kiểm tra riêng cho trạng thái "canceled"
       if (status === 'canceled') {
         if (isRequester) {
           // Chỉ cho phép requester hủy khi receiver vẫn đang ở trạng thái pending
-          if (exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending) {
+          if (
+            exchange.receiverStatus.exchangeStatus !== ShippingStatusE.pending
+          ) {
             throw new BadRequestException('Receiver is not pending');
           }
         } else if (isReceiver) {
           // Chỉ cho phép receiver hủy khi requester vẫn đang ở trạng thái pending
-          if (exchange.requestStatus.exchangeStatus !== ShippingStatusE.pending) {
+          if (
+            exchange.requestStatus.exchangeStatus !== ShippingStatusE.pending
+          ) {
             throw new BadRequestException('Requester is not pending');
           }
         }
-  
+
         // Nếu điều kiện thỏa mãn, cập nhật trạng thái "canceled" chỉ 2 bên
-       exchange.receiverStatus.exchangeStatus = 'canceled';
-       
-  
+        exchange.receiverStatus.exchangeStatus = 'canceled';
+
         // Đưa sản phẩm về trạng thái ban đầu (ví dụ: khôi phục số lượng)
         await Promise.all([
           this.productModel.updateOne(
@@ -451,10 +467,10 @@ export class ExchangeService {
             { session },
           ),
         ]);
-  
+
         exchange.allExchangeStatus = 'canceled';
       }
-  
+
       // Xử lý trạng thái hoàn thành, chỉ cập nhật confirmStatus của bên còn lại
       if (status === 'completed') {
         if (isRequester) {
@@ -465,15 +481,15 @@ export class ExchangeService {
           exchange.requestStatus.confirmStatus = 'pending';
         }
       }
-  
+
       // Lưu trạng thái cập nhật và commit giao dịch
       await exchange.save({ session });
       await session.commitTransaction();
-  
+
       const product = await this.productModel
         .findById(exchange.requestProduct.requesterProductId)
         .lean();
-  
+
       const updatingUser = isRequester
         ? (exchange.requesterId as any).firstname +
           ' ' +
@@ -481,21 +497,21 @@ export class ExchangeService {
         : (exchange.receiverId as any).firstname +
           ' ' +
           (exchange.receiverId as any).lastname;
-  
+
       // Tạo thông báo với tên đầy đủ của người dùng
       const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được cập nhật thành '${status}' bởi người dùng ${updatingUser}.`;
-      console.log(notificationMessage)
+      console.log(notificationMessage);
       // Gửi thông báo cho bên còn lại
       const otherPartyId = isRequester
         ? (exchange.receiverId as any)._id
         : (exchange.requesterId as any)._id;
-  
+
       console.log('Sending notification to:', otherPartyId);
       await this.eventGateway.sendAuthenticatedNotification(
         otherPartyId.toString(),
         notificationMessage,
       );
-  
+
       return exchange.toObject();
     } catch (error) {
       await session.abortTransaction();
@@ -506,9 +522,6 @@ export class ExchangeService {
       session.endSession();
     }
   }
-  
-  
-
 
   async updateExchangeConfirmStatusService(
     userId: string,
@@ -521,34 +534,50 @@ export class ExchangeService {
     try {
       const exchange = await this.exchangeModel
         .findById(exchangeId)
-        .populate('requesterId', 'firstname lastname') // Populate requesterId to get the name
+        .populate('requesterId', 'firstname lastname')
         .populate('receiverId', 'firstname lastname')
         .session(session);
 
       if (!exchange) {
         throw new BadRequestException('Exchange not found');
       }
-      if(
-        exchange.allExchangeStatus !== 'accepted'
-      ){
-        throw new BadRequestException('Exchange status is not accepted')
+      if (exchange.allExchangeStatus !== 'accepted') {
+        throw new BadRequestException('Exchange status is not accepted');
       }
 
-      // Ensure that the user is either the requester or the receiver
       const isRequester =
         (exchange.requesterId as any)._id.toString() === userId;
       const isReceiver = (exchange.receiverId as any)._id.toString() === userId;
+
       if (!isRequester && !isReceiver) {
         throw new BadRequestException('You are not the requester or receiver');
       }
 
-      // Determine if the user is the requester or receiver and update confirmStatus
+      // Check if the requester is updating and receiver status must be "completed"
+      // Check if the requester is updating and receiver's status must be "completed"
+      if (
+        isRequester &&
+        exchange.receiverStatus.exchangeStatus !== 'completed'
+      ) {
+        throw new BadRequestException(
+          'Cannot update: Receiver’s status must be "completed"',
+        );
+      }
+
+      // Check if the receiver is updating and requester’s status must be "completed"
+      if (isReceiver && exchange.requestStatus.exchangeStatus !== 'completed') {
+        throw new BadRequestException(
+          'Cannot update: Requester’s status must be "completed"',
+        );
+      }
+
+      // Update confirmStatus based on role
       if (isRequester) {
         exchange.requestStatus.confirmStatus = confirmStatus;
-        exchange.receiverStatus.statusDate = new Date()
+        exchange.requestStatus.statusDate = new Date();
       } else {
         exchange.receiverStatus.confirmStatus = confirmStatus;
-        exchange.receiverStatus.statusDate = new Date()
+        exchange.receiverStatus.statusDate = new Date();
       }
 
       // If both parties confirm, mark the exchange as completed
@@ -576,10 +605,8 @@ export class ExchangeService {
           ' ' +
           (exchange.receiverId as any).lastname;
 
-      // Create the notification message with the user's full name
       const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được xác nhận bởi người dùng ${updatingUser}.`;
 
-      // Send notification to the other party about the status update
       const otherPartyId = isRequester
         ? exchange.receiverId
         : exchange.requesterId;
@@ -612,22 +639,26 @@ export class ExchangeService {
       .skip((page - 1) * limit)
       .limit(limit)
       .lean();
-  
+
     // Sử dụng Promise.all để lấy đánh giá của mỗi giao dịch trong listExchange song song
     const dataWithRatings = await Promise.all(
       listExchange.map(async (exchange) => {
-        const requesterRating = await this.ratingModel.findOne({
-          userId: exchange.requesterId,
-          targetId: exchange._id,
-          targetType: 'exchange',
-        }).lean();
-  
-        const receiverRating = await this.ratingModel.findOne({
-          userId: exchange.receiverId,
-          targetId: exchange._id,
-          targetType: 'exchange',
-        }).lean();
-  
+        const requesterRating = await this.ratingModel
+          .findOne({
+            userId: exchange.requesterId,
+            targetId: exchange._id,
+            targetType: 'exchange',
+          })
+          .lean();
+
+        const receiverRating = await this.ratingModel
+          .findOne({
+            userId: exchange.receiverId,
+            targetId: exchange._id,
+            targetType: 'exchange',
+          })
+          .lean();
+
         return {
           ...exchange,
           ratings: {
@@ -635,13 +666,12 @@ export class ExchangeService {
             receiverRating: receiverRating || null,
           },
         };
-      })
+      }),
     );
-  
+
     return {
       total,
       data: dataWithRatings,
     };
   }
-  
 }

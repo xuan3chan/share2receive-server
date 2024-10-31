@@ -8,6 +8,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { AuthService } from '../../../../../src/auth/auth.service';
 import * as cookie from 'cookie';
+import { NotificationService } from 'src/notification/notification.service';
 
 @WebSocketGateway({
   cors: {
@@ -24,7 +25,10 @@ export class EventGateway
   private clients: Map<string, { socket: Socket; isAuthenticated: boolean }> =
     new Map();
 
-  constructor(private readonly authService: AuthService) {
+  constructor(
+    private readonly authService: AuthService,
+    private readonly notificationService: NotificationService,
+  ) {
     console.log('EventGateway instance created');
   }
 
@@ -76,5 +80,6 @@ export class EventGateway
 
   sendAuthenticatedNotification(userId: string, message: string) {
     this.server.to(userId).emit('authenticatedNotification', message);
+    this.notificationService.createNotification(userId, message);
   }
 }

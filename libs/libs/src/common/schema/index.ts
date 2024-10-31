@@ -6,3 +6,4 @@ export * from './brand.schema';
 export * from './product.schema';
 export * from './exchange.schema';
 export * from './rating.schema';
+export * from './notification.schema';

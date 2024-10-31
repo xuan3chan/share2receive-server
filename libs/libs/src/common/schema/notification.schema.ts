@@ -11,12 +11,9 @@ import mongoose from 'mongoose';
     userId: string;
 
     @Prop({ type: mongoose.Schema.Types.String, required: true })
-    title?: string;
-
-    @Prop({ type: mongoose.Schema.Types.String, required: true })
     content: string;
 
-    @Prop({ type: mongoose.Schema.Types.Boolean, required: true })
+    @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
     isViewed: Boolean;
 
   }

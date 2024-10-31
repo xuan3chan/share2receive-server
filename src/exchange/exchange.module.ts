@@ -6,11 +6,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Product, ProductSchema, Rating, RatingSchema, User, UserSchema } from '@app/libs/common/schema';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { AuthModule } from 'src/auth/auth.module';
-import { RatingModule } from 'src/rating/rating.module';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
   imports: [
     AuthModule,
+    NotificationModule,
     MongooseModule.forFeature([
       { name: Exchange.name, schema: ExchangeSchema },
       { name: Product.name, schema: ProductSchema },
@@ -18,6 +19,7 @@ import { RatingModule } from 'src/rating/rating.module';
       { name: Rating.name, schema: RatingSchema },
     ]),
   ],
+
   controllers: [ExchangeController],
   providers: [ExchangeService,EventGateway],
 })

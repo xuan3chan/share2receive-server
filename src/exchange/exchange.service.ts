@@ -345,8 +345,8 @@ export class ExchangeService {
         if (product) {
           this.eventGateway.sendAuthenticatedNotification(
             exchange.requesterId.toString(),
-            `Giao dịch cho sản phẩm"${product.productName}" đã bị từ chối.`,
-          );
+            `Giao dịch cho sản phẩm '${product.productName}' đã bị từ chối.`
+          );          
         }
       } else {
         throw new BadRequestException('Invalid status');
@@ -483,8 +483,8 @@ export class ExchangeService {
           (exchange.receiverId as any).lastname;
   
       // Tạo thông báo với tên đầy đủ của người dùng
-      const notificationMessage = `Giao dịch cho sản phẩm "${product?.productName}" đã được cập nhật thành "${status}" bởi người dùng ${updatingUser}.`;
-  
+      const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được cập nhật thành '${status}' bởi người dùng ${updatingUser}.`;
+      console.log(notificationMessage)
       // Gửi thông báo cho bên còn lại
       const otherPartyId = isRequester
         ? (exchange.receiverId as any)._id
@@ -577,7 +577,7 @@ export class ExchangeService {
           (exchange.receiverId as any).lastname;
 
       // Create the notification message with the user's full name
-      const notificationMessage = `Giao dịch cho sản phẩm "${product?.productName}" đã được xác nhận bởi người dùng ${updatingUser}.`;
+      const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được xác nhận bởi người dùng ${updatingUser}.`;
 
       // Send notification to the other party about the status update
       const otherPartyId = isRequester

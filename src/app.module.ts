@@ -17,7 +17,7 @@ import { ExchangeModule } from './exchange/exchange.module';
 import { EventGateway } from '../libs/libs/src/common/util/event.gateway';
 import { RatingModule } from './rating/rating.module';
 import { NotificationModule } from './notification/notification.module';
-
+import { RedisCacheModule } from './redis/redis.module';
 @Module({
   imports: [
     SearchModule,
@@ -27,6 +27,7 @@ import { NotificationModule } from './notification/notification.module';
     RoleModule,
     AuthModule,
     MailerModule,
+    RedisCacheModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,

@@ -104,14 +104,19 @@ export class ExchangeService {
   async getListExchangeService(
     userId: string,
     filterUserId?: string[],
+    filterRole?: string,
     page: number = 1,
     limit: number = 10,
   ): Promise<{ total: number; data: any[] }> {
+    const baseConditions = filterRole === 'requester'
+      ? { requesterId: userId }
+      : filterRole === 'receiver'
+      ? { receiverId: userId }
+      : { $or: [{ requesterId: userId }, { receiverId: userId }] };
+  
     const queryConditions = {
-      $or: [
-        { requesterId: userId, ...(filterUserId ? { receiverId: { $in: filterUserId } } : {}) },
-        { receiverId: userId, ...(filterUserId ? { requesterId: { $in: filterUserId } } : {}) },
-      ],
+      ...baseConditions,
+      ...(filterUserId ? { [filterRole === 'requester' ? 'receiverId' : 'requesterId']: { $in: filterUserId } } : {}),
     };
   
     // Get total count of documents matching the query (without pagination)
@@ -130,10 +135,7 @@ export class ExchangeService {
   
     const structuredExchanges = listExchange.map((exchange) => ({
       ...exchange,
-      role:
-        (exchange.requesterId as any)._id.toString() === userId
-          ? 'requester'
-          : 'receiver',
+      role: (exchange.requesterId as any)._id.toString() === userId ? 'requester' : 'receiver',
     }));
   
     return {
@@ -141,6 +143,7 @@ export class ExchangeService {
       data: structuredExchanges,
     };
   }
+  
   
   
 

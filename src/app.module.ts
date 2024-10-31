@@ -16,6 +16,7 @@ import { BullModule } from '@nestjs/bull';
 import { ExchangeModule } from './exchange/exchange.module';
 import { EventGateway } from '../libs/libs/src/common/util/event.gateway';
 import { RatingModule } from './rating/rating.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { RatingModule } from './rating/rating.module';
     }),
     ExchangeModule,
     RatingModule,
+    NotificationModule,
     
   ],
   providers: [EventGateway],

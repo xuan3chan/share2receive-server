@@ -61,6 +61,7 @@ export class ExchangeController {
   @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Limit per page', example: 10 })
   @ApiQuery({ name: 'filterUserId', required: false, description: 'Filter by user id' })
+  @ApiQuery({ name: 'filterRole', required: false,enum:['requester','receiver'], description: 'Filter by role' })
   @UseGuards(MemberGuard)
   @ApiOperation({ summary: 'Get list of exchanges' })
   async getListExchange(
@@ -68,9 +69,10 @@ export class ExchangeController {
     @Query('page') page: number,
     @Query('limit') limit: number,
     @Query('filterUserId') filterUserId: string[],
+    @Query('filterRole') filterRole: string,
   ) {
     const userId = this.getUserIdFromToken(request);
-    return this.exchangeService.getListExchangeService(userId, filterUserId, page, limit);
+    return this.exchangeService.getListExchangeService(userId, filterUserId,filterRole, page, limit);
   }
   
 

@@ -481,7 +481,7 @@ export class ExchangeService {
           exchange.requestStatus.confirmStatus = 'pending';
         }
       }
-
+      console.log('exchange', exchange);
       // Lưu trạng thái cập nhật và commit giao dịch
       await exchange.save({ session });
       await session.commitTransaction();

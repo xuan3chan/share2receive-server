@@ -597,6 +597,7 @@ export class ExchangeService {
       }
 
       // Save the exchange status and commit transaction
+      console.log('exchange', exchange);
       await exchange.save({ session });
       await session.commitTransaction();
 

@@ -499,8 +499,17 @@ export class ExchangeService {
           (exchange.receiverId as any).lastname;
 
       // Tạo thông báo với tên đầy đủ của người dùng
-      const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được cập nhật thành '${status}' bởi người dùng ${updatingUser}.`;
-      console.log(notificationMessage);
+      const statusTranslations: { [key: string]: string } = {
+        pending: 'đang chờ xử lý',
+        completed: 'đã hoàn thành',
+        rejected: 'đã bị từ chối',
+        accepted: 'đã được chấp nhận',
+        // Add other status translations as needed
+      };
+      
+      const translatedStatus = statusTranslations[status] || status;
+      
+      const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được cập nhật thành '${translatedStatus}' bởi người dùng ${updatingUser}.`;      console.log(notificationMessage);
       // Gửi thông báo cho bên còn lại
       const otherPartyId = isRequester
         ? (exchange.receiverId as any)._id

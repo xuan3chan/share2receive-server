@@ -407,7 +407,6 @@ export class ProductService {
           );
         });
         
-  
         const paginatedResults = filteredResults.slice((page - 1) * limit, page * limit);
   
         return {

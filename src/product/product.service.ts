@@ -394,18 +394,20 @@ export class ProductService {
         
         // If filters are applied, we filter the search results further
         const filteredResults = searchResults.filter(product => {
-          const adjustedStartPrice = filterStartPrice === 0 ? 1 : filterStartPrice; // Adjust start price if it's 0
+          // Adjust start price if it's 0
+          const adjustedStartPrice = filterStartPrice === 0 ? 1 : filterStartPrice;
         
           return (
             (!filterCategory || filterCategory.includes(product.categoryName)) &&
             (!filterBrand || filterBrand.includes(product.brandName)) &&
-            (!adjustedStartPrice || product.price >= adjustedStartPrice) &&
-            (!filterEndPrice || product.price <= filterEndPrice) &&
+            (typeof adjustedStartPrice === 'undefined' || product.price >= adjustedStartPrice) &&
+            (typeof filterEndPrice === 'undefined' || product.price <= filterEndPrice) &&
             (!filterCondition || filterCondition.includes(product.condition)) &&
             (!filterMaterial || filterMaterial.includes(product.material)) &&
             (!filterStyle || filterStyle.includes(product.style))
           );
         });
+        
         
         const paginatedResults = filteredResults.slice((page - 1) * limit, page * limit);
   

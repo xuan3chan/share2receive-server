@@ -501,7 +501,7 @@ export class ProductService {
         .select('-createdAt -updatedAt -__v  -approved -isDeleted -isBlock')
         .populate('categoryId', 'name type')
         .populate('brandId', 'name')
-        .populate('userId', 'firstname lastname')
+        .populate('userId', 'firstname lastname number averageRating numberOfRating')
         .lean({ virtuals: true })
         .exec();
 
@@ -524,7 +524,7 @@ export class ProductService {
         .select('-createdAt -updatedAt -__v  -approved -isDeleted -isBlock')
         .populate('categoryId', 'name type')
         .populate('brandId', 'name')
-        .populate('userId', 'firstname lastname avatar')
+        .populate('userId', 'firstname lastname avatar numberOfRating averageRating')
         .lean({ virtuals: true })
         .exec();
 

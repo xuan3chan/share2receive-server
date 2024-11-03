@@ -18,6 +18,7 @@ import { EventGateway } from '../libs/libs/src/common/util/event.gateway';
 import { RatingModule } from './rating/rating.module';
 import { NotificationModule } from './notification/notification.module';
 import { RedisCacheModule } from './redis/redis.module';
+import { WalletModule } from './wallet/wallet.module';
 @Module({
   imports: [
     SearchModule,
@@ -51,6 +52,7 @@ import { RedisCacheModule } from './redis/redis.module';
     ExchangeModule,
     RatingModule,
     NotificationModule,
+    WalletModule,
     
   ],
   providers: [EventGateway],

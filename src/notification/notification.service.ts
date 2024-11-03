@@ -35,25 +35,28 @@ export class NotificationService {
     }
 
     async getNotificationByUserId(userId: string): Promise<Notification[]> {
-        const cacheKey = `notifications:${userId}`;
+      const cacheKey = `notifications:${userId}`;
     
-        // Try getting notifications from Redis
-        const cachedNotifications = await this.redisService.getJSON<Notification[]>(cacheKey, '$');
-        if (cachedNotifications) {
-            this.logger.log(`Cache hit for user ${userId}`);
-            return cachedNotifications;
-        }
+      // Try getting notifications from Redis
+      const cachedNotifications = await this.redisService.getJSON<Notification[]>(cacheKey, '$');
+      if (cachedNotifications) {
+        this.logger.log(`Cache hit for user ${userId}`);
+        return cachedNotifications;
+      }
     
-        // If not in cache, fetch from the database
-        this.logger.log(`Cache miss for user ${userId}. Fetching from DB.`);
-        const notifications = await this.notificationModel.find({ userId }).lean();
+      // If not in cache, fetch from the database
+      this.logger.log(`Cache miss for user ${userId}. Fetching from DB.`);
+      const notifications = await this.notificationModel
+        .find({ userId })
+        .sort({ createdAt: -1 }) // Sort by createdAt in descending order
+        .lean();
     
-        // Deep serialization to remove Mongoose-specific properties
-        const serializedNotifications = JSON.parse(JSON.stringify(notifications));
+      // Deep serialization to remove Mongoose-specific properties
+      const serializedNotifications = JSON.parse(JSON.stringify(notifications));
     
-        // Save the notifications to Redis with a TTL of 1 hour (3600 seconds)
-        await this.redisService.setJSON(cacheKey, '$', serializedNotifications);
-        return notifications;
+      // Save the notifications to Redis with a TTL of 1 hour (3600 seconds)
+      await this.redisService.setJSON(cacheKey, '$', serializedNotifications);
+      return notifications;
     }
     
     

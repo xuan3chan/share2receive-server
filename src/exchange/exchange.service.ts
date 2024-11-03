@@ -287,7 +287,6 @@ export class ExchangeService {
   
       if (status === 'accepted') {
         exchange.allExchangeStatus = 'accepted';
-        // Add additional status fields
         exchange.receiverStatus = {
           exchangeStatus: 'pending',
           confirmStatus: null,
@@ -328,11 +327,19 @@ export class ExchangeService {
           ),
         ]);
   
-        const updateExchangedStatus = async (productUpdate, productId) => {
-          const allVariantsSoldOut = productUpdate.sizeVariants.every(
+        const updateExchangedStatus = async (productId) => {
+          const product = await this.productModel.findById(productId).lean();
+        
+          if (!product) {
+            throw new Error(`Product with ID ${productId} not found`);
+          }
+        
+          // Check if all size variants have amount = 0
+          const allVariantsSoldOut = product.sizeVariants.every(
             (variant) => variant.amount === 0,
           );
-  
+        
+          // Update product status to 'soldOut' if all variants are sold out
           if (allVariantsSoldOut) {
             await this.productModel.updateOne(
               { _id: productId },
@@ -341,16 +348,17 @@ export class ExchangeService {
             );
           }
         };
+        
+        // Check and update both requester and receiver products
+        await Promise.all([
+          updateExchangedStatus(exchange.requestProduct.requesterProductId),
+          updateExchangedStatus(exchange.receiveProduct.receiverProductId),
+        ]);
+        
   
         await Promise.all([
-          updateExchangedStatus(
-            requesterProductUpdate,
-            exchange.requestProduct.requesterProductId,
-          ),
-          updateExchangedStatus(
-            receiverProductUpdate,
-            exchange.receiveProduct.receiverProductId,
-          ),
+          updateExchangedStatus(exchange.requestProduct.requesterProductId),
+          updateExchangedStatus(exchange.receiveProduct.receiverProductId),
         ]);
   
         // Send notification to the requester
@@ -394,6 +402,7 @@ export class ExchangeService {
       session.endSession();
     }
   }
+  
   
 
   async updateExchangeStatuswhenShippingService(

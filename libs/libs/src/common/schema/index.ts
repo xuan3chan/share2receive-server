@@ -7,3 +7,4 @@ export * from './product.schema';
 export * from './exchange.schema';
 export * from './rating.schema';
 export * from './notification.schema';
+export * from './wallet.schema';

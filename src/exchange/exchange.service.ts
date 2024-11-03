@@ -19,7 +19,25 @@ export class ExchangeService {
     @InjectModel('Rating') private ratingModel: Model<ExchangeDocument>,
     private eventGateway: EventGateway,
   ) {}
+  private async checkAmountProduct(
+    productId: string,
+  ): Promise<boolean> {
+    const product = await this.productModel
+      .findOne({
+        _id: productId,
+      })
+      .lean();
 
+    if (!product) {
+      throw new BadRequestException('Product not found');
+    }
+
+    const totalAmount = product.sizeVariants.reduce(
+      (total, variant) => total + variant.amount,
+      0,
+    );
+  return totalAmount > 0;
+  }
   async createExchangeService(
     requesterId: string,
     createExchangeDto: CreateExchangeDto,
@@ -217,7 +235,7 @@ export class ExchangeService {
   ): Promise<any> {
     const session = await this.exchangeModel.db.startSession();
     session.startTransaction();
-
+  
     try {
       const exchange = await this.exchangeModel
         .findById(exchangeId)
@@ -225,34 +243,32 @@ export class ExchangeService {
       if (!exchange) {
         throw new BadRequestException('Exchange not found');
       }
-
+  
       if (exchange.allExchangeStatus !== 'pending') {
         throw new BadRequestException('Exchange status is not pending');
       }
-
+  
       if (exchange.receiverId.toString() !== userId) {
         throw new BadRequestException('You are not the receiver');
       }
-
-      const [requesterProductUpdate, receiverProductUpdate] = await Promise.all(
-        [
-          this.productModel
-            .findOne({
-              _id: exchange.requestProduct.requesterProductId,
-              'sizeVariants.size': exchange.requestProduct.size,
-              'sizeVariants.colors': exchange.requestProduct.colors,
-            })
-            .lean(),
-          this.productModel
-            .findOne({
-              _id: exchange.receiveProduct.receiverProductId,
-              'sizeVariants.size': exchange.receiveProduct.size,
-              'sizeVariants.colors': exchange.receiveProduct.colors,
-            })
-            .lean(),
-        ],
-      );
-
+  
+      const [requesterProductUpdate, receiverProductUpdate] = await Promise.all([
+        this.productModel
+          .findOne({
+            _id: exchange.requestProduct.requesterProductId,
+            'sizeVariants.size': exchange.requestProduct.size,
+            'sizeVariants.colors': exchange.requestProduct.colors,
+          })
+          .lean(),
+        this.productModel
+          .findOne({
+            _id: exchange.receiveProduct.receiverProductId,
+            'sizeVariants.size': exchange.receiveProduct.size,
+            'sizeVariants.colors': exchange.receiveProduct.colors,
+          })
+          .lean(),
+      ]);
+  
       const validateStock = (productUpdate, exchangeProduct) => {
         const variant = productUpdate?.sizeVariants.find(
           (v) =>
@@ -261,19 +277,17 @@ export class ExchangeService {
         );
         return variant && variant.amount >= exchangeProduct.amount;
       };
-
+  
       if (
         !validateStock(requesterProductUpdate, exchange.requestProduct) ||
         !validateStock(receiverProductUpdate, exchange.receiveProduct)
       ) {
-        throw new BadRequestException(
-          'Not enough stock to accept the exchange',
-        );
+        throw new BadRequestException('Not enough stock to accept the exchange');
       }
-
+  
       if (status === 'accepted') {
         exchange.allExchangeStatus = 'accepted';
-        //add field
+        // Add additional status fields
         exchange.receiverStatus = {
           exchangeStatus: 'pending',
           confirmStatus: null,
@@ -284,7 +298,7 @@ export class ExchangeService {
           confirmStatus: null,
           statusDate: new Date(),
         };
-
+  
         await Promise.all([
           this.productModel.updateOne(
             {
@@ -313,19 +327,21 @@ export class ExchangeService {
             { session },
           ),
         ]);
-
+  
         const updateExchangedStatus = async (productUpdate, productId) => {
-          if (
-            productUpdate.sizeVariants.every((variant) => variant.amount === 0)
-          ) {
+          const allVariantsSoldOut = productUpdate.sizeVariants.every(
+            (variant) => variant.amount === 0,
+          );
+  
+          if (allVariantsSoldOut) {
             await this.productModel.updateOne(
               { _id: productId },
-              { $set: { status: 'Exchanged' } },
+              { $set: { status: 'sold' } },
               { session },
             );
           }
         };
-
+  
         await Promise.all([
           updateExchangedStatus(
             requesterProductUpdate,
@@ -336,7 +352,7 @@ export class ExchangeService {
             exchange.receiveProduct.receiverProductId,
           ),
         ]);
-
+  
         // Send notification to the requester
         const product = await this.productModel
           .findById(exchange.requestProduct.requesterProductId)
@@ -345,13 +361,12 @@ export class ExchangeService {
           this.eventGateway.sendAuthenticatedNotification(
             exchange.requesterId.toString(),
             'Thông báo Trao đổi',
-            `Giao dịch cho sản phẩm"${product.productName}" đã được chấp nhận.`,
-            
+            `Giao dịch cho sản phẩm "${product.productName}" đã được chấp nhận.`,
           );
         }
       } else if (status === 'rejected') {
         exchange.allExchangeStatus = 'rejected';
-
+  
         // Send notification to the requester
         const product = await this.productModel
           .findById(exchange.requestProduct.requesterProductId)
@@ -361,16 +376,16 @@ export class ExchangeService {
           this.eventGateway.sendAuthenticatedNotification(
             exchange.requesterId.toString(),
             'Thông báo Trao đổi',
-            `Giao dịch cho sản phẩm '${product.productName}' đã bị từ chối.`,
+            `Giao dịch cho sản phẩm "${product.productName}" đã bị từ chối.`,
           );
         }
       } else {
         throw new BadRequestException('Invalid status');
       }
-
+  
       await exchange.save({ session });
       await session.commitTransaction();
-
+  
       return exchange.toObject();
     } catch (error) {
       await session.abortTransaction();
@@ -379,6 +394,7 @@ export class ExchangeService {
       session.endSession();
     }
   }
+  
 
   async updateExchangeStatuswhenShippingService(
     exchangeId: string,

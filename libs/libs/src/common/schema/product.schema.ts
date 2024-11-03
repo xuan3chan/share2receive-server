@@ -70,7 +70,7 @@ export class Product extends Document {
 
   @Prop({
     type: mongoose.Schema.Types.String,
-    enum: ['active', 'inactive','suspend','exchanging','exchanged','Sold'],
+    enum: ['active', 'inactive','suspend','exchanging','exchanged','sold'],
     default: 'active',
   })
   status: string;

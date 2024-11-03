@@ -13,15 +13,15 @@ export class NotificationService {
         private redisService: RedisService, // Inject RedisService
     ) {}
 
-    async createNotification(userId: string, content: string): Promise<Notification> {
-        const createdNotification = new this.notificationModel({ userId, content });
+    async createNotification(userId: string, title: string, content: string): Promise<Notification> {
+        const createdNotification = new this.notificationModel({ userId, title, content });
         const notification = await createdNotification.save();
-
+    
         // Invalidate cache for the user
         await this.redisService.delJSON(`notifications:${userId}`);
         return notification;
     }
-
+    
     async updateNotificationViewed(userId: string, notificationId: string): Promise<Notification> {
         const updatedNotification = await this.notificationModel.findOneAndUpdate(
             { userId, _id: notificationId },
@@ -30,7 +30,7 @@ export class NotificationService {
         );
 
         // Invalidate cache for the user
-        await this.redisService.delJSON(`notifications:${userId}`);
+        this.redisService.delJSON(`notifications:${userId}`);
         return updatedNotification;
     }
 

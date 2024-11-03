@@ -78,8 +78,9 @@ export class EventGateway
     this.server.emit('generalNotification', message);
   }
 
-  sendAuthenticatedNotification(userId: string, message: string) {
-    this.server.to(userId).emit('authenticatedNotification', message);
-    this.notificationService.createNotification(userId, message);
-  }
+  sendAuthenticatedNotification(userId: string, title: string, message: string) {
+    this.server.to(userId).emit('authenticatedNotification', { title, message });
+    this.notificationService.createNotification(userId, title, message);
+}
+
 }

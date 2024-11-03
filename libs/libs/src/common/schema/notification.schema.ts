@@ -9,7 +9,8 @@ import mongoose from 'mongoose';
  
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
     userId: string;
-
+    @Prop({ type: mongoose.Schema.Types.String, required: true })
+    title: string;
     @Prop({ type: mongoose.Schema.Types.String, required: true })
     content: string;
 

@@ -96,7 +96,8 @@ export class ExchangeService {
     await exchange.save();
     this.eventGateway.sendAuthenticatedNotification(
       receiverProduct.userId.toString(),
-      'You have a new exchange request',
+      'Thông báo Trao đổi',
+      'Bạn có một yêu cầu trao đổi sản phẩm mới',
     );
     return exchange;
   }
@@ -343,7 +344,9 @@ export class ExchangeService {
         if (product) {
           this.eventGateway.sendAuthenticatedNotification(
             exchange.requesterId.toString(),
+            'Thông báo Trao đổi',
             `Giao dịch cho sản phẩm"${product.productName}" đã được chấp nhận.`,
+            
           );
         }
       } else if (status === 'rejected') {
@@ -357,6 +360,7 @@ export class ExchangeService {
         if (product) {
           this.eventGateway.sendAuthenticatedNotification(
             exchange.requesterId.toString(),
+            'Thông báo Trao đổi',
             `Giao dịch cho sản phẩm '${product.productName}' đã bị từ chối.`,
           );
         }
@@ -502,14 +506,14 @@ export class ExchangeService {
       const statusTranslations: { [key: string]: string } = {
         pending: 'đang chờ xử lý',
         completed: 'đã hoàn thành',
-        rejected: 'đã bị từ chối',
+        shiping: 'đang vận chuyển',
         accepted: 'đã được chấp nhận',
         // Add other status translations as needed
       };
       
       const translatedStatus = statusTranslations[status] || status;
       
-      const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được cập nhật thành '${translatedStatus}' bởi người dùng ${updatingUser}.`;      console.log(notificationMessage);
+      const notificationMessage = `Giao dịch cho sản phẩm '${product?.productName}' đã được cập nhật thành '${translatedStatus}' bởi người dùng ${updatingUser}.`;      
       // Gửi thông báo cho bên còn lại
       const otherPartyId = isRequester
         ? (exchange.receiverId as any)._id
@@ -518,6 +522,7 @@ export class ExchangeService {
       console.log('Sending notification to:', otherPartyId);
       await this.eventGateway.sendAuthenticatedNotification(
         otherPartyId.toString(),
+        'Thông báo Trao đổi',
         notificationMessage,
       );
 
@@ -621,6 +626,7 @@ export class ExchangeService {
       console.log('Sending notification to:', (otherPartyId as any)._id);
       await this.eventGateway.sendAuthenticatedNotification(
         (otherPartyId as any)._id.toString(),
+        'Thông báo Trao đổi',
         notificationMessage,
       );
       return exchange.toObject();

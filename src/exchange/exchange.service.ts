@@ -336,7 +336,7 @@ export class ExchangeService {
           if (allVariantsSoldOut) {
             await this.productModel.updateOne(
               { _id: productId },
-              { $set: { status: 'sold' } },
+              { $set: { status: 'soldOut' } },
               { session },
             );
           }

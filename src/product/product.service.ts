@@ -384,6 +384,7 @@ export class ProductService {
         status: 'active',
         isDeleted: false,
         'approved.approveStatus': 'approved',
+        'sizeVariants.amount': { $gt: 0 },
         isBlock: false,
       };
   

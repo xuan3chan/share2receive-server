@@ -240,9 +240,7 @@ export class ProductService {
       );
     }
   }
-  
-  
-  
+   
   async deleteProductService(
     userId: string,
     productId: string,
@@ -480,8 +478,8 @@ export class ProductService {
       const [products, total] = await Promise.all([
         this.productModel
           .find(query)
-          .populate('categoryId', 'name type')
-          .populate('brandId', 'name')
+          .populate('categoryId', 'name type totalProduct')
+          .populate('brandId', 'name totalProduct')
           .populate('userId', 'firstname lastname avatar')
           .select('-createdAt -updatedAt -__v -approved -isDeleted -isBlock')
           .skip((page - 1) * limit)

@@ -19,9 +19,6 @@ export class CreateBrandDto {
   @IsNotEmpty()
   @MaxLength(50)
   @MinLength(2)
-  @Matches(/^[\p{L}0-9 ]+$/u, {
-    message: 'name must only contain letters, numbers, and spaces',
-  })
   name: string;
 
   @ApiProperty({
@@ -61,9 +58,6 @@ export class UpdateBrandDto {
   @IsOptional()
   @MaxLength(50)
   @MinLength(2)
-  @Matches(/^[\p{L}0-9 ]+$/u, {
-    message: 'name must only contain letters, numbers, and spaces',
-  })
   name: string;
 
   @ApiProperty({

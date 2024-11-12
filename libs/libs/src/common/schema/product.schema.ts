@@ -78,7 +78,7 @@ export class Product extends Document {
   @Prop({ type: mongoose.Schema.Types.Boolean, default: false })
   isBlock: boolean;
 
-  @Prop({ type: mongoose.Schema.Types.String, enum: ['sale', 'barter'] })
+  @Prop({ type: mongoose.Schema.Types.String, enum: ['sale', 'barter','donate'] })
   type: string;
 
   @Prop({ type: mongoose.Schema.Types.Number})
@@ -104,6 +104,9 @@ export class Product extends Document {
 
   @Prop({ type: mongoose.Schema.Types.Number,required:true})
   weight: number;
+  
+  @Prop({ type: mongoose.Schema.Types.String,required:true})
+  age:string
 }
 export type ProductDocument = HydratedDocument<Product>;
 export const ProductSchema = SchemaFactory.createForClass(Product);

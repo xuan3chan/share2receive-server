@@ -561,7 +561,8 @@ export class ProductService {
           'approved.approveStatus': 'approved', // Only approved products
           isDeleted: false, // Exclude deleted products
           isBlock: false, // Exclude blocked products
-          userId: { $ne: userId }, // Exclude the current user's products
+          userId: { $ne: userId },
+           // Exclude the current user's products
         })
         .populate('categoryId', 'type') // Populate categoryId to access type field
         .select('-__v -createdAt -updatedAt') // Exclude unnecessary fields
@@ -584,7 +585,8 @@ export class ProductService {
         );
         const materialMatches = material?.includes(product.material);
         const styleMatches = style?.includes(product.style);
-        const tagMatches = [hobby, age, zodiacSign].some(
+        const ageMatches = product.age?.includes(age); // Check for age match
+        const tagMatches = [hobby, zodiacSign].some(
           (tag) => typeof tag === 'string' && product.tags?.includes(tag),
         );
   
@@ -594,6 +596,7 @@ export class ProductService {
         if (sizeMatches) score += 2;
         if (colorMatches) score += 2;
         if (materialMatches) score += 1;
+        if (ageMatches) score += 2; // Age match score adjustment
         if (tagMatches) score += 1;
   
         return { ...product, score };
@@ -613,6 +616,7 @@ export class ProductService {
       );
     }
   }
+  
   
   
   

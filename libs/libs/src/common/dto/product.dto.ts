@@ -25,6 +25,7 @@ enum ProductStatus {
 enum ProductType {
   Sale = 'sale',
   Barter = 'barter',
+  Donate = 'donate',
 }
 
 export class SizeVariantDto {
@@ -183,6 +184,13 @@ export class CreateProductDto {
   @Max(5000)
   weight: number;
   
+  @ApiProperty({
+    description: 'Images of the product',
+    example:'20-25'
+  })
+  @IsString()
+  @MaxLength(6)
+  age:string;
 }
 
 export class DeleteImagesDto {
@@ -343,6 +351,15 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @MaxLength(5000)
   weight: number;
   
+    
+  @ApiProperty({
+    description: 'Images of the product',
+    example:'20-25'
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(6)
+  age:string;
 }
 
 export class idMongoDto {

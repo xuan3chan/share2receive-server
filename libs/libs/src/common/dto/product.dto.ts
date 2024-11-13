@@ -350,7 +350,7 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   @Min(50)
   @Max(500)
   weight: number;
-  //asdsdsd
+  //asdsdsdasdasdasd
     
   @ApiProperty({
     description: 'Images of the product',

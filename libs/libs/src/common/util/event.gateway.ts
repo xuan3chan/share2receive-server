@@ -4,41 +4,48 @@ import {
   OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  MessageBody,
+  ConnectedSocket,
+  SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { AuthService } from '../../../../../src/auth/auth.service';
 import * as cookie from 'cookie';
 import { NotificationService } from 'src/notification/notification.service';
+import { MessagesService } from '../../../../../src/messages/messages.service';
+import { JwtService } from '@nestjs/jwt';
+import { BadRequestException } from '@nestjs/common';
+import { Readable } from 'stream';
 
 @WebSocketGateway({
   cors: {
     origin: (origin, callback) => {
-      callback(null, true);
+      callback(null, true); // Allow all origins
     },
     credentials: true,
   },
 })
-export class EventGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
-  private clients: Map<string, { socket: Socket; isAuthenticated: boolean }> =
-    new Map();
+  private clients: Map<string, { socket: Socket; isAuthenticated: boolean }> = new Map();
+  private authenticatedUsers: Set<string> = new Set(); // Track authenticated users
 
   constructor(
-    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
     private readonly notificationService: NotificationService,
+    private readonly messageService: MessagesService,
   ) {
     console.log('EventGateway instance created');
   }
 
   handleDisconnect(socket: Socket) {
     console.log('Socket disconnected:', socket.id);
-    this.clients.delete(socket.id);
+    if (socket.data._id) {
+      this.authenticatedUsers.delete(socket.data._id);
+      this.clients.delete(socket.data._id);
+    }
   }
 
   async handleConnection(socket: Socket): Promise<void> {
-    console.log('Socket connected:', socket.id);
     const cookies = socket.handshake.headers.cookie;
     let isAuthenticated = false;
     let accessToken = null;
@@ -50,23 +57,28 @@ export class EventGateway
 
     if (accessToken) {
       try {
-        const userId = await this.authService.handleVerifyTokenService(accessToken);
-        if (userId) {
+        const userData = await this.handleVerifyToken(accessToken);
+
+        if (userData && !this.authenticatedUsers.has(userData._id)) {
           isAuthenticated = true;
-          socket.data = { _id: userId };
-          socket.join(userId);
-          console.log('Authenticated user connected:', userId);
+          socket.data = {
+            _id: userData._id,
+            firstname: userData.firstname,
+            lastname: userData.lastname,
+            avatar: userData.avatar,
+          };
+          this.clients.set(userData._id, { socket, isAuthenticated });
+          this.authenticatedUsers.add(userData._id);
+          console.log('Authenticated user connected:', userData._id);
         }
       } catch (err) {
         console.error('Error verifying token:', err);
       }
     }
 
-    this.clients.set(socket.id, { socket, isAuthenticated });
-    console.log('Current clients:', Array.from(this.clients.keys()));
-
     if (!isAuthenticated) {
       console.log('Unauthenticated user connected:', socket.id);
+      socket.disconnect();
     }
   }
 
@@ -74,13 +86,96 @@ export class EventGateway
     console.log('Socket server initialized');
   }
 
-  sendGeneralNotification(message: string) {
-    this.server.emit('generalNotification', message);
-  }
-
   sendAuthenticatedNotification(userId: string, title: string, message: string) {
     this.server.to(userId).emit('authenticatedNotification', { title, message });
     this.notificationService.createNotification(userId, title, message);
+  }
+
+  @SubscribeMessage('joinRoom')
+async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
+  client.join(roomId);
+  console.log(`User ${client.data._id} joined room ${roomId}`);
+
+  // Retrieve previous messages for the room
+  const previousMessages = await this.messageService.getMessagesInRoom(roomId);
+
+  // Emit the previous messages to the client who joined the room
+  console.log('Emitting previous messages to client:', previousMessages);
+  client.emit('previousMessages', previousMessages);
 }
 
+
+  @SubscribeMessage('sendMessage')
+  async handleMessage(
+    @MessageBody() message: { receiverId: string; content?: string; file?: string; fileName?: string; fileType?: string },
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    const senderId = client.data._id;
+    const roomId = [senderId, message.receiverId].sort().join('_');
+
+    try {
+      let file: Express.Multer.File | undefined = undefined;
+      if (message.file && message.fileName && message.fileType) {
+        file = await this.processFile({
+          file: message.file,
+          fileName: message.fileName,
+          fileType: message.fileType,
+        });
+      }
+
+      const savedMessage = await this.messageService.saveMessage(
+        roomId,
+        senderId,
+        message.receiverId,
+        message.content,
+        file,
+      );
+
+      this.sendAuthenticatedNotification(message.receiverId, 'New message received', message.content || 'Image message');
+
+      client.to(roomId).emit('receiveMessage', {
+        senderId,
+        firstname: client.data.firstname,
+        lastname: client.data.lastname,
+        avatar: client.data.avatar,
+        content: message.content,
+        fileUrl: savedMessage.image, // Use the image URL returned by saveMessage
+      });
+    } catch (error) {
+      console.error('Error saving message:', error);
+      throw new BadRequestException('Failed to save message.');
+    }
+  }
+
+  private async processFile(data: { file: string; fileName: string; fileType: string }): Promise<Express.Multer.File> {
+    const base64Data = data.file.split(',')[1];
+    const fileBuffer = Buffer.from(base64Data, 'base64');
+
+    const readableInstanceStream = new Readable();
+    readableInstanceStream.push(fileBuffer);
+    readableInstanceStream.push(null);
+
+    return {
+      buffer: fileBuffer,
+      originalname: data.fileName,
+      mimetype: data.fileType,
+      fieldname: '',
+      encoding: '',
+      size: fileBuffer.length,
+      stream: readableInstanceStream,
+      destination: '',
+      filename: data.fileName,
+      path: '',
+    };
+  }
+
+  async handleVerifyToken(token: string) {
+    try {
+      const userData = await this.jwtService.verifyAsync(token);
+      return userData;
+    } catch (err) {
+      console.error('Error verifying token:', err);
+      return null;
+    }
+  }
 }

@@ -565,6 +565,7 @@ export class ProductService {
            // Exclude the current user's products
         })
         .populate('categoryId', 'type') // Populate categoryId to access type field
+        .populate('userId', 'firstname lastname avatar')
         .select('-__v -createdAt -updatedAt') // Exclude unnecessary fields
         .lean() // Return plain JavaScript objects
         .exec();
@@ -616,12 +617,6 @@ export class ProductService {
       );
     }
   }
-  
-  
-  
-  
-
-  
   
 
   //*****************manage product***************** */

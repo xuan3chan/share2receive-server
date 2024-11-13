@@ -347,7 +347,8 @@ export class UpdateProductDto extends PartialType(CreateProductDto) {
   })
   @IsNumber()
   @IsOptional()
-  @MinLength(50)
+  @Min(50)
+  @Max(5000)
   @MaxLength(5000)
   weight: number;
   

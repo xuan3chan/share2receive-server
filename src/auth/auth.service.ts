@@ -33,6 +33,9 @@ export class AuthService {
         _id: accountHolder._id,
         role: accountHolder.role,
         isBlock: accountHolder.isBlock,
+        firstname: accountHolder.firstname,
+        lastname: accountHolder.lastname,
+        avatar: accountHolder.avatar,
         userStyle: accountHolder.userStyle,
         sub: accountHolder._id,
       };

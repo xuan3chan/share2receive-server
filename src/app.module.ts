@@ -19,6 +19,8 @@ import { RatingModule } from './rating/rating.module';
 import { NotificationModule } from './notification/notification.module';
 import { RedisCacheModule } from './redis/redis.module';
 import { WalletModule } from './wallet/wallet.module';
+import { MessagesModule } from './messages/messages.module';
+import { GatewayModule } from '@app/libs/common/util/gateway.module';
 @Module({
   imports: [
     SearchModule,
@@ -53,8 +55,8 @@ import { WalletModule } from './wallet/wallet.module';
     RatingModule,
     NotificationModule,
     WalletModule,
-    
+    MessagesModule,
+    GatewayModule,
   ],
-  providers: [EventGateway],
 })
 export class AppModule {}

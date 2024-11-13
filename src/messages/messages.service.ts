@@ -52,6 +52,8 @@ export class MessagesService {
   async getMessagesInRoom(roomId: string): Promise<Message[]> {
     return this.messageModel
       .find({ roomId })
+      .populate('senderId', 'firstname lastname avatar')
+      .populate('receiverId', 'firstname lastname avatar')
       .sort({ createdAt: 1 })
       .exec();
   }

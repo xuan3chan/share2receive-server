@@ -85,6 +85,12 @@
       color: white;
       border-top-right-radius: 0px;
     }
+    .timestamp {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 5px;
+      align-self: flex-end;
+    }
     .avatar {
       width: 32px;
       height: 32px;
@@ -236,11 +242,12 @@
           content: messageContent,
           file: fileData,
           fileName: fileData ? document.getElementById('imageInput').files[0].name : null,
-          fileType: fileData ? document.getElementById('imageInput').files[0].type : null
+          fileType: fileData ? document.getElementById('imageInput').files[0].type : null,
+          createdAt: new Date().toISOString() // Adding createdAt for the sender's own message
         };
 
         socket.emit('sendMessage', message);
-        displayMessage('You', messageContent, "right", null, fileData);
+        displayMessage('You', messageContent, "right", null, fileData, message.createdAt);
         document.getElementById('messageInput').value = '';
         document.getElementById('imageInput').value = '';
       }
@@ -264,18 +271,18 @@
     });
 
     socket.on('previousMessages', (messages) => {
-      console.log('Received previous messages:', messages); // Debugging log
       messages.forEach((message) => {
+        const senderDetails = message.senderId;
         displayMessage(
-          message.senderId === senderId ? 'You' : `${message.senderId}`,
+          senderDetails._id === senderId ? 'You' : `${senderDetails.firstname} ${senderDetails.lastname}`,
           message.content,
-          message.senderId === senderId ? 'right' : 'left',
-          null,
-          message.image
+          senderDetails._id === senderId ? 'right' : 'left',
+          senderDetails.avatar,
+          message.image,
+          message.createdAt
         );
       });
     });
-    
 
     socket.on('receiveMessage', (message) => {
       displayMessage(
@@ -283,21 +290,26 @@
         message.content, 
         message.senderId === senderId ? "right" : "left", 
         message.avatar, 
-        message.image
+        message.image,
+        message.createdAt
       );
     });
 
-    function displayMessage(sender, content, position, avatar = null, fileUrl = null) {
+    function displayMessage(sender, content, position, avatar = null, fileUrl = null, createdAt = null) {
       const chatBox = document.getElementById('chatMessages');
       const messageElement = document.createElement('div');
       messageElement.classList.add('chat-message', position);
-    
+
+      // Format timestamp
+      const time = createdAt ? new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
       let messageHTML = `
         ${avatar && position === "left" ? `<img src="${avatar}" class="avatar" alt="Avatar">` : ''}
         <div class="content-box">
           ${position === "left" ? `<span class="sender">${sender}</span>` : ''}
-          ${content ? `<span class="content">${content}</span>` : ''} <!-- Only display content if it exists -->
+          ${content ? `<span class="content">${content}</span>` : ''}
           ${fileUrl ? `<img src="${fileUrl}" alt="Image">` : ''}
+          <span class="timestamp">${time}</span>
         </div>
       `;
       
@@ -305,7 +317,6 @@
       chatBox.appendChild(messageElement);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
-    
   </script>
 </body>
 </html>

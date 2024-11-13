@@ -100,7 +100,6 @@ async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: S
   const previousMessages = await this.messageService.getMessagesInRoom(roomId);
 
   // Emit the previous messages to the client who joined the room
-  console.log('Emitting previous messages to client:', previousMessages);
   client.emit('previousMessages', previousMessages);
 }
 
@@ -131,7 +130,7 @@ async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: S
         file,
       );
 
-      this.sendAuthenticatedNotification(message.receiverId, 'New message received', message.content || 'Image message');
+      this.sendAuthenticatedNotification(message.receiverId, 'Tin nhắn mới', message.content || 'Image message');
 
       client.to(roomId).emit('receiveMessage', {
         senderId,

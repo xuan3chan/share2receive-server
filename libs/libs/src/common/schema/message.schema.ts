@@ -10,10 +10,10 @@ export class Message extends Document {
     @Prop({ type: mongoose.Schema.Types.String, required: true })
     roomId: string;
 
-    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true,ref:'User' })
     senderId: string;
   
-    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true,ref:'User' })
     receiverId: string;
   
     @Prop({ type: mongoose.Schema.Types.String,  })

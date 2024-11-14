@@ -22,7 +22,7 @@ export class MessagesController {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
-  @Get()
+  @Get('get-room')
   async getMessagesInRoomController(
     @Req() request:Request): Promise<Message[]> {
     const userId = this.getUserIdFromToken(request);

@@ -28,6 +28,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   @WebSocketServer() server: Server;
   private clients: Map<string, { socket: Socket; isAuthenticated: boolean }> = new Map();
   private authenticatedUsers: Set<string> = new Set(); // Track authenticated users
+  private roomMembers: Map<string, Set<string>> = new Map(); // Track users in each room
 
   constructor(
     private readonly jwtService: JwtService,
@@ -42,6 +43,12 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     if (socket.data._id) {
       this.authenticatedUsers.delete(socket.data._id);
       this.clients.delete(socket.data._id);
+
+      // Remove user from all rooms they were a part of
+      for (const [roomId, members] of this.roomMembers.entries()) {
+        members.delete(socket.data._id);
+        if (members.size === 0) this.roomMembers.delete(roomId);
+      }
     }
   }
 
@@ -92,17 +99,28 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   }
 
   @SubscribeMessage('joinRoom')
-async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
-  client.join(roomId);
-  console.log(`User ${client.data._id} joined room ${roomId}`);
+  async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
+    client.join(roomId);
+    console.log(`User ${client.data._id} joined room ${roomId}`);
 
-  // Retrieve previous messages for the room
-  const previousMessages = await this.messageService.getMessagesInRoom(roomId);
+    // Track room membership
+    if (!this.roomMembers.has(roomId)) {
+      this.roomMembers.set(roomId, new Set());
+    }
+    this.roomMembers.get(roomId)?.add(client.data._id);
 
-  // Emit the previous messages to the client who joined the room
-  client.emit('previousMessages', previousMessages);
-}
+    // Mark messages as read when the user joins the room
+    await this.messageService.markMessagesAsRead(roomId, client.data._id);
 
+    // Retrieve previous messages for the room
+    const previousMessages = await this.messageService.getMessagesInRoom(roomId);
+
+    // Emit the previous messages to the client who joined the room
+    client.emit('previousMessages', previousMessages);
+
+    // Notify others in the room that messages have been read by this user
+    client.to(roomId).emit('messagesRead', { roomId, readerId: client.data._id });
+  }
 
   @SubscribeMessage('sendMessage')
   async handleMessage(
@@ -113,7 +131,7 @@ async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: S
     const roomId = [senderId, message.receiverId].sort().join('_');
 
     try {
-      let file: Express.Multer.File | undefined = undefined;
+      let file: Express.Multer.File | undefined;
       if (message.file && message.fileName && message.fileType) {
         file = await this.processFile({
           file: message.file,
@@ -130,16 +148,33 @@ async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: S
         file,
       );
 
-      this.sendAuthenticatedNotification(message.receiverId, 'Tin nhắn mới', message.content || 'Image message');
+      // Check if the recipient is currently in the room
+      const isRecipientInRoom = this.roomMembers.get(roomId)?.has(message.receiverId) || false;
 
+      if (isRecipientInRoom) {
+        await this.messageService.markMessagesAsRead(roomId, message.receiverId);
+      }
+
+      // Send the message to other users in the room
       client.to(roomId).emit('receiveMessage', {
         senderId,
         firstname: client.data.firstname,
         lastname: client.data.lastname,
         avatar: client.data.avatar,
         content: message.content,
-        fileUrl: savedMessage.image, // Use the image URL returned by saveMessage
+        fileUrl: savedMessage.image,
+        isRead: isRecipientInRoom,
       });
+
+      // Send notification if the recipient is not in the room
+      if (!isRecipientInRoom) {
+        this.sendAuthenticatedNotification(message.receiverId, 'Tin nhắn mới', message.content || 'Image message');
+      }
+
+      // Emit 'messagesRead' to mark the last message as read if recipient is in the room
+      if (isRecipientInRoom) {
+        this.server.to(roomId).emit('messagesRead', { roomId, readerId: message.receiverId });
+      }
     } catch (error) {
       console.error('Error saving message:', error);
       throw new BadRequestException('Failed to save message.');

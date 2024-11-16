@@ -136,9 +136,10 @@
         message.content, 
         message.senderId === senderId ? "right" : "left", 
         message.avatar, 
-        message.image,
+        message.fileUrl,
         message.createdAt
       );
+      console.log(message);
     });
 
     function displayMessage(sender, content, position, avatar = null, fileUrl = null, createdAt = null) {
@@ -146,22 +147,25 @@
       const messageElement = document.createElement('div');
       messageElement.classList.add('chat-message', position);
 
-      const time = createdAt ? new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const time = createdAt
+        ? new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : '';
 
       let messageHTML = `
-        ${avatar && position === "left" ? `<img src="${avatar}" class="avatar" alt="Avatar">` : ''}
+        ${avatar && position === 'left' ? `<img src="${avatar}" class="avatar" alt="Avatar">` : ''}
         <div class="content-box">
-          ${position === "left" ? `<span class="sender">${sender}</span>` : ''}
+          ${position === 'left' ? `<span class="sender">${sender}</span>` : ''}
           ${content ? `<span class="content">${content}</span>` : ''}
-          ${fileUrl ? `<img src="${fileUrl}" alt="Image">` : ''}
+          ${fileUrl ? `<img src="${fileUrl}" alt="Image not found">` : ''}
           <span class="timestamp">${time}</span>
         </div>
       `;
-      
+
       messageElement.innerHTML = messageHTML;
       chatBox.appendChild(messageElement);
       chatBox.scrollTop = chatBox.scrollHeight;
     }
+   
   </script>
 </body>
 </html>

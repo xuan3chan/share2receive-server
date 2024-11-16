@@ -53,7 +53,6 @@ export class MessagesService {
     );
   }
   
-
   async getMessagesInRoom(roomId: string): Promise<Message[]> {
     return this.messageModel
       .find({ roomId })

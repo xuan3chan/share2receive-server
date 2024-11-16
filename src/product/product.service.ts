@@ -674,7 +674,6 @@ export class ProductService {
         isBlock: product.isBlock,
         type: product.type,
         price: product.price,
-        priceNew: product.priceNew,
         tags: product.tags,
         createdAt: (product as any).createdAt,
         updatedAt: (product as any).updatedAt,

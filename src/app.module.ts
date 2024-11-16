@@ -21,6 +21,7 @@ import { RedisCacheModule } from './redis/redis.module';
 import { WalletModule } from './wallet/wallet.module';
 import { MessagesModule } from './messages/messages.module';
 import { GatewayModule } from '@app/libs/common/util/gateway.module';
+import { CartModule } from './cart/cart.module';
 @Module({
   imports: [
     SearchModule,
@@ -57,6 +58,7 @@ import { GatewayModule } from '@app/libs/common/util/gateway.module';
     WalletModule,
     MessagesModule,
     GatewayModule,
+    CartModule,
   ],
 })
 export class AppModule {}

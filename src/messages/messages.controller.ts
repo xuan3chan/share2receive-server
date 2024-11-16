@@ -1,10 +1,11 @@
 import { MessagesService } from './messages.service';
 import { Message } from '@app/libs/common/schema';
-import { Controller, Get, Param, Patch, Query, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
 import { ApiTags } from '@nestjs/swagger';
+import { MemberGuard } from '@app/libs/common/gaurd';
 
 @ApiTags('Messages')
 @Controller('messages')
@@ -23,6 +24,7 @@ export class MessagesController {
     }
   }
   @Get('get-room')
+  @UseGuards(MemberGuard)
   async getMessagesInRoomController(
     @Req() request:Request): Promise<Message[]> {
     const userId = this.getUserIdFromToken(request);

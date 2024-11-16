@@ -9,3 +9,4 @@ export * from './rating.schema';
 export * from './notification.schema';
 export * from './wallet.schema';
 export * from './message.schema';
+export * from './cart.schema';

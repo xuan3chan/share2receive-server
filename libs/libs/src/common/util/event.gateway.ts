@@ -165,7 +165,6 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         fileUrl: savedMessage.image,
         isRead: isRecipientInRoom,
       });
-
       // Send notification if the recipient is not in the room
       if (!isRecipientInRoom) {
         this.sendAuthenticatedNotification(message.receiverId, 'Tin nhắn mới', message.content || 'Image message');

@@ -162,8 +162,9 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         lastname: client.data.lastname,
         avatar: client.data.avatar,
         content: message.content,
-        fileUrl: savedMessage.image,
+        image: savedMessage.image,
         isRead: isRecipientInRoom,
+        createdAt: new Date(),
       });
       // Send notification if the recipient is not in the room
       if (!isRecipientInRoom) {

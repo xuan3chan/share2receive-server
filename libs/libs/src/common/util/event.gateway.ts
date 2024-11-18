@@ -98,6 +98,10 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     this.notificationService.createNotification(userId, title, message);
   }
 
+  sendNotificationMessage(userId: string, title: string, message: string) {
+    this.server.to(userId).emit('notificationMessage', { title, message });
+  }
+
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
     client.join(roomId);
@@ -168,7 +172,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       });
       // Send notification if the recipient is not in the room
       if (!isRecipientInRoom) {
-        this.sendAuthenticatedNotification(message.receiverId, 'Tin nhắn mới', message.content || 'Image message');
+        this.sendNotificationMessage(message.receiverId, 'Có tin nhắn mới', message.content || 'Hình ảnh');
       }
 
       // Emit 'messagesRead' to mark the last message as read if recipient is in the room

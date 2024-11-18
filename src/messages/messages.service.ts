@@ -39,8 +39,10 @@ export class MessagesService {
   
       const message = new this.messageModel(messageData);
       const savedMessage = await message.save();
-  
+      //populate senderId and receiverId
+      await savedMessage.populate('receiverId', 'firstname lastname avatar');
       return savedMessage;
+      
     } catch (error) {
       console.error("Error saving message:", error);
       throw new BadRequestException(error.message);
@@ -138,7 +140,7 @@ export class MessagesService {
     return messagesWithPartners;
 }
 
-
+// get 
 
 
 

@@ -76,6 +76,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
           };
           this.clients.set(userData._id, { socket, isAuthenticated });
           this.authenticatedUsers.add(userData._id);
+          socket.join(userData._id);
           console.log('Authenticated user connected:', userData._id);
         }
       } catch (err) {
@@ -98,15 +99,14 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     this.notificationService.createNotification(userId, title, message);
   }
 
-  sendNotificationMessage(userId: string, title: string, message: string) {
-    this.server.to(userId).emit('notificationMessage', { title, message });
+  sendNotificationMessage(userId: string, title: string,receiver:string, message: string) {
+    this.server.to(userId).emit('messageNotification', { title,receiver, message });
+    console.log('sendNotificationMessage',userId, title,receiver, message);
   }
 
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
     client.join(roomId);
-    console.log(`User ${client.data._id} joined room ${roomId}`);
-
     // Track room membership
     if (!this.roomMembers.has(roomId)) {
       this.roomMembers.set(roomId, new Set());
@@ -151,7 +151,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         message.content,
         file,
       );
-
+      //find name receiver
       // Check if the recipient is currently in the room
       const isRecipientInRoom = this.roomMembers.get(roomId)?.has(message.receiverId) || false;
 
@@ -172,9 +172,10 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       });
       // Send notification if the recipient is not in the room
       if (!isRecipientInRoom) {
-        this.sendNotificationMessage(message.receiverId, 'Có tin nhắn mới', message.content || 'Hình ảnh');
+        const receiver = (savedMessage.receiverId as any).firstname + ' ' + (savedMessage.receiverId as any).lastname;
+        this.sendNotificationMessage(message.receiverId, 'Có tin nhắn mới',receiver, message.content || 'Hình ảnh');
+        
       }
-
       // Emit 'messagesRead' to mark the last message as read if recipient is in the room
       if (isRecipientInRoom) {
         this.server.to(roomId).emit('messagesRead', { roomId, readerId: message.receiverId });

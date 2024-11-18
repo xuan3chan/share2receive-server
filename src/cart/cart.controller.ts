@@ -1,4 +1,4 @@
-import { Body, Controller, Post,Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post,Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateCartDto } from '@app/libs/common/dto/cart.dto';
@@ -31,5 +31,23 @@ export class CartController {
   ) {
     const userId = this.getUserIdFromToken(request); // Hàm lấy userId từ token
     return this.cartService.createCartService(userId, createCartDto);
+  }
+
+  @Get()
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Get Cart of user' })
+  async getCart(@Req() request: Request) {
+    const userId = this.getUserIdFromToken(request);
+    return this.cartService.getCartService(userId);
+  }
+
+  @Delete(':id')
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Delete Cart' })
+  async deleteCart(@Req() request: Request,
+  @Param('id') cartId: string,
+) {
+    const userId = this.getUserIdFromToken(request);
+    return this.cartService.deleteCartService(userId, cartId);
   }
 }

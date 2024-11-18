@@ -22,11 +22,13 @@ export class CartService {
     if (product.type != 'sale') {
         throw new Error('Product not for sale');
     }
+    if(product.status != 'active'){
+        throw new Error('Product not active');
+    }
     if( userId === product.userId){
         throw new Error('You can not buy your product');
     }
-    //check amount,szie color of product
-    // tìm size và color, số lượng dựa trên tìm trong prouct.sizeVariants
+   
     const sizeVariant = product.sizeVariants.find(
       (sizeVariant) =>
         sizeVariant.size === createCartDto.size &&
@@ -39,10 +41,7 @@ export class CartService {
       throw new Error('Not enough product');
     }
     //tạo cart
-    console.log(product);
     const result =product.price * createCartDto.amount;
-    console.log(result);
-    console.log(product.price);
     const cart = new this.cartModel({
       userId,
       productId: createCartDto.productId,
@@ -54,5 +53,13 @@ export class CartService {
     });
     await cart.save();
     return cart;
+  }
+  async deleteCartService(userId: string, cartId: string): Promise<{message:string}> {
+    await this.cartModel.deleteOne({ _id: cartId, userId });
+    return  {message:'Delete success'};
+  }
+  async getCartService(userId: string): Promise<{data:Cart[]}> {
+    const cart = await this.cartModel.find({ userId }).populate('productId','_id productName imgUrls userId status isDeleted ');
+    return {data:cart};
   }
 }

@@ -62,4 +62,5 @@ export class CartService {
     const cart = await this.cartModel.find({ userId }).populate('productId','_id productName imgUrls userId status isDeleted ');
     return {data:cart};
   }
+  
 }

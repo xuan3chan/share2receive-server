@@ -24,9 +24,10 @@ export class Order extends Document {
   })
   paymentStatus: string; // Trạng thái thanh toán
 
-  @Prop({ type: String, default: null })
-  TransactionId: string; // Mã giao dịch từ MoMo
-
+  @Prop({ type: mongoose.Types.ObjectId, default: null })
+  transactionId: string; // Mã giao dịch từ MoMo
+  @Prop({type:mongoose.Schema.Types.String,enum:['momo_wallet','agreement'],default:'momo_wallet'})
+  type: string; // Loại đơn hàng (momo_wallet, etc.)
   @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'SubOrder' }])
   subOrders: mongoose.Types.ObjectId[]; // Danh sách subOrders thuộc đơn hàng
 }
@@ -42,7 +43,7 @@ export class SubOrder extends Document {
   @Prop({ type: String }) //  
   orderUUID:string; // Mã đơn hàng
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Order',})
-  orderId: string; // ID của đơn hàng cha
+  orderId: mongoose.Schema.Types.ObjectId; // ID của đơn hàng cha
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   sellerId: string; // Người bán
@@ -52,6 +53,13 @@ export class SubOrder extends Document {
 
   @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'OrderItem' }])
   products: mongoose.Types.ObjectId[]; // Danh sách sản phẩm trong subOrder
+
+  @Prop({
+    type: String,
+    enum: ['pending', 'shipping', 'delivered','complete', 'canceled'],
+    default: 'pending',
+  })
+  status: string; // Trạng thái đơn hàng
 }
 
 export type SubOrderDocument = HydratedDocument<SubOrder>;

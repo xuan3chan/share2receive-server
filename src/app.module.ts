@@ -24,6 +24,7 @@ import { GatewayModule } from '@app/libs/common/util/gateway.module';
 import { CartModule } from './cart/cart.module';
 import { CheckoutModule } from './checkout/checkout.module';
 import { OrdersModule } from './orders/orders.module';
+import { TransactionModule } from './transaction/transaction.module';
 @Module({
   imports: [
     SearchModule,
@@ -63,6 +64,7 @@ import { OrdersModule } from './orders/orders.module';
     CartModule,
     CheckoutModule,
     OrdersModule,
+    TransactionModule,
   ],
 })
 export class AppModule {}

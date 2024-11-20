@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, Logger, NotFoundException } from '@nestjs/com
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { ProductDocument } from '@app/libs/common/schema'; // Adjust the path accordingly
+import { ProductDocument } from '@app/libs/common/schema';
 import { ProductSearchCriteria } from '@app/libs/common/interface';
 
 @Injectable()
@@ -14,7 +14,6 @@ export class SearchService implements OnModuleInit {
     @InjectModel('Product') private productModel: Model<ProductDocument>,
   ) {}
 
-  // Transforms a product from MongoDB into the desired format
   private transformProduct(product: any) {
     return {
       productName: product.productName,
@@ -26,21 +25,21 @@ export class SearchService implements OnModuleInit {
         _id: variant._id.toString(),
       })),
       material: product.material,
-      approveStatus: product.approved.approveStatus,
+      approveStatus: product.approved?.approveStatus,
       userId: {
-        _id: product.userId?._id.toString(),
-        firstname: product.userId?.firstname,
-        lastname: product.userId?.lastname,
-        avatar: product.userId?.avatar,
+        _id: product.userId?._id?.toString() || null,
+        firstname: product.userId?.firstname || null,
+        lastname: product.userId?.lastname || null,
+        avatar: product.userId?.avatar || null,
       },
       categoryId: {
-        _id: product.categoryId?._id.toString(),
-        name: product.categoryId?.name,
-        type: product.categoryId?.type,
+        _id: product.categoryId?._id?.toString() || null,
+        name: product.categoryId?.name || null,
+        type: product.categoryId?.type || null,
       },
       brandId: {
-        _id: product.brandId?._id.toString(),
-        name: product.brandId?.name,
+        _id: product.brandId?._id?.toString() || null,
+        name: product.brandId?.name || null,
       },
       status: product.status,
       isDeleted: product.isDeleted,
@@ -57,15 +56,13 @@ export class SearchService implements OnModuleInit {
     };
   }
 
-  // Runs when the module initializes
   async onModuleInit() {
-    await this.syncWithElasticsearch(); // Sync new changes
-    await this.reindexAllProducts();    // Reindex all existing products
+    await this.syncWithElasticsearch();
+    await this.reindexAllProducts();
   }
 
-  // Syncs new changes to Elasticsearch
   async syncWithElasticsearch() {
-    const changeStream = this.productModel.watch(); // Watches for events on Product collection
+    const changeStream = this.productModel.watch();
 
     changeStream.on('change', async (change) => {
       const { operationType, documentKey } = change;
@@ -89,9 +86,11 @@ export class SearchService implements OnModuleInit {
             });
             this.logger.log(`Product indexed: ${documentKey._id}`);
           } else if (operationType === 'update') {
+            // Handle version conflict with retry_on_conflict
             await this.elasticsearchService.update({
               index: 'products',
               id: documentKey._id.toString(),
+              retry_on_conflict: 3, // Retry if version conflict occurs
               body: {
                 doc: productSearchCriteria,
               },
@@ -106,12 +105,32 @@ export class SearchService implements OnModuleInit {
           this.logger.log(`Product deleted from Elasticsearch: ${documentKey._id}`);
         }
       } catch (error) {
-        this.logger.error(`Error syncing document ${documentKey._id} with Elasticsearch`, error);
+        if (
+          error.status === 409 &&
+          error.body?.error?.type === 'version_conflict_engine_exception'
+        ) {
+          this.logger.warn(
+            `Version conflict detected for document: ${documentKey._id}. Skipping this operation.`,
+          );
+        } else {
+          this.logger.error(
+            `Error syncing document ${documentKey._id} with Elasticsearch`,
+            error,
+          );
+        }
       }
+    });
+
+    changeStream.on('error', (err) => {
+      this.logger.error('Change stream error:', err);
+    });
+
+    changeStream.on('close', () => {
+      this.logger.warn('Change stream closed. Restarting...');
+      this.syncWithElasticsearch();
     });
   }
 
-  // Reindexes all existing products
   async reindexAllProducts() {
     try {
       const fullDocuments = await this.productModel
@@ -121,22 +140,23 @@ export class SearchService implements OnModuleInit {
         .populate('userId', 'firstname lastname avatar')
         .lean();
 
-      for (const product of fullDocuments) {
+      const bulkOperations = fullDocuments.map((product) => {
         const productSearchCriteria = this.transformProduct(product);
+        return [
+          { index: { _index: 'products', _id: product._id.toString() } },
+          productSearchCriteria,
+        ];
+      }).flat();
 
-        await this.elasticsearchService.index({
-          index: 'products',
-          body: productSearchCriteria,
-          id: product._id.toString(),
-        });
-        this.logger.log(`Product reindexed: ${product._id}`);
+      if (bulkOperations.length > 0) {
+        await this.elasticsearchService.bulk({ body: bulkOperations });
+        this.logger.log(`Successfully reindexed ${fullDocuments.length} products`);
       }
     } catch (error) {
       this.logger.error(`Failed to reindex products: ${error.message}`);
     }
   }
 
-  // Search method for products
   async searchProductsService(searchKey: string) {
     try {
       const { body } = await this.elasticsearchService.search({
@@ -150,22 +170,12 @@ export class SearchService implements OnModuleInit {
                     query: searchKey,
                     fields: [
                       'productName^3',
-                      'categoryName^2',
-                      'brandName',
+                      'categoryId.name^2',
+                      'brandId.name',
                       'tags',
                       'description',
                     ],
-                    fuzziness: '1',
-                    operator: 'or',
-                    minimum_should_match: '1<85%',
-                  },
-                },
-                {
-                  match: {
-                    productName: {
-                      query: searchKey,
-                      boost: 5,
-                    },
+                    fuzziness: 'AUTO',
                   },
                 },
               ],
@@ -174,10 +184,16 @@ export class SearchService implements OnModuleInit {
         },
       });
 
-      // Filter products with specific conditions
       const products = body.hits.hits
         .map((hit) => hit._source)
-        .filter((product) => product.approveStatus === 'approved' && !product.isDeleted && !product.isBlocked && product.status === 'active');
+        .filter(
+          (product) =>
+            product.approveStatus === 'approved' &&
+            !product.isDeleted &&
+            !product.isBlocked &&
+            product.status === 'active',
+        );
+
       return products;
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);

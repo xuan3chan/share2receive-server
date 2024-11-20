@@ -22,6 +22,7 @@ export class UpdateInfoOrderDto{
     })
     @IsString()
     @IsNotEmpty()
+    @IsOptional()
     address:string
 
     @ApiProperty({
@@ -30,5 +31,59 @@ export class UpdateInfoOrderDto{
     })
     @IsString()
     @IsNotEmpty()
+    @IsOptional()
     phone:string
+
+    @ApiProperty({
+        description: 'Type of the order',
+        example: 'momo_wallet',
+    })
+    @IsString()
+    @IsOptional()
+    type:string
+}
+
+export class CreateOrderByProductDto{
+    @ApiProperty({
+        description: 'Product ID',
+        example: '123456',
+    })
+    @IsMongoId()
+    @IsNotEmpty()
+    productId:string
+
+    @ApiProperty({
+        description: 'Quantity of the product',
+        example: 2,
+    })
+    @IsNumber()
+    @IsNotEmpty()
+    @Min(1)
+    quantity:number
+
+    @ApiProperty({
+        description: 'Size of the product',
+        example: 'M',
+    })
+    @IsString()
+    @IsNotEmpty()
+    size:string
+
+    @ApiProperty({
+        description: 'Color of the product',
+        example: 'red',
+    })
+    @IsString()
+    @IsNotEmpty()
+    color:string
+}
+
+export class UpdateSubOrderDto{
+    @ApiProperty({
+        description: 'Status of the order',
+        example: 'shipping',
+    })
+    @IsString()
+    @IsOptional()
+    status:string
 }

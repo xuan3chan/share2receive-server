@@ -12,3 +12,4 @@ export * from './message.schema';
 export * from './cart.schema';
 export * from './order.schema';
 export * from './order.schema';
+export * from './transaction.schema';

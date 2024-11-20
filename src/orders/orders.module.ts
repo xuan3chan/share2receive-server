@@ -13,7 +13,12 @@ import {
   ProductSchema,
   Cart,
   CartSchema,
+  User,
+  UserSchema,
+  Transaction,
+  TransactionSchema,
 } from '@app/libs/common/schema';
+import { TransactionModule } from 'src/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -22,8 +27,11 @@ import {
       { name: SubOrder.name, schema: SubOrderSchema },
       { name: OrderItem.name, schema: OrderItemSchema },
       { name: Product.name, schema: ProductSchema },
-      {name:Cart.name,schema:CartSchema}
+      {name:Cart.name,schema:CartSchema},
+      {name:User.name,schema:UserSchema},
+      
     ]),
+    TransactionModule,
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

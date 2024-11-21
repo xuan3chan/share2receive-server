@@ -111,7 +111,7 @@ export class CheckoutService {
         secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
         partnerCode: 'MOMO',
         redirectUrl: 'https://share2receive-client.vercel.app/',
-        ipnUrl: process.env.MOMO_IPN_URL,
+        ipnUrl: process.env.MOMO_IPN_URL || 'https://share2receive-server.onrender.com/api/checkout/callback/momo',
         requestType: 'payWithMethod',
         lang: 'vi',
       };

@@ -94,18 +94,24 @@ export class CheckoutService {
       }
   
       // Lấy danh sách sản phẩm từ các `subOrders`
-      const items = (myOrder.subOrders as any[]).flatMap((subOrder) =>
-        (subOrder.products as any[]).map((product) => ({
+      const items = await Promise.all(
+        (myOrder.subOrders as any[]).flatMap((subOrder) =>
+          (subOrder.products as any[]).map(async (product) => {
+        const productDetails = await this.productModel.findById(product.productId).lean();
+        return {
           id: product.productId.toString(),
           name: product.productName,
           price: product.price,
           currency: 'VND',
           quantity: product.quantity,
-          imageUrl: product.imgUrls || '', // Bổ sung đường dẫn ảnh nếu có
+          imageUrl: productDetails.imgUrls || '', // Bổ sung đường dẫn ảnh nếu có
           totalPrice: product.price * product.quantity,
-        })),
+        };
+          }),
+        ),
       );
-  
+
+
       const config = {
         accessKey: 'F8BBA842ECF85',
         secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',

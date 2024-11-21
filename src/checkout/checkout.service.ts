@@ -7,7 +7,13 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Cart, Order, OrderItem, Product, SubOrder } from '@app/libs/common/schema';
+import {
+  Cart,
+  Order,
+  OrderItem,
+  Product,
+  SubOrder,
+} from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { IMomoPaymentResponse } from '@app/libs/common/interface';
 import { TransactionService } from 'src/transaction/transaction.service';
@@ -42,7 +48,7 @@ export class CheckoutService {
             },
           ],
         });
-  
+
       if (!myOrder) {
         throw new BadRequestException('Đơn hàng không tồn tại!');
       }
@@ -55,35 +61,44 @@ export class CheckoutService {
       if (myOrder.subOrders.length === 0) {
         throw new BadRequestException('Không có sản phẩm nào trong đơn hàng!');
       }
-  
+
       // Kiểm tra tồn kho trước khi tạo giao dịch
       for (const subOrderId of myOrder.subOrders) {
-        const subOrder = await this.subOrderModel.findById(subOrderId).populate('products');
+        const subOrder = await this.subOrderModel
+          .findById(subOrderId)
+          .populate('products');
         for (const productItem of subOrder.products) {
-          const orderItem = await this.orderItemModel.findById(productItem).lean();
+          const orderItem = await this.orderItemModel
+            .findById(productItem)
+            .lean();
           if (!orderItem) {
-            throw new BadRequestException(`Sản phẩm không tồn tại: ${productItem}`);
+            throw new BadRequestException(
+              `Sản phẩm không tồn tại: ${productItem}`,
+            );
           }
-  
-          const product = await this.productModel.findById(orderItem.productId).lean();
+
+          const product = await this.productModel
+            .findById(orderItem.productId)
+            .lean();
           if (!product) {
             throw new BadRequestException(
               `Sản phẩm không tồn tại: ${orderItem.productId}`,
             );
           }
-  
+
           // Tìm size và màu cụ thể trong sizeVariants
           const sizeVariant = product.sizeVariants.find(
             (variant) =>
-              variant.size === orderItem.size && variant.colors === orderItem.color,
+              variant.size === orderItem.size &&
+              variant.colors === orderItem.color,
           );
-  
+
           if (!sizeVariant) {
             throw new BadRequestException(
               `Không tìm thấy phiên bản sản phẩm (size: ${orderItem.size}, màu: ${orderItem.color}).`,
             );
           }
-  
+
           // Kiểm tra tồn kho
           if (sizeVariant.amount < orderItem.quantity) {
             throw new BadRequestException(
@@ -92,45 +107,70 @@ export class CheckoutService {
           }
         }
       }
-  
+
       // Lấy danh sách sản phẩm từ các `subOrders`
-      const items = (myOrder.subOrders as any[]).flatMap((subOrder) =>
-        (subOrder.products as any[]).map((product) => ({
-          id: product.productId.toString(),
-          name: product.productName,
-          price: product.price,
-          currency: 'VND',
-          quantity: product.quantity,
-          imageUrl: product.imgUrls || '', // Bổ sung đường dẫn ảnh nếu có
-          totalPrice: product.price * product.quantity,
-        })),
-      );
-      
+      const items = (
+        await Promise.all(
+          myOrder.subOrders.flatMap(async (subOrderId: any) => {
+            const subOrder = await this.subOrderModel
+              .findById(subOrderId)
+              .populate('products');
+            return Promise.all(
+              subOrder.products.map(async (product: any) => {
+                // Truy vấn dữ liệu sản phẩm từ `productModel`
+                const productData = await this.productModel
+                  .findById(product.productId) // `product.productId` là ObjectId
+                  .select('imgUrls productName price')
+                  .lean();
+
+                if (!productData) {
+                  throw new BadRequestException(
+                    `Không tìm thấy sản phẩm với ID: ${product.productId}`,
+                  );
+                }
+
+                return {
+                  id: product.productId.toString(), // Lấy ID từ `productId` dưới dạng chuỗi
+                  name: productData.productName,
+                  price: product.price, // Giá sản phẩm
+                  currency: 'VND',
+                  quantity: product.quantity, // Số lượng sản phẩm
+                  imageUrl: productData.imgUrls?.[0] || '', // Ảnh đầu tiên hoặc chuỗi rỗng
+                  totalPrice: product.price * product.quantity, // Tổng giá trị
+                };
+              }),
+            );
+          }),
+        )
+      ).flat(); // Loại bỏ cấp độ mảng lồng nhau
+
       const config = {
         accessKey: 'F8BBA842ECF85',
         secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
         partnerCode: 'MOMO',
         redirectUrl: 'https://share2receive-client.vercel.app/',
-        ipnUrl: process.env.MOMO_IPN_URL || 'https://share2receive-server.onrender.com/api/checkout/callback/momo',
+        ipnUrl:
+          process.env.MOMO_IPN_URL ||
+          'https://share2receive-server.onrender.com/api/checkout/callback/momo',
         requestType: 'payWithMethod',
         lang: 'vi',
       };
-  
+
       const orderInfo =
         'Thanh toán đơn hàng của bạn - ' +
         (myOrder.subOrders as any[])
           .map((subOrder) => subOrder.orderUUID.toString())
           .join(', ');
-  
+
       const extraData = orderID;
       const autoCapture = true;
-  
+
       // Tổng số tiền thanh toán
       const amount = myOrder.totalAmount;
       // Tạo orderId và requestId
       const orderId = config.partnerCode + new Date().getTime();
       const requestId = orderId;
-  
+
       // Tạo chữ ký (signature)
       const rawSignature = [
         `accessKey=${config.accessKey}`,
@@ -144,12 +184,12 @@ export class CheckoutService {
         `requestId=${requestId}`,
         `requestType=${config.requestType}`,
       ].join('&');
-  
+
       const signature = crypto
         .createHmac('sha256', config.secretKey)
         .update(rawSignature)
         .digest('hex');
-  
+
       // Tạo payload gửi tới MoMo
       const requestBody = JSON.stringify({
         partnerCode: config.partnerCode,
@@ -168,7 +208,7 @@ export class CheckoutService {
         signature,
         items,
       });
-  
+
       // Gửi yêu cầu đến MoMo
       const options = {
         hostname: 'test-payment.momo.vn',
@@ -180,15 +220,15 @@ export class CheckoutService {
           'Content-Length': Buffer.byteLength(requestBody),
         },
       };
-  
+
       return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
           let data = '';
-  
+
           res.on('data', (chunk) => {
             data += chunk;
           });
-  
+
           res.on('end', () => {
             try {
               const response = JSON.parse(data);
@@ -203,12 +243,14 @@ export class CheckoutService {
               }
             } catch (error) {
               reject(
-                new BadRequestException('Không thể phân tích phản hồi từ MoMo.'),
+                new BadRequestException(
+                  'Không thể phân tích phản hồi từ MoMo.',
+                ),
               );
             }
           });
         });
-  
+
         req.on('error', (e) => {
           reject(
             new InternalServerErrorException(
@@ -216,7 +258,7 @@ export class CheckoutService {
             ),
           );
         });
-  
+
         req.write(requestBody);
         req.end();
       });
@@ -225,33 +267,33 @@ export class CheckoutService {
       throw new BadRequestException(error.message);
     }
   }
-  
-  
 
   async momoCallbackService(body: IMomoPaymentResponse): Promise<any> {
     console.log('Callback từ MoMo:', body);
     if (body.resultCode === 0) {
       console.log('Thanh toán thành công cho đơn hàng:', body.orderId);
-      await this.updateOrderStatus(body.extraData, 'paid',body);
+      await this.updateOrderStatus(body.extraData, 'paid', body);
     } else {
       console.error('Thanh toán thất bại:', body.message);
-      await this.updateOrderStatus(body.extraData, 'failed',body);
+      await this.updateOrderStatus(body.extraData, 'failed', body);
       throw new BadRequestException(body.message);
     }
-  
+
     return { message: 'Callback từ MoMo đã được xử lý thành công.' };
   }
-  
+
   private async updateOrderStatus(
     orderId: string,
     status: string,
     body: IMomoPaymentResponse,
   ) {
-    const order = await this.orderModel.findOne(
-        { _id: orderId },
-    );
+    const order = await this.orderModel.findOne({ _id: orderId });
     const userId = order.userId;
-    const saveTran = await this.transactionService.saveTransaction(orderId,userId,body)
+    const saveTran = await this.transactionService.saveTransaction(
+      orderId,
+      userId,
+      body,
+    );
     //update order status and save transactionId
     await this.orderModel.findByIdAndUpdate(orderId, {
       paymentStatus: status,
@@ -261,36 +303,43 @@ export class CheckoutService {
     if (!order) {
       throw new BadRequestException('Đơn hàng không tồn tại!');
     }
-  
+
     if (status === 'paid') {
       const subOrders = await this.subOrderModel.find({ orderId });
-  
+
       for (const subOrder of subOrders) {
         for (const productItem of subOrder.products) {
-          const orderItem = await this.orderItemModel.findById(productItem).lean();
+          const orderItem = await this.orderItemModel
+            .findById(productItem)
+            .lean();
           if (!orderItem) {
-            throw new BadRequestException(`Sản phẩm không tồn tại: ${productItem}`);
+            throw new BadRequestException(
+              `Sản phẩm không tồn tại: ${productItem}`,
+            );
           }
-  
-          const product = await this.productModel.findById(orderItem.productId).lean();
+
+          const product = await this.productModel
+            .findById(orderItem.productId)
+            .lean();
           if (!product) {
             throw new BadRequestException(
               `Sản phẩm không tồn tại: ${orderItem.productId}`,
             );
           }
-  
+
           // Tìm size và màu cụ thể trong sizeVariants
           const sizeVariant = product.sizeVariants.find(
             (variant) =>
-              variant.size === orderItem.size && variant.colors === orderItem.color,
+              variant.size === orderItem.size &&
+              variant.colors === orderItem.color,
           );
-  
+
           if (!sizeVariant) {
             throw new BadRequestException(
               `Không tìm thấy phiên bản sản phẩm (size: ${orderItem.size}, màu: ${orderItem.color}).`,
             );
           }
-  
+
           // Kiểm tra tồn kho
           if (sizeVariant.amount < orderItem.quantity) {
             // Nếu hết hàng, hoàn tác trạng thái thanh toán
@@ -303,28 +352,32 @@ export class CheckoutService {
           }
         }
       }
-  
+
       // Nếu tất cả sản phẩm đủ hàng, cập nhật tồn kho và thông tin bán
       for (const subOrder of subOrders) {
         for (const productItem of subOrder.products) {
-          const orderItem = await this.orderItemModel.findById(productItem).lean();
+          const orderItem = await this.orderItemModel
+            .findById(productItem)
+            .lean();
           const product = await this.productModel.findById(orderItem.productId);
-  
+
           if (product) {
             const sizeVariantIndex = product.sizeVariants.findIndex(
               (variant) =>
-                variant.size === orderItem.size && variant.colors === orderItem.color,
+                variant.size === orderItem.size &&
+                variant.colors === orderItem.color,
             );
-  
+
             if (sizeVariantIndex !== -1) {
               // Cập nhật tồn kho
-              product.sizeVariants[sizeVariantIndex].amount -= orderItem.quantity;
-  
+              product.sizeVariants[sizeVariantIndex].amount -=
+                orderItem.quantity;
+
               // Lưu lại thay đổi
               await product.save();
               console.log(product);
             }
-  
+
             // Cập nhật số lượng đã bán
             await this.productModel.updateOne(
               { _id: product._id },
@@ -335,9 +388,4 @@ export class CheckoutService {
       }
     }
   }
-  
- 
-
-  
-
 }

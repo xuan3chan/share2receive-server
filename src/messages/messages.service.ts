@@ -76,7 +76,6 @@ export class MessagesService {
       .lean()
       .exec();
 
-    console.log("Rooms found:", rooms); // Debug: Check the list of rooms for the user
 
     // Step 2: Filter out duplicate room IDs
     const uniqueRooms = rooms.filter(

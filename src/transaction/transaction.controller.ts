@@ -35,7 +35,7 @@ export class TransactionController {
     return this.transactionService.checkTransactionStatus(orderId);
   }
 
-  @Put(':checkTranIsPaid/:orderId')
+  @Put('checkTranIsPaid/:orderId')
   @UseGuards(MemberGuard)
   async checkTranIsPaid(
     @Param('orderId') orderId: string,

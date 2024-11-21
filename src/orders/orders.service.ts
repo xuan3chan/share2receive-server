@@ -12,7 +12,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateOrderByProductDto } from '@app/libs/common/dto/order.dto';
 import { TransactionService } from 'src/transaction/transaction.service';
-
+import { EventGateway } from '@app/libs/common/util/event.gateway';
+import { MailerService } from 'src/mailer/mailer.service';
 @Injectable()
 export class OrdersService {
   constructor(
@@ -22,6 +23,8 @@ export class OrdersService {
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(Cart.name) private cartModel: Model<Cart>,
     @InjectModel(User.name) private userModel: Model<User>,
+    private EventGateway: EventGateway,
+    private mailerService: MailerService,
     private transactionService: TransactionService,
   ) {}
 
@@ -114,6 +117,23 @@ export class OrdersService {
       { _id: { $in: cartItems.map((item) => item._id) } },
       { $set: { isCheckedOut: true } },
     );
+    // gui tin nhan cho cac nguoi ban lam sao lay orderUUID trong subOrder
+    for (const sellerId of Object.keys(groupedBySeller)) {
+      const sellerItems = groupedBySeller[sellerId];
+      const orderInfo = sellerItems.map((item: any) => `${item.productId.productName} ${item.size} ${item.color} ${item.amount} cái`).join(', ');
+
+      const seller = await this.userModel.findById(sellerId).lean();
+      const subOrder = await this.subOrderModel.findOne({ sellerId }).sort({ createdAt: -1 }).lean();
+      if (seller && seller.email) {
+      this.mailerService.sendEmailNewOrder(seller.email, subOrder.orderUUID, orderInfo);
+      }
+
+      this.EventGateway.sendAuthenticatedNotification(
+      sellerId,
+      'Bạn có đơn hàng mới',
+      'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
+      );
+    }
 
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
@@ -219,6 +239,18 @@ export class OrdersService {
       { _id: subOrder._id },
       { $set: { orderId: order._id } },
     );
+    //gui tin thong bao cho nguoi ban
+    const userData = await this.userModel
+      .findOne({ _id: product.userId })
+      .lean();
+    // lấy orderUUID của đơn hàng của seller
+    const orderInfo = product.productName + ' ' + orderItem.size + ' ' + orderItem.color + ' ' + orderItem.quantity + ' cái';
+    this.mailerService.sendEmailNewOrder(userData.email,subOrder.orderUUID,orderInfo,);
+    this.EventGateway.sendAuthenticatedNotification(
+      product.userId,
+      'Bạn có đơn hàng mới',
+      'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
+    );
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
   async getOrdersByUserService(userId: string): Promise<any> {
@@ -263,7 +295,7 @@ export class OrdersService {
     if (order.paymentStatus === 'paid') {
       // Thực hiện hoàn tiền
       await this.transactionService.refundTransaction(orderId);
-      
+
       // Tăng số lượng sản phẩm trong kho
       const subOrders = await this.subOrderModel
         .find({ _id: { $in: order.subOrders } })
@@ -342,22 +374,22 @@ export class OrdersService {
       _id: subOrderId,
       sellerId,
     });
-  
+
     if (!subOrder) {
       throw new BadRequestException(
         'Không tìm thấy SubOrder hoặc SubOrder không thuộc về sellerId',
       );
     }
-  
+
     // Cập nhật trạng thái cho SubOrder
     subOrder.status = status;
     await subOrder.save();
-  
+
     // Xử lý logic dựa trên trạng thái mới
     if (status === 'canceled') {
       // Tìm danh sách sản phẩm thuộc SubOrder
       const products = await this.orderItemModel.find({ subOrderId });
-  
+
       for (const product of products) {
         const productItem = await this.productModel.findById(product.productId);
         if (!productItem) {
@@ -365,13 +397,13 @@ export class OrdersService {
             `Không tìm thấy sản phẩm: ${product.productId}`,
           );
         }
-  
+
         // Tìm sizeVariant cần cập nhật
         const sizeVariantIndex = productItem.sizeVariants.findIndex(
           (variant) =>
             variant.size === product.size && variant.colors === product.color,
         );
-  
+
         if (sizeVariantIndex !== -1) {
           // Cập nhật số lượng tồn kho
           productItem.sizeVariants[sizeVariantIndex].amount += product.quantity;
@@ -383,9 +415,7 @@ export class OrdersService {
         }
       }
     }
-  
+
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
-  
-  
 }

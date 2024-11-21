@@ -19,6 +19,8 @@ import {
   TransactionSchema,
 } from '@app/libs/common/schema';
 import { TransactionModule } from 'src/transaction/transaction.module';
+import { GatewayModule } from '@app/libs/common/util/gateway.module';
+import { MailerModule } from 'src/mailer/mailer.module';
 
 @Module({
   imports: [
@@ -30,8 +32,12 @@ import { TransactionModule } from 'src/transaction/transaction.module';
       {name:Cart.name,schema:CartSchema},
       {name:User.name,schema:UserSchema},
       
+      
     ]),
     TransactionModule,
+    GatewayModule,
+    MailerModule
+    
   ],
   controllers: [OrdersController],
   providers: [OrdersService],

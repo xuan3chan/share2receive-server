@@ -97,6 +97,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   sendAuthenticatedNotification(userId: string, title: string, message: string) {
     this.server.to(userId).emit('authenticatedNotification', { title, message });
     this.notificationService.createNotification(userId, title, message);
+    console.log('sendAuthenticatedNotification',userId, title, message);
   }
 
   sendNotificationMessage(userId: string, title: string,receiver:string, message: string) {
@@ -124,6 +125,17 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
 
     // Notify others in the room that messages have been read by this user
     client.to(roomId).emit('messagesRead', { roomId, readerId: client.data._id });
+  }
+  //leave room
+  @SubscribeMessage('leaveRoom')
+  async handleLeaveRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
+    client.leave(roomId);
+    // Remove user from the room
+    this.roomMembers.get(roomId)?.delete(client.data._id);
+    // If the user was the last one in the room, remove the room
+    if (this.roomMembers.get(roomId)?.size === 0) {
+      this.roomMembers.delete(roomId);
+    }
   }
 
   @SubscribeMessage('sendMessage')

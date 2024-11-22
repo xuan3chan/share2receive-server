@@ -123,5 +123,15 @@ export class OrdersController {
     const userId = this.getUserIdFromToken(request);
     return this.ordersService.updateSubOrderStatusService(userId, orderId, status);
   }
+
+  @Delete(':subOrderId')
+  @UseGuards(MemberGuard)
+  async deleteSubOrderController(
+    @Req() request: Request,
+    @Param('subOrderId') subOrderId: string,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.ordersService.deleteSubOrderService(subOrderId, userId);
+  }
   
 }

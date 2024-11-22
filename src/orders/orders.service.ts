@@ -493,4 +493,38 @@ export class OrdersService {
 
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
+  async deleteSubOrderService(subOrderId: string, userId: string): Promise<any> {
+    // Xóa subOrder trong mảng subOrders của Order
+    const updateOrder = await this.orderModel.updateMany(
+      { subOrders: subOrderId, userId: userId },
+      { $pull: { subOrders: subOrderId } }
+    );
+  
+    if (!updateOrder) {
+      throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về userId');
+    }
+  
+    // Kiểm tra các Order có mảng subOrders rỗng và xóa Order nếu cần
+    await this.orderModel.deleteMany({ subOrders: { $size: 0 } });
+  
+    // Kiểm tra subOrder có tồn tại
+    const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
+    if (!subOrder) {
+      throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về sellerId');
+    }
+  
+    // Kiểm tra trạng thái của SubOrder
+    if (subOrder.status === 'shipping') {
+      throw new BadRequestException('Không thể xóa SubOrder đã được giao');
+    }
+  
+    // Xóa SubOrder
+    await this.subOrderModel.deleteOne({ _id: subOrderId });
+  
+    // Xóa các OrderItem thuộc SubOrder
+    await this.orderItemModel.deleteMany({ subOrderId });
+  
+    return { message: 'Xóa SubOrder thành công!' };
+  }
+  
 }

@@ -494,7 +494,7 @@ export class OrdersService {
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
   async deleteSubOrderService(subOrderId: string, userId: string): Promise<any> {
-    // Xóa subOrder trong mảng subOrders của Order
+    // Xóa subOrder khỏi mảng subOrders của Order
     const updateOrder = await this.orderModel.updateMany(
       { subOrders: subOrderId, userId: userId },
       { $pull: { subOrders: subOrderId } }
@@ -504,10 +504,27 @@ export class OrdersService {
       throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về userId');
     }
   
-    // Kiểm tra các Order có mảng subOrders rỗng và xóa Order nếu cần
-    await this.orderModel.deleteMany({ subOrders: { $size: 0 } });
+    // Lấy thông tin Order chứa subOrder
+    const order = await this.orderModel.findOne({ subOrders: subOrderId });
+    if (!order) {
+      throw new BadRequestException('Không tìm thấy Order liên quan đến SubOrder này');
+    }
   
-    // Kiểm tra subOrder có tồn tại
+    // Kiểm tra các Order có mảng subOrders rỗng và xóa Order nếu cần
+    if (order.subOrders.length === 0) {
+      await this.orderModel.deleteOne({ _id: order._id });
+    } else {
+      // Cập nhật lại totalAmount của Order nếu còn SubOrder
+      const remainingSubOrders = await this.subOrderModel.find({ _id: { $in: order.subOrders } });
+      const newTotalAmount = remainingSubOrders.reduce((total, subOrder) => total + subOrder.subTotal, 0);
+  
+      await this.orderModel.updateOne(
+        { _id: order._id },
+        { $set: { totalAmount: newTotalAmount } }
+      );
+    }
+  
+    // Kiểm tra SubOrder có tồn tại không
     const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
     if (!subOrder) {
       throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về sellerId');
@@ -524,7 +541,8 @@ export class OrdersService {
     // Xóa các OrderItem thuộc SubOrder
     await this.orderItemModel.deleteMany({ subOrderId });
   
-    return { message: 'Xóa SubOrder thành công!' };
+    return { message: 'Xóa SubOrder và cập nhật Order thành công!' };
   }
+  
   
 }

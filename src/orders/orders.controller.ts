@@ -15,7 +15,10 @@ import { OrdersService } from './orders.service';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
-import { CreateOrderByProductDto, UpdateInfoOrderDto } from '@app/libs/common/dto/order.dto';
+import {
+  CreateOrderByProductDto,
+  UpdateInfoOrderDto,
+} from '@app/libs/common/dto/order.dto';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { MemberGuard } from '@app/libs/common/gaurd';
 
@@ -70,7 +73,12 @@ export class OrdersController {
     @Body() updateInfoOrderDto: UpdateInfoOrderDto,
   ) {
     const userId = this.getUserIdFromToken(request);
-    return this.ordersService.updateInfoOrderService(orderId, userId,updateInfoOrderDto.phone,updateInfoOrderDto.address);
+    return this.ordersService.updateInfoOrderService(
+      orderId,
+      userId,
+      updateInfoOrderDto.phone,
+      updateInfoOrderDto.address,
+    );
   }
 
   @Post('create-now')
@@ -121,7 +129,11 @@ export class OrdersController {
     @Body('status') status: string,
   ) {
     const userId = this.getUserIdFromToken(request);
-    return this.ordersService.updateSubOrderStatusService(userId, orderId, status);
+    return this.ordersService.updateSubOrderStatusService(
+      userId,
+      orderId,
+      status,
+    );
   }
 
   @Delete(':subOrderId')
@@ -133,5 +145,12 @@ export class OrdersController {
     const userId = this.getUserIdFromToken(request);
     return this.ordersService.deleteSubOrderService(subOrderId, userId);
   }
-  
+  @Delete(':subOrderId/:orderItemId')
+  @UseGuards(MemberGuard)
+  async deleteOrderItemController(
+    @Param('subOrderId') subOrderId: string,
+    @Param('orderItemId') orderItemId: string,
+  ) {
+    return this.ordersService.deleteOrderItemService(subOrderId, orderItemId);
+  }
 }

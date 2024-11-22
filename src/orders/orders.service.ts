@@ -120,18 +120,30 @@ export class OrdersService {
     // gui tin nhan cho cac nguoi ban lam sao lay orderUUID trong subOrder
     for (const sellerId of Object.keys(groupedBySeller)) {
       const sellerItems = groupedBySeller[sellerId];
-      const orderInfo = sellerItems.map((item: any) => `${item.productId.productName} ${item.size} ${item.color} ${item.amount} cái`).join(', ');
+      const orderInfo = sellerItems
+        .map(
+          (item: any) =>
+            `${item.productId.productName} ${item.size} ${item.color} ${item.amount} cái`,
+        )
+        .join(', ');
 
       const seller = await this.userModel.findById(sellerId).lean();
-      const subOrder = await this.subOrderModel.findOne({ sellerId }).sort({ createdAt: -1 }).lean();
+      const subOrder = await this.subOrderModel
+        .findOne({ sellerId })
+        .sort({ createdAt: -1 })
+        .lean();
       if (seller && seller.email) {
-      this.mailerService.sendEmailNewOrder(seller.email, subOrder.orderUUID, orderInfo);
+        this.mailerService.sendEmailNewOrder(
+          seller.email,
+          subOrder.orderUUID,
+          orderInfo,
+        );
       }
 
       this.EventGateway.sendAuthenticatedNotification(
-      sellerId,
-      'Bạn có đơn hàng mới',
-      'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
+        sellerId,
+        'Bạn có đơn hàng mới',
+        'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
       );
     }
 
@@ -149,16 +161,21 @@ export class OrdersService {
             path: 'products', // Populate products trong SubOrder
             model: 'OrderItem', // Model được sử dụng cho products
             select: '-createdAt -updatedAt', // Chỉ lấy các trường cần thiết (tùy ý)
+            populate: {
+              path: 'productId', // Populate productId trong OrderItem
+              model: 'Product', // Model được sử dụng cho productId
+              select: 'imgUrls', // Chỉ lấy trường imgUrls
+            },
           },
           {
             path: 'sellerId', // Populate thông tin người bán
             model: 'User', // Model người bán
-            select: 'fisrtname lastname address phone avatar email', // Chỉ lấy các trường cần thiết (tùy ý)
+            select: 'firstname lastname address phone avatar email', // Chỉ lấy các trường cần thiết (tùy ý)
           },
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
-
+  
     return { data: order };
   }
 
@@ -244,8 +261,20 @@ export class OrdersService {
       .findOne({ _id: product.userId })
       .lean();
     // lấy orderUUID của đơn hàng của seller
-    const orderInfo = product.productName + ' ' + orderItem.size + ' ' + orderItem.color + ' ' + orderItem.quantity + ' cái';
-    this.mailerService.sendEmailNewOrder(userData.email,subOrder.orderUUID,orderInfo,);
+    const orderInfo =
+      product.productName +
+      ' ' +
+      orderItem.size +
+      ' ' +
+      orderItem.color +
+      ' ' +
+      orderItem.quantity +
+      ' cái';
+    this.mailerService.sendEmailNewOrder(
+      userData.email,
+      subOrder.orderUUID,
+      orderInfo,
+    );
     this.EventGateway.sendAuthenticatedNotification(
       product.userId,
       'Bạn có đơn hàng mới',
@@ -253,20 +282,27 @@ export class OrdersService {
     );
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
-  async getOrdersByUserService(userId: string): Promise<any> {
+    async getOrdersByUserService(userId: string): Promise<any> {
     const orders = await this.orderModel
       .find({ userId })
       .populate({
         path: 'subOrders',
         select: '-createdAt -updatedAt',
-        populate: {
-          path: 'products',
-          model: 'OrderItem',
-          select: '-createdAt -updatedAt',
-        },
+        populate: [
+          {
+            path: 'products',
+            model: 'OrderItem',
+            select: '-createdAt -updatedAt',
+            populate: {
+              path: 'productId',
+              model: 'Product',
+              select: 'imgUrls',
+            },
+          },
+        ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
-
+  
     return { data: orders };
   }
   async cancelOrderService(orderId: string, userId: string): Promise<any> {
@@ -360,7 +396,13 @@ export class OrdersService {
         path: 'products',
         model: 'OrderItem',
         select: '-createdAt -updatedAt',
+        populate: {
+          path: 'productId',
+          model: 'Product',
+          select: 'imgUrls',
+        },
       });
+  
     return { data: orders };
   }
   async updateSubOrderStatusService(
@@ -368,12 +410,19 @@ export class OrdersService {
     subOrderId: string,
     status: string,
   ): Promise<any> {
-    console.log(status);
+    console.log(subOrderId);
     // Kiểm tra subOrder thuộc về sellerId
-    const subOrder = await this.subOrderModel.findOne({
-      _id: subOrderId,
-      sellerId,
-    });
+    const subOrder = await this.subOrderModel
+      .findOne({ _id: subOrderId, sellerId })
+      .populate({
+        path: 'orderId',
+        select: 'userId',
+        populate: {
+          path: 'userId',
+          model: 'User',
+          select: 'email firstname lastname',
+        },
+      });
 
     if (!subOrder) {
       throw new BadRequestException(
@@ -384,6 +433,32 @@ export class OrdersService {
     // Cập nhật trạng thái cho SubOrder
     subOrder.status = status;
     await subOrder.save();
+
+    // Lấy thông tin người mua từ orderId
+    const buyer = (subOrder.orderId as any).userId;
+    if (!buyer) {
+      throw new BadRequestException('Không tìm thấy thông tin người mua.');
+    }
+
+    // Gửi thông báo qua email và tin nhắn cho người mua
+    const emailContent =
+      status === 'canceled'
+        ? 'Đơn hàng của bạn đã bị hủy. Vui lòng kiểm tra chi tiết trên ứng dụng.'
+        : `Trạng thái đơn hàng của bạn đã được cập nhật thành: ${status}.`;
+    const notificationContent =
+      status === 'canceled'
+        ? 'Đơn hàng của bạn đã bị hủy.'
+        : `Trạng thái đơn hàng đã được cập nhật thành: ${status}.`;
+
+    if (buyer.email) {
+      await this.mailerService.sendEmailNotify(buyer.email, emailContent);
+    }
+
+    this.EventGateway.sendAuthenticatedNotification(
+      buyer._id.toString(),
+      'Cập nhật trạng thái đơn hàng',
+      notificationContent,
+    );
 
     // Xử lý logic dựa trên trạng thái mới
     if (status === 'canceled') {

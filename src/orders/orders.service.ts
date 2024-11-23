@@ -494,28 +494,32 @@ export class OrdersService {
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
   async deleteSubOrderService(subOrderId: string, userId: string): Promise<any> {
-    // Xóa subOrder khỏi mảng subOrders của Order
-    const updateOrder = await this.orderModel.updateMany(
-      { subOrders: subOrderId, userId: userId },
-      { $pull: { subOrders: subOrderId } }
-    );
-  
-    if (!updateOrder) {
-      throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về userId');
-    }
-  
-    // Lấy thông tin Order chứa subOrder
-    const order = await this.orderModel.findOne({ subOrders: subOrderId });
+    // 1. Tìm Order chứa SubOrder cần xóa
+    const order = await this.orderModel.findOne({ subOrders: subOrderId, userId });
     if (!order) {
       throw new BadRequestException('Không tìm thấy Order liên quan đến SubOrder này');
     }
   
-    // Kiểm tra các Order có mảng subOrders rỗng và xóa Order nếu cần
-    if (order.subOrders.length === 0) {
+    // 2. Xóa SubOrder khỏi mảng subOrders của Order
+    const updateResult = await this.orderModel.updateOne(
+      { _id: order._id },
+      { $pull: { subOrders: subOrderId } }
+    );
+  
+    if (updateResult.modifiedCount === 0) {
+      throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về userId');
+    }
+  
+    // 3. Kiểm tra nếu mảng subOrders trống, xóa luôn Order
+    if (order.subOrders.length === 1) {
+      // SubOrder bị xóa là phần tử cuối cùng, xóa Order
       await this.orderModel.deleteOne({ _id: order._id });
     } else {
-      // Cập nhật lại totalAmount của Order nếu còn SubOrder
-      const remainingSubOrders = await this.subOrderModel.find({ _id: { $in: order.subOrders } });
+      // Nếu còn SubOrders khác, cập nhật lại totalAmount
+      const remainingSubOrders = await this.subOrderModel.find({
+        _id: { $in: order.subOrders.filter(id => id.toString() !== subOrderId) }, // Lọc bỏ subOrderId
+      });
+  
       const newTotalAmount = remainingSubOrders.reduce((total, subOrder) => total + subOrder.subTotal, 0);
   
       await this.orderModel.updateOne(
@@ -524,23 +528,24 @@ export class OrdersService {
       );
     }
   
-    // Kiểm tra SubOrder có tồn tại không
+    // 4. Tìm SubOrder cần xóa
     const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
     if (!subOrder) {
       throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về sellerId');
     }
   
-    // Kiểm tra trạng thái của SubOrder
+    // 5. Kiểm tra trạng thái SubOrder
     if (subOrder.status === 'shipping') {
       throw new BadRequestException('Không thể xóa SubOrder đã được giao');
     }
   
-    // Xóa SubOrder
+    // 6. Xóa SubOrder
     await this.subOrderModel.deleteOne({ _id: subOrderId });
   
-    // Xóa các OrderItem thuộc SubOrder
+    // 7. Xóa các OrderItem thuộc SubOrder
     await this.orderItemModel.deleteMany({ subOrderId });
   
+    // 8. Trả về thông báo thành công
     return { message: 'Xóa SubOrder và cập nhật Order thành công!' };
   }
   

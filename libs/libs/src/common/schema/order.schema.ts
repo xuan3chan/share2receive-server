@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 @Schema({
   timestamps: true, // Tự động thêm createdAt và updatedAt
 })
@@ -54,6 +55,15 @@ export class SubOrder extends Document {
   @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'OrderItem' }])
   products: mongoose.Types.ObjectId[]; // Danh sách sản phẩm trong subOrder
 
+  @Prop({ type:mongoose.Schema.Types.String,default:'agreement',enum:['GHN','GHTK','agreement']})
+  shippingService: string; // Dịch vụ vận chuyển
+
+  @Prop({ type: Number, default: 0 })
+  shippingFee: number; // Phí vận chuyển
+
+  @Prop({type:mongoose.Schema.Types.String,default:null})
+  note : string
+
   @Prop({
     type: String,
     enum: ['pending', 'shipping', 'delivered','complete', 'canceled'],
@@ -102,8 +112,8 @@ export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
 
 // tạo mã đơn hàng
 SubOrderSchema.pre<SubOrder>('save', function (next) {
-    if (!this.orderUUID) {
-      this.orderUUID = 'SUB-ORD' + new Date().getTime(); // Tạo mã SubOrder với thời gian hiện tại
-    }
-    next();
+  if (!this.orderUUID) {
+    this.orderUUID = uuidv4(); // Tạo mã SubOrder với uuid4
+  }
+  next();
   });

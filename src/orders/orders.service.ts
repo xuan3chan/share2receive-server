@@ -154,30 +154,63 @@ export class OrdersService {
     const order = await this.orderModel
       .findOne({ _id: orderId, userId })
       .populate({
-        path: 'subOrders', // Populate subOrders và UserId trong Order
-        select: '-createdAt -updatedAt', // Chỉ lấy các trường cần thiết (tùy ý)
+        path: 'subOrders',
+        select: '-createdAt -updatedAt',
         populate: [
           {
-            path: 'products', // Populate products trong SubOrder
-            model: 'OrderItem', // Model được sử dụng cho products
-            select: '-createdAt -updatedAt', // Chỉ lấy các trường cần thiết (tùy ý)
+            path: 'products',
+            model: 'OrderItem',
+            select: '-createdAt -updatedAt',
             populate: {
-              path: 'productId', // Populate productId trong OrderItem
-              model: 'Product', // Model được sử dụng cho productId
-              select: 'imgUrls', // Chỉ lấy trường imgUrls
+              path: 'productId',
+              model: 'Product',
+              select: 'imgUrls',
             },
           },
           {
-            path: 'sellerId', // Populate thông tin người bán
-            model: 'User', // Model người bán
-            select: 'firstname lastname address phone avatar email', // Chỉ lấy các trường cần thiết (tùy ý)
+            path: 'sellerId',
+            model: 'User',
+            select: 'firstname lastname address phone avatar email',
           },
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
   
-    return { data: order };
+    if (!order) {
+      throw new Error('Order not found or you do not have access to it.');
+    }
+  
+    // Tính toán `summary` nếu cần
+    let totalAmount = 0;
+    let totalPrice = 0;
+    const uniqueProductIds = new Set<string>();
+  
+    if (order.subOrders) {
+      order.subOrders.forEach((subOrder: any) => {
+        if (Array.isArray(subOrder.products)) {
+          subOrder.products.forEach((product: any) => {
+            totalAmount += product.quantity;
+            totalPrice += product.quantity * product.price;
+            if (product.productId) {
+              uniqueProductIds.add(product.productId.toString());
+            }
+          });
+        }
+      });
+    }
+  
+    const totalTypes = uniqueProductIds.size;
+  
+    return {
+      data: order,
+      summary: {
+        totalAmount,
+        totalTypes,
+        totalPrice,
+      },
+    };
   }
+  
 
   async updateInfoOrderService(
     orderId: string,
@@ -282,7 +315,7 @@ export class OrdersService {
     );
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
-    async getOrdersByUserService(userId: string): Promise<any> {
+  async getOrdersByUserService(userId: string): Promise<any> {
     const orders = await this.orderModel
       .find({ userId })
       .populate({
@@ -290,7 +323,7 @@ export class OrdersService {
         select: '-createdAt -updatedAt',
         populate: [
           {
-            path: 'products',
+            path: 'products', // Populate sản phẩm trong subOrder
             model: 'OrderItem',
             select: '-createdAt -updatedAt',
             populate: {
@@ -303,8 +336,38 @@ export class OrdersService {
       })
       .populate('userId', 'firstname lastname address phone avatar email');
   
-    return { data: orders };
+    // Tính toán `summary`
+    let totalProduct = 0;
+    let totalPrice = 0;
+    const uniqueProductIds = new Set<string>();
+  
+    orders.forEach((order: any) => {
+      order.subOrders.forEach((subOrder: any) => {
+        if (Array.isArray(subOrder.products)) {
+          subOrder.products.forEach((product: any) => {
+            totalProduct += product.quantity;
+            totalPrice += product.quantity * product.price;
+            if (product.productId) {
+              uniqueProductIds.add(product.productId.toString());
+            }
+          });
+        }
+      });
+    });
+  
+    const totalTypes = uniqueProductIds.size;
+  
+    return {
+      data: orders,
+      summary: {
+        totalProduct,
+        totalTypes,
+        totalPrice,
+      },
+    };
   }
+  
+  
   async cancelOrderService(orderId: string, userId: string): Promise<any> {
     // Tìm đơn hàng theo ID và userId
     const order = await this.orderModel.findOne({ _id: orderId, userId });

@@ -1,7 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Post,Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post,Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { CartService } from './cart.service';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { CreateCartDto } from '@app/libs/common/dto/cart.dto';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CreateCartDto, UpdateCartDto } from '@app/libs/common/dto/cart.dto';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
@@ -49,5 +49,15 @@ export class CartController {
 ) {
     const userId = this.getUserIdFromToken(request);
     return this.cartService.deleteCartService(userId, cartId);
+  }
+  @Patch(':id')
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Update Cart' })
+  async updateCart(@Req() request: Request,
+  @Param('id') cartId: string,
+  @Body() updateCartDto: UpdateCartDto,
+) {
+    const userId = this.getUserIdFromToken(request);
+    return this.cartService.updateCartService(userId, cartId, updateCartDto.amount);
   }
 }

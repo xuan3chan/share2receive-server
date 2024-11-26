@@ -87,3 +87,24 @@ export class UpdateSubOrderDto{
     @IsOptional()
     status:string
 }
+export class UpdateShippingDto{
+    
+    @ApiProperty({
+        description: 'Shipping service',
+        example: 'GHN',
+    })
+    @IsString()
+    @IsOptional()
+    @IsNotEmpty()
+    shippingService:string
+
+    @ApiProperty({
+        description: 'note',
+        example: 'Giao hàng nhanh nha',
+    })
+    @IsString()
+    @IsOptional()
+    @IsNotEmpty()
+    @MaxLength(255)
+    note:string
+}

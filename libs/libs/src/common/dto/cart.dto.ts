@@ -22,7 +22,6 @@ export class CreateCartDto {
     description: 'Size of the product',
     example: 'L',
   })
-  @IsEnum(SizeE, { message: 'Size must be a valid enum value from SizeE' })
   @IsNotEmpty()
   size: string;
 

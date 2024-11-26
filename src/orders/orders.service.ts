@@ -7,13 +7,14 @@ import {
   Cart,
   User,
 } from '@app/libs/common/schema';
-import { Model } from 'mongoose';
+import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateOrderByProductDto } from '@app/libs/common/dto/order.dto';
 import { TransactionService } from 'src/transaction/transaction.service';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { MailerService } from 'src/mailer/mailer.service';
+import { IShipping} from '@app/libs/common/interface';
 @Injectable()
 export class OrdersService {
   constructor(
@@ -177,16 +178,18 @@ export class OrdersService {
       .populate('userId', 'firstname lastname address phone avatar email');
   
     if (!order) {
-      throw new Error('Order not found or you do not have access to it.');
+      throw new BadRequestException('Order not found or you do not have access to it.');
     }
   
     // Tính toán `summary` nếu cần
     let totalAmount = 0;
     let totalPrice = 0;
+    let totalShippingFee = 0;
     const uniqueProductIds = new Set<string>();
   
     if (order.subOrders) {
       order.subOrders.forEach((subOrder: any) => {
+        totalShippingFee += subOrder.shippingFee || 0;
         if (Array.isArray(subOrder.products)) {
           subOrder.products.forEach((product: any) => {
             totalAmount += product.quantity;
@@ -207,6 +210,7 @@ export class OrdersService {
         totalAmount,
         totalTypes,
         totalPrice,
+        totalShippingFee,
       },
     };
   }
@@ -332,38 +336,17 @@ export class OrdersService {
               select: 'imgUrls',
             },
           },
+          {
+            path: 'sellerId',
+            model: 'User',
+            select: 'firstname lastname address phone avatar email',
+          },
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
   
-    // Tính toán `summary`
-    let totalProduct = 0;
-    let totalPrice = 0;
-    const uniqueProductIds = new Set<string>();
-  
-    orders.forEach((order: any) => {
-      order.subOrders.forEach((subOrder: any) => {
-        if (Array.isArray(subOrder.products)) {
-          subOrder.products.forEach((product: any) => {
-            totalProduct += product.quantity;
-            totalPrice += product.quantity * product.price;
-            if (product.productId) {
-              uniqueProductIds.add(product.productId.toString());
-            }
-          });
-        }
-      });
-    });
-  
-    const totalTypes = uniqueProductIds.size;
-  
     return {
       data: orders,
-      summary: {
-        totalProduct,
-        totalTypes,
-        totalPrice,
-      },
     };
   }
   
@@ -706,4 +689,175 @@ export class OrdersService {
     return { message: 'Xóa OrderItem và cập nhật giá thành công!' };
   }
   
+  async updateShippingService(
+    subOrderId?: string,
+    shippingService?: string,
+    note?: string,
+  ): Promise<any> {
+    const subOrder = await this.subOrderModel
+      .findOne({ _id: subOrderId })
+      .populate('orderId')
+      .populate('sellerId');
+  
+    if (!subOrder) {
+      throw new BadRequestException('Không tìm thấy SubOrder');
+    }
+  
+    // Kiểm tra trạng thái SubOrder
+    if (subOrder.status === 'shipping') {
+      throw new BadRequestException('Không thể cập nhật dịch vụ vận chuyển cho SubOrder đã được giao');
+    }
+  
+    // Kiểm tra dịch vụ vận chuyển hợp lệ
+    if (shippingService && !['GHN', 'GHTK', 'agreement'].includes(shippingService)) {
+      throw new BadRequestException('Dịch vụ vận chuyển không hợp lệ');
+    }
+  
+    // Nếu dịch vụ vận chuyển mới được chọn
+    if (shippingService && subOrder.shippingService === shippingService) {
+      throw new BadRequestException('Dịch vụ vận chuyển đã được chọn');
+    }
+  
+    const addressOfBuyer = (subOrder.orderId as any).address;
+    const addressOfSeller = (subOrder.sellerId as any).address;
+  
+    if (!addressOfBuyer || !addressOfSeller) {
+      console.log(addressOfBuyer, addressOfSeller);
+      throw new BadRequestException('Không tìm thấy địa chỉ giao hàng');
+    }
+  
+    // Cập nhật dịch vụ vận chuyển
+    if (shippingService) {
+      if (shippingService === 'agreement') {
+        subOrder.shippingFee = 0;
+      } else {
+        const shippingServices: Record<string, IShipping> = {
+          GHN: {
+            name: 'GHN',
+            intraProvince: {
+              mass: 3, // kg
+              fee: 15000,
+              more: 2500,
+            },
+            interProvince: {
+              mass: 0.5, // kg
+              fee: 29000,
+              more: 5000,
+            },
+          },
+          GHTK: {
+            name: 'GHTK',
+            intraProvince: {
+              mass: 3, // kg
+              fee: 22000,
+              more: 2500,
+            },
+            interProvince: {
+              mass: 0.5, // kg
+              fee: 30000,
+              more: 2500,
+            },
+          },
+        };
+  
+        const compare = this.compareLastPartOfAddress(addressOfBuyer, addressOfSeller);
+        const totalWeight = await this.calculateTotalWeight(subOrder.products);
+  
+        subOrder.shippingFee = this.calculateShippingFee(
+          shippingServices[shippingService],
+          totalWeight,
+          compare,
+        );
+      }
+  
+      subOrder.shippingService = shippingService;
+    }
+
+    // Cập nhật note nếu có
+    if (note !== undefined) {
+      subOrder.note = note;
+    }
+
+    // Lưu SubOrder đã cập nhật
+    await subOrder.save();
+
+    // Cập nhật lại totalAmount của Order chứa SubOrder
+    const order = await this.orderModel.findOne({ subOrders: subOrderId });
+    if (!order) {
+      throw new BadRequestException('Không tìm thấy Order liên quan');
+    }
+  
+    const updatedSubOrders = await this.subOrderModel.find({ _id: { $in: order.subOrders } });
+    const newTotalAmount = updatedSubOrders.reduce(
+      (total, sub) => total + sub.subTotal + sub.shippingFee,
+      0,
+    );
+    console.log(newTotalAmount);
+    await this.orderModel.updateOne(
+      { _id: order._id },
+      { $set: { totalAmount: newTotalAmount } },
+    );
+  
+    return { message: 'Cập nhật dịch vụ vận chuyển thành công!' };
+  }
+
+
+  /**
+   * Hàm so sánh tỉnh/thành phố của hai địa chỉ.
+   */
+  private compareLastPartOfAddress(address1: string, address2: string): boolean {
+    const lastPart1 = address1.split(',').pop()?.trim();
+    const lastPart2 = address2.split(',').pop()?.trim();
+    console.log(lastPart1, lastPart2);
+    return lastPart1 === lastPart2;
+  }
+  
+  /**
+   * Hàm tính tổng trọng lượng của các sản phẩm.
+   */
+  private async calculateTotalWeight(orderItems: mongoose.Types.ObjectId[]): Promise<number> {
+    // Lấy danh sách OrderItems liên quan
+    const items = await this.orderItemModel.find({ _id: { $in: orderItems } }).populate('productId');
+  
+    if (items.length === 0) {
+      throw new BadRequestException('Không tìm thấy sản phẩm nào để tính trọng lượng');
+    }
+  
+    // Tính tổng trọng lượng = trọng lượng sản phẩm * số lượng
+    return items.reduce((totalWeight, item) => {
+      const product = item.productId as any;
+      if (!product.weight) {
+        throw new BadRequestException(`Sản phẩm ${item.productName} không có thông tin trọng lượng`);
+      }
+      return totalWeight + product.weight * item.quantity;
+    }, 0);
+  }
+  
+  /**
+   * Hàm tính phí vận chuyển.
+   */
+  private calculateShippingFee(
+    ghn: IShipping,
+    totalWeight: number,
+    isIntraProvince: boolean,
+  ): number {
+    const service = isIntraProvince ? ghn.intraProvince : ghn.interProvince;
+    const baseFee = service.fee;
+  
+    // Chuyển đổi gram thành kg
+    totalWeight = totalWeight / 1000;
+  
+    console.log(`Total weight: ${totalWeight}kg, Mass limit: ${service.mass}kg`);
+  
+    // Tính thêm phí nếu trọng lượng vượt quá giới hạn
+    const additionalFee =
+      totalWeight > service.mass
+        ? Math.ceil((totalWeight - service.mass) / 0.5) * service.more // Tính mỗi 0.5kg thêm phí "more"
+        : 0;
+  
+    return baseFee + additionalFee;
+  }
+  
+  
+
 }

@@ -8,11 +8,12 @@ import { v4 as uuidv4 } from 'uuid';
 export class Order extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   userId: string; // Người mua
-
-  @Prop({ type: String,default:null })
+  @Prop({ type: String }) //
+  oderUUID: string;
+  @Prop({ type: String, default: null })
   phone: string; // Số điện thoại người mua
 
-  @Prop({ type: String,default:null })
+  @Prop({ type: String, default: null })
   address: string; // Địa chỉ người mua
 
   @Prop({ type: Number, required: true, min: 0 })
@@ -27,7 +28,11 @@ export class Order extends Document {
 
   @Prop({ type: mongoose.Types.ObjectId, default: null })
   transactionId: string; // Mã giao dịch từ MoMo
-  @Prop({type:mongoose.Schema.Types.String,enum:['momo_wallet','agreement'],default:'momo_wallet'})
+  @Prop({
+    type: mongoose.Schema.Types.String,
+    enum: ['momo_wallet', 'agreement'],
+    default: 'momo_wallet',
+  })
   type: string; // Loại đơn hàng (momo_wallet, etc.)
   @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'SubOrder' }])
   subOrders: mongoose.Types.ObjectId[]; // Danh sách subOrders thuộc đơn hàng
@@ -40,10 +45,9 @@ export const OrderSchema = SchemaFactory.createForClass(Order);
   timestamps: true, // Tự động thêm createdAt và updatedAt
 })
 export class SubOrder extends Document {
-  
-  @Prop({ type: String }) //  
-  orderUUID:string; // Mã đơn hàng
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Order',})
+  @Prop({ type: String }) //
+  orderUUID: string; // Mã đơn hàng
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Order' })
   orderId: mongoose.Schema.Types.ObjectId; // ID của đơn hàng cha
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
@@ -55,18 +59,22 @@ export class SubOrder extends Document {
   @Prop([{ type: mongoose.Schema.Types.ObjectId, ref: 'OrderItem' }])
   products: mongoose.Types.ObjectId[]; // Danh sách sản phẩm trong subOrder
 
-  @Prop({ type:mongoose.Schema.Types.String,default:'agreement',enum:['GHN','GHTK','agreement']})
+  @Prop({
+    type: mongoose.Schema.Types.String,
+    default: 'agreement',
+    enum: ['GHN', 'GHTK', 'agreement'],
+  })
   shippingService: string; // Dịch vụ vận chuyển
 
   @Prop({ type: Number, default: 0 })
   shippingFee: number; // Phí vận chuyển
 
-  @Prop({type:mongoose.Schema.Types.String,default:null})
-  note : string
+  @Prop({ type: mongoose.Schema.Types.String, default: null })
+  note: string;
 
   @Prop({
     type: String,
-    enum: ['pending', 'shipping', 'delivered','complete', 'canceled'],
+    enum: ['pending', 'shipping', 'delivered', 'complete', 'canceled'],
     default: 'pending',
   })
   status: string; // Trạng thái đơn hàng
@@ -113,7 +121,13 @@ export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
 // tạo mã đơn hàng
 SubOrderSchema.pre<SubOrder>('save', function (next) {
   if (!this.orderUUID) {
-    this.orderUUID = uuidv4(); // Tạo mã SubOrder với uuid4
+    this.orderUUID = 'SUB-ORD-' + uuidv4();
   }
   next();
-  });
+});
+SubOrderSchema.pre<SubOrder>('save', function (next) {
+  if (!this.orderUUID) {
+    this.orderUUID = 'ORD-' + uuidv4();
+  }
+  next();
+});

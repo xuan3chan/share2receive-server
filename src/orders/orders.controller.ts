@@ -18,6 +18,7 @@ import { JwtPayload } from 'jsonwebtoken';
 import {
   CreateOrderByProductDto,
   UpdateInfoOrderDto,
+  UpdateShippingDto,
 } from '@app/libs/common/dto/order.dto';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { MemberGuard } from '@app/libs/common/gaurd';
@@ -152,5 +153,18 @@ export class OrdersController {
     @Param('orderItemId') orderItemId: string,
   ) {
     return this.ordersService.deleteOrderItemService(subOrderId, orderItemId);
+  }
+  
+  @Patch('update-shipping-service/:id')
+  @UseGuards(MemberGuard)
+  async updateShippingController(
+    @Param('id') subOrderId: string,
+    @Body() updateShippingDto: UpdateShippingDto,
+  ) {
+    return this.ordersService.updateShippingService(
+      subOrderId,
+      updateShippingDto.shippingService,
+      updateShippingDto.note,
+    );
   }
 }

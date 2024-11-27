@@ -121,13 +121,13 @@ export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
 // tạo mã đơn hàng
 SubOrderSchema.pre<SubOrder>('save', function (next) {
   if (!this.orderUUID) {
-    this.orderUUID = 'SUB-ORD-' + uuidv4();
+    this.orderUUID = 'SUB-ORD-' + uuidv4().replace(/-/g, '').slice(0, 12);
   }
   next();
 });
-SubOrderSchema.pre<SubOrder>('save', function (next) {
-  if (!this.orderUUID) {
-    this.orderUUID = 'ORD-' + uuidv4();
+OrderSchema.pre<Order>('save', function (next) {
+  if (!this.oderUUID) {
+    this.oderUUID = 'ORD-' + uuidv4().replace(/-/g, '').slice(0, 12);
   }
   next();
 });

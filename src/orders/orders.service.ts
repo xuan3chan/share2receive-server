@@ -436,8 +436,13 @@ export class OrdersService {
       .find({ sellerId })
       .populate({
         path: 'orderId',
-        select: 'paymentStatus',
-      })
+        select: 'paymentStatus address phone',
+        populate: {
+          path: 'userId',
+          select: 'email firstname lastname',
+        }
+      }
+    )
       .populate({
         path: 'products',
         model: 'OrderItem',

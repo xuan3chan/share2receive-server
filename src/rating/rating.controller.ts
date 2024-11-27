@@ -77,4 +77,15 @@ export class RatingController {
     const userId = this.getUserIdFromToken(request);
     return this.ratingService.getRatingForExchangeService(userId, targetId);
   }
+
+  @Get('get-list-detail-sale')
+  @UseGuards(MemberGuard)
+  @ApiOperation({ summary: 'Get list detail rating' })
+  async getListDetailRatingForSale(
+    @Query('targetId') targetId: string,
+    @Req() request: Request,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.ratingService.getRatingForSaleService(userId, targetId);
+  }
 }

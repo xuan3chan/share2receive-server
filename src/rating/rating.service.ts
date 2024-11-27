@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { RatingDocument, ExchangeDocument,UserDocument } from '@app/libs/common/schema';
+import { RatingDocument, ExchangeDocument,UserDocument, SubOrderDocument } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateRatingDto } from '@app/libs/common/dto';
@@ -8,8 +8,8 @@ import { CreateRatingDto } from '@app/libs/common/dto';
 export class RatingService {
   constructor(
     @InjectModel('Rating') private readonly ratingModel: Model<RatingDocument>,
-    @InjectModel('User') private readonly userModel: Model<RatingDocument>,
-    @InjectModel('Product') private readonly productModel: Model<RatingDocument>,
+    @InjectModel('User') private readonly userModel: Model<UserDocument>,
+    @InjectModel('SubOrder') private readonly subOrderModel: Model<SubOrderDocument>,
     @InjectModel('Exchange') private readonly exchangeModel: Model<ExchangeDocument>,
   ) {}
 
@@ -20,10 +20,41 @@ export class RatingService {
     try {
       const { targetType, targetId, rating, comment } = createRatingDto;
   
-      if (targetType === 'Product') {
-        const product = await this.productModel.findById(targetId);
-        if (!product) throw new BadRequestException('Product not found');
-        if (product.userId === userId) throw new BadRequestException('You cannot rate your own product');
+      if (targetType === 'sale') {
+        const subOrder = await this.subOrderModel.findById(targetId).lean();
+        if (!subOrder) throw new BadRequestException('subOrder not found');
+  
+        // Check if the user has already rated this product
+        const existingRating = await this.ratingModel.findOne({
+          userId,
+          targetId,
+          targetType: 'sale',
+        });
+        if (existingRating) throw new BadRequestException('You have already rated this product');
+
+        // Create and save the new rating
+        const createdRating = new this.ratingModel({
+          userId,
+          targetId,
+          targetType,
+          rating,
+          comment,
+        });
+        const user = await this.userModel.findById(subOrder.sellerId) as  UserDocument;
+
+        if (!user) throw new BadRequestException('User not found');
+        const newNumberOfRatings = (user.numberOfRating || 0) + 1;
+
+        const newAverageRating = ((user.averageRating * (user.numberOfRating || 0)) + rating) / newNumberOfRatings;
+        await Promise.all([
+          createdRating.save(),
+          this.userModel.findByIdAndUpdate(subOrder.sellerId, {
+            averageRating: newAverageRating,
+            numberOfRating: newNumberOfRatings,
+          }, { new: true })
+        ]);
+        return createdRating;
+        // Update the product's average rating and rating count
       } else if (targetType === 'exchange') {
         const exchange = await this.exchangeModel.findById(targetId).lean();
         if (!exchange) throw new BadRequestException('Exchange not found')
@@ -87,7 +118,7 @@ export class RatingService {
   
         return createdRating;
       }
-  
+      
       throw new BadRequestException('Invalid target for rating');
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to create rating');
@@ -140,6 +171,30 @@ export class RatingService {
       userRole,
       requesterRating: requesterRating || null, // Đánh giá của requester (nếu có)
       receiverRating: receiverRating || null,   // Đánh giá của receiver (nếu có)
+    };
+  }
+  //get detail rating for sale
+  async getRatingForSaleService(
+    userId: string,
+    targetId: string,
+  ): Promise<any> {
+    const rating = await this.ratingModel.findOne({
+      userId,
+      targetId,
+      targetType: 'sale',
+    });
+    if (!rating) throw new BadRequestException('Rating not found');
+    
+    const subOrder = await this.subOrderModel.findById(rating.targetId).populate('sellerId').lean();
+    if (!subOrder) throw new BadRequestException('SubOrder not found');
+    
+    const seller = await this.userModel.findById(subOrder.sellerId).select('firstname lastname').lean();
+    if (!seller) throw new BadRequestException('Seller not found');
+    
+    // thêm thông tin người bán vào rating data ra
+    return {
+      ...rating.toObject(),
+      seller,
     };
   }
 }

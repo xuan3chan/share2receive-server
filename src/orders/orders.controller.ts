@@ -302,7 +302,6 @@ async getOrdersByUserController(
   @Put('request-refund/:subOrderId')
   @UseGuards(MemberGuard)
   async requestRefundController(
-    @Req() request: Request,
     @Param('subOrderId') subOrderId: string,
     @Body() requestRefundDto: RequestRefundDto,
   ) {
@@ -311,4 +310,26 @@ async getOrdersByUserController(
       requestRefundDto
     );
   }
+  @Patch('update-status-for-buyer/:subOrderId')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['completed'],
+        },
+      },
+    },
+  })
+  @UseGuards(MemberGuard)
+  async updateStatusForBuyerController(
+    @Param('subOrderId') subOrderId: string,
+    @Body('status') status: string,
+    @Req() request: Request,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.ordersService.updateStatusForBuyerService(userId,subOrderId, status);
+  }
+
 }

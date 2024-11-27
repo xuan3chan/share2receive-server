@@ -3,6 +3,7 @@ import { RatingService } from './rating.service';
 import { RatingController } from './rating.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Rating, RatingSchema } from '@app/libs/common/schema/rating.schema';
+import { SubOrderSchema } from '@app/libs/common/schema';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Rating, RatingSchema } from '@app/libs/common/schema/rating.schema';
       { name: 'User', schema: RatingSchema },
       { name: 'Product', schema: RatingSchema },
       { name: 'Exchange', schema: RatingSchema },
+      { name: 'SubOrder', schema: SubOrderSchema },
     ]),
   ],
   controllers: [RatingController],

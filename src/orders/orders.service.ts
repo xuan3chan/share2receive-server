@@ -10,11 +10,14 @@ import {
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateOrderByProductDto, RequestRefundDto } from '@app/libs/common/dto/order.dto';
+import {
+  CreateOrderByProductDto,
+  RequestRefundDto,
+} from '@app/libs/common/dto/order.dto';
 import { TransactionService } from 'src/transaction/transaction.service';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { MailerService } from 'src/mailer/mailer.service';
-import { IShipping} from '@app/libs/common/interface';
+import { IShipping } from '@app/libs/common/interface';
 @Injectable()
 export class OrdersService {
   constructor(
@@ -176,17 +179,19 @@ export class OrdersService {
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
-  
+
     if (!order) {
-      throw new BadRequestException('Order not found or you do not have access to it.');
+      throw new BadRequestException(
+        'Order not found or you do not have access to it.',
+      );
     }
-  
+
     // Tính toán `summary` nếu cần
     let totalAmount = 0;
     let totalPrice = 0;
     let totalShippingFee = 0;
     const uniqueProductIds = new Set<string>();
-  
+
     if (order.subOrders) {
       order.subOrders.forEach((subOrder: any) => {
         totalShippingFee += subOrder.shippingFee || 0;
@@ -201,9 +206,9 @@ export class OrdersService {
         }
       });
     }
-  
+
     const totalTypes = uniqueProductIds.size;
-  
+
     return {
       data: order,
       summary: {
@@ -214,7 +219,6 @@ export class OrdersService {
       },
     };
   }
-  
 
   async updateInfoOrderService(
     orderId: string,
@@ -328,35 +332,37 @@ export class OrdersService {
     limit: number = 10,
     sortBy: string = 'createdAt',
     sortOrder: string | 'desc' = 'desc',
-    searchKey?: string
+    searchKey?: string,
   ): Promise<any> {
     const query: any = { userId };
-  
+
     // Lọc theo trạng thái thanh toán
     if (paymentStatus) {
       query.paymentStatus = paymentStatus;
     }
-  
+
     // Lọc theo khoảng thời gian
     if (dateFrom && dateTo) {
       const dateToObj = new Date(dateTo);
       dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
       query.createdAt = { $gte: dateFrom, $lte: dateToObj };
     }
-  
-    // Tìm kiếm không phân biệt dấu
- // Kiểm tra và normalize searchKey
-if (searchKey) {
-  const normalizedSearchKey = searchKey.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  console.log('Normalized Search Key:', normalizedSearchKey); // In ra kiểm tra
 
-  // Tạo truy vấn tìm kiếm không phân biệt dấu
-  query.$or = [
-    { orderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã đơn hàng
-  ];
-} else {
-  console.log('Search key is empty or invalid.');
-}
+    // Tìm kiếm không phân biệt dấu
+    // Kiểm tra và normalize searchKey
+    if (searchKey) {
+      const normalizedSearchKey = searchKey
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      console.log('Normalized Search Key:', normalizedSearchKey); // In ra kiểm tra
+
+      // Tạo truy vấn tìm kiếm không phân biệt dấu
+      query.$or = [
+        { orderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã đơn hàng
+      ];
+    } else {
+      console.log('Search key is empty or invalid.');
+    }
 
     // Tìm đơn hàng và sử dụng populate
     const orders = await this.orderModel
@@ -386,10 +392,10 @@ if (searchKey) {
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo trường sortBy và sortOrder
       .skip((page - 1) * limit) // Phân trang: bỏ qua (page - 1) * limit
       .limit(limit); // Giới hạn số lượng đơn hàng trả về
-  
+
     // Đếm tổng số đơn hàng để tính phân trang
     const totalOrders = await this.orderModel.countDocuments(query);
-  
+
     // Trả về dữ liệu cùng thông tin phân trang
     return {
       data: orders,
@@ -400,9 +406,7 @@ if (searchKey) {
       },
     };
   }
-  
-  
-  
+
   async cancelOrderService(orderId: string, userId: string): Promise<any> {
     // Tìm đơn hàng theo ID và userId
     const order = await this.orderModel.findOne({ _id: orderId, userId });
@@ -491,7 +495,7 @@ if (searchKey) {
     limit: number = 10,
     sortBy: string = 'createdAt',
     sortOrder: string | 'asc' | 'desc' = 'desc',
-    searchKey?: string
+    searchKey?: string,
   ): Promise<any> {
     const query: any = { sellerId };
     // Lọc theo khoảng thời gian (nếu có)
@@ -503,29 +507,41 @@ if (searchKey) {
       dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
       query.createdAt = { ...query.createdAt, $lte: dateToObj };
     }
-  
+
     // Tìm kiếm theo subOrderUUID hoặc mã sản phẩm nếu có searchKey
     if (searchKey) {
-      const normalizedSearchKey = searchKey.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Xử lý tìm kiếm không phân biệt dấu
+      const normalizedSearchKey = searchKey
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); // Xử lý tìm kiếm không phân biệt dấu
       console.log('Normalized Search Key:', normalizedSearchKey);
-  
+
       query.$or = [
         { subOrderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã subOrderUUID
-        { 'products.productName': { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo tên sản phẩm
+        {
+          'products.productName': {
+            $regex: normalizedSearchKey,
+            $options: 'i',
+          },
+        }, // Tìm kiếm theo tên sản phẩm
       ];
     }
-  
+
     // Kiểm tra và xử lý các tham số sortBy và sortOrder
-    const validSortFields = ['createdAt', 'paymentStatus', 'totalAmount', 'subOrderUUID']; // Các trường hợp hợp lệ cho sắp xếp
+    const validSortFields = [
+      'createdAt',
+      'paymentStatus',
+      'totalAmount',
+      'subOrderUUID',
+    ]; // Các trường hợp hợp lệ cho sắp xếp
     if (!validSortFields.includes(sortBy)) {
       sortBy = 'createdAt'; // Nếu sortBy không hợp lệ, sử dụng mặc định
     }
-  
+
     // Đảm bảo sortOrder hợp lệ
     if (sortOrder !== 'asc' && sortOrder !== 'desc') {
       sortOrder = 'desc'; // Nếu sortOrder không hợp lệ, sử dụng mặc định
     }
-  
+
     // Tạo truy vấn để lấy danh sách các đơn hàng
     const orders = await this.subOrderModel
       .find(query)
@@ -550,10 +566,10 @@ if (searchKey) {
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortBy và sortOrder
       .skip((page - 1) * limit) // Phân trang
       .limit(limit); // Giới hạn số lượng kết quả trả về
-  
+
     // Đếm tổng số đơn hàng để tính phân trang
     const totalOrders = await this.subOrderModel.countDocuments(query);
-  
+
     // Trả về dữ liệu cùng với thông tin phân trang
     return {
       data: orders,
@@ -564,8 +580,7 @@ if (searchKey) {
       },
     };
   }
-  
-  
+
   async updateSubOrderStatusService(
     sellerId: string,
     subOrderId: string,
@@ -653,23 +668,33 @@ if (searchKey) {
 
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
-  async deleteSubOrderService(subOrderId: string, userId: string): Promise<any> {
+  async deleteSubOrderService(
+    subOrderId: string,
+    userId: string,
+  ): Promise<any> {
     // 1. Tìm Order chứa SubOrder cần xóa
-    const order = await this.orderModel.findOne({ subOrders: subOrderId, userId });
+    const order = await this.orderModel.findOne({
+      subOrders: subOrderId,
+      userId,
+    });
     if (!order) {
-      throw new BadRequestException('Không tìm thấy Order liên quan đến SubOrder này');
+      throw new BadRequestException(
+        'Không tìm thấy Order liên quan đến SubOrder này',
+      );
     }
-  
+
     // 2. Xóa SubOrder khỏi mảng subOrders của Order
     const updateResult = await this.orderModel.updateOne(
       { _id: order._id },
-      { $pull: { subOrders: subOrderId } }
+      { $pull: { subOrders: subOrderId } },
     );
-  
+
     if (updateResult.modifiedCount === 0) {
-      throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về userId');
+      throw new BadRequestException(
+        'Không tìm thấy SubOrder hoặc không thuộc về userId',
+      );
     }
-  
+
     // 3. Kiểm tra nếu mảng subOrders trống, xóa luôn Order
     if (order.subOrders.length === 1) {
       // SubOrder bị xóa là phần tử cuối cùng, xóa Order
@@ -677,38 +702,45 @@ if (searchKey) {
     } else {
       // Nếu còn SubOrders khác, cập nhật lại totalAmount
       const remainingSubOrders = await this.subOrderModel.find({
-        _id: { $in: order.subOrders.filter(id => id.toString() !== subOrderId) }, // Lọc bỏ subOrderId
+        _id: {
+          $in: order.subOrders.filter((id) => id.toString() !== subOrderId),
+        }, // Lọc bỏ subOrderId
       });
-  
-      const newTotalAmount = remainingSubOrders.reduce((total, subOrder) => total + subOrder.subTotal, 0);
-  
+
+      const newTotalAmount = remainingSubOrders.reduce(
+        (total, subOrder) => total + subOrder.subTotal,
+        0,
+      );
+
       await this.orderModel.updateOne(
         { _id: order._id },
-        { $set: { totalAmount: newTotalAmount } }
+        { $set: { totalAmount: newTotalAmount } },
       );
     }
-  
+
     // 4. Tìm SubOrder cần xóa
     const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
     if (!subOrder) {
-      throw new BadRequestException('Không tìm thấy SubOrder hoặc không thuộc về sellerId');
+      throw new BadRequestException(
+        'Không tìm thấy SubOrder hoặc không thuộc về sellerId',
+      );
     }
-  
+
     // 5. Kiểm tra trạng thái SubOrder
     if (subOrder.status === 'shipping') {
       throw new BadRequestException('Không thể xóa SubOrder đã được giao');
     }
-  
+
     // 6. Xóa SubOrder
     await this.subOrderModel.deleteOne({ _id: subOrderId });
-  
+
     // 7. Xóa các OrderItem thuộc SubOrder
     await this.orderItemModel.deleteMany({ subOrderId });
-  
+
     // 8. Trả về thông báo thành công
     return { message: 'Xóa SubOrder và cập nhật Order thành công!' };
   }
-  
+
   // xóa proudct item trong suborder
   async deleteOrderItemService(
     subOrderId: string,
@@ -724,9 +756,11 @@ if (searchKey) {
       );
     }
     if (subOrder.status === 'shipping') {
-      throw new BadRequestException('Không thể xóa OrderItem trong SubOrder đã được giao');
+      throw new BadRequestException(
+        'Không thể xóa OrderItem trong SubOrder đã được giao',
+      );
     }
-  
+
     // Kiểm tra OrderItem thuộc về SubOrder
     const orderItem = await this.orderItemModel.findOne({
       _id: orderItemId,
@@ -737,28 +771,28 @@ if (searchKey) {
         'Không tìm thấy OrderItem hoặc không thuộc về SubOrder',
       );
     }
-  
+
     // Xóa OrderItem
     await this.orderItemModel.deleteOne({ _id: orderItemId });
-  
+
     // Kiểm tra còn OrderItem nào trong SubOrder
     const remainingOrderItems = await this.orderItemModel.find({ subOrderId });
     if (remainingOrderItems.length === 0) {
       // Nếu không còn OrderItem nào, xóa luôn SubOrder
       await this.subOrderModel.deleteOne({ _id: subOrderId });
-  
+
       // Lấy Order chứa SubOrder này
       const order = await this.orderModel.findOne({ subOrders: subOrderId });
       if (!order) {
         throw new BadRequestException('Không tìm thấy Order liên quan');
       }
-  
+
       // Cập nhật lại danh sách subOrders trong Order
       await this.orderModel.updateOne(
         { _id: order._id },
         { $pull: { subOrders: subOrderId } },
       );
-  
+
       // Kiểm tra nếu không còn SubOrder nào trong Order
       const remainingSubOrders = await this.subOrderModel.find({
         _id: { $in: order.subOrders },
@@ -766,13 +800,13 @@ if (searchKey) {
       if (remainingSubOrders.length === 0) {
         // Nếu Order không còn SubOrder nào, xóa luôn Order
         await this.orderModel.deleteOne({ _id: order._id });
-  
+
         return { message: 'Xóa OrderItem, SubOrder và Order thành công!' };
       }
-  
+
       return { message: 'Xóa OrderItem và SubOrder thành công!' };
     }
-  
+
     // Nếu còn OrderItem trong SubOrder, cập nhật lại subTotal
     const newSubTotal = remainingOrderItems.reduce(
       (total, item) => total + item.price * item.quantity,
@@ -782,27 +816,29 @@ if (searchKey) {
       { _id: subOrderId },
       { $set: { subTotal: newSubTotal } },
     );
-  
+
     // Cập nhật lại totalAmount của Order chứa SubOrder
     const order = await this.orderModel.findOne({ subOrders: subOrderId });
     if (!order) {
       throw new BadRequestException('Không tìm thấy Order liên quan');
     }
-  
-    const updatedSubOrders = await this.subOrderModel.find({ _id: { $in: order.subOrders } });
+
+    const updatedSubOrders = await this.subOrderModel.find({
+      _id: { $in: order.subOrders },
+    });
     const newTotalAmount = updatedSubOrders.reduce(
       (total, sub) => total + sub.subTotal,
       0,
     );
-  
+
     await this.orderModel.updateOne(
       { _id: order._id },
       { $set: { totalAmount: newTotalAmount } },
     );
-  
+
     return { message: 'Xóa OrderItem và cập nhật giá thành công!' };
   }
-  
+
   async updateShippingService(
     subOrderId?: string,
     shippingService?: string,
@@ -812,34 +848,39 @@ if (searchKey) {
       .findOne({ _id: subOrderId })
       .populate('orderId')
       .populate('sellerId');
-  
+
     if (!subOrder) {
       throw new BadRequestException('Không tìm thấy SubOrder');
     }
-  
+
     // Kiểm tra trạng thái SubOrder
     if (subOrder.status === 'shipping') {
-      throw new BadRequestException('Không thể cập nhật dịch vụ vận chuyển cho SubOrder đã được giao');
+      throw new BadRequestException(
+        'Không thể cập nhật dịch vụ vận chuyển cho SubOrder đã được giao',
+      );
     }
-  
+
     // Kiểm tra dịch vụ vận chuyển hợp lệ
-    if (shippingService && !['GHN', 'GHTK', 'agreement'].includes(shippingService)) {
+    if (
+      shippingService &&
+      !['GHN', 'GHTK', 'agreement'].includes(shippingService)
+    ) {
       throw new BadRequestException('Dịch vụ vận chuyển không hợp lệ');
     }
-  
+
     // Nếu dịch vụ vận chuyển mới được chọn
     if (shippingService && subOrder.shippingService === shippingService) {
       throw new BadRequestException('Dịch vụ vận chuyển đã được chọn');
     }
-  
+
     const addressOfBuyer = (subOrder.orderId as any).address;
     const addressOfSeller = (subOrder.sellerId as any).address;
-  
+
     if (!addressOfBuyer || !addressOfSeller) {
       console.log(addressOfBuyer, addressOfSeller);
       throw new BadRequestException('Không tìm thấy địa chỉ giao hàng');
     }
-  
+
     // Cập nhật dịch vụ vận chuyển
     if (shippingService) {
       if (shippingService === 'agreement') {
@@ -873,17 +914,20 @@ if (searchKey) {
             },
           },
         };
-  
-        const compare = this.compareLastPartOfAddress(addressOfBuyer, addressOfSeller);
+
+        const compare = this.compareLastPartOfAddress(
+          addressOfBuyer,
+          addressOfSeller,
+        );
         const totalWeight = await this.calculateTotalWeight(subOrder.products);
-  
+
         subOrder.shippingFee = this.calculateShippingFee(
           shippingServices[shippingService],
           totalWeight,
           compare,
         );
       }
-  
+
       subOrder.shippingService = shippingService;
     }
 
@@ -900,8 +944,10 @@ if (searchKey) {
     if (!order) {
       throw new BadRequestException('Không tìm thấy Order liên quan');
     }
-  
-    const updatedSubOrders = await this.subOrderModel.find({ _id: { $in: order.subOrders } });
+
+    const updatedSubOrders = await this.subOrderModel.find({
+      _id: { $in: order.subOrders },
+    });
     const newTotalAmount = updatedSubOrders.reduce(
       (total, sub) => total + sub.subTotal + sub.shippingFee,
       0,
@@ -910,35 +956,45 @@ if (searchKey) {
       { _id: order._id },
       { $set: { totalAmount: newTotalAmount } },
     );
-  
+
     return { message: 'Cập nhật dịch vụ vận chuyển thành công!' };
   }
   async requestRefundService(
     subOrderId: string,
     requestRefundDto: RequestRefundDto,
   ): Promise<any> {
-    const { reason, bankingName, bankingNameUser, bankingNumber,bankingBranch } = requestRefundDto;
-  
+    const {
+      reason,
+      bankingName,
+      bankingNameUser,
+      bankingNumber,
+      bankingBranch,
+    } = requestRefundDto;
+
     // Tìm SubOrder theo subOrderId
     const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
     if (!subOrder) {
       throw new BadRequestException('Không tìm thấy SubOrder');
     }
-  
+
     // Kiểm tra trạng thái của SubOrder
     if (subOrder.status === 'canceled') {
-      throw new BadRequestException('Không thể yêu cầu hoàn tiền cho SubOrder đã được giao');
+      throw new BadRequestException(
+        'Không thể yêu cầu hoàn tiền cho SubOrder đã được giao',
+      );
     }
-  
+
     // Kiểm tra trạng thái thanh toán của Order
     const order = await this.orderModel.findOne({ subOrders: subOrderId });
     if (!order) {
       throw new BadRequestException('Không tìm thấy Order liên quan');
     }
     if (order.paymentStatus !== 'paid') {
-      throw new BadRequestException('Chỉ có thể yêu cầu hoàn tiền cho đơn hàng đã thanh toán');
+      throw new BadRequestException(
+        'Chỉ có thể yêu cầu hoàn tiền cho đơn hàng đã thanh toán',
+      );
     }
-  
+
     // Tạo yêu cầu hoàn tiền trong SubOrder
     subOrder.requestRefund = {
       reason,
@@ -948,10 +1004,10 @@ if (searchKey) {
       bankingNumber,
       status: 'pending', // Mặc định là pending khi yêu cầu được tạo
     };
-  
+
     // Lưu lại SubOrder với thông tin yêu cầu hoàn tiền
     await subOrder.save();
-  
+
     // Cập nhật trạng thái của Order (nếu cần thiết
     // Trả về kết quả sau khi tạo yêu cầu hoàn tiền thành công
     return {
@@ -959,40 +1015,71 @@ if (searchKey) {
       subOrder,
     };
   }
-  
-
+  async updateStatusForBuyerService(
+    userId: string,
+    subOrderId: string,
+    status: string,
+  ) {
+    // Tìm SubOrder theo subOrderId
+    const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
+    if (!subOrder) {
+      throw new BadRequestException('Không tìm thấy SubOrder');
+    }
+    if(subOrder.sellerId === userId){
+      throw new BadRequestException('Bạn không thể xác nhận đã nhận hàng cho đơn hàng của mình');
+    }
+    if (subOrder.status != 'delivered') {
+      throw new BadRequestException(
+        'Không thể cập nhật trạng thái cho SubOrder chưa được giao',
+      );
+    }
+    subOrder.status = status;
+    await subOrder.save();
+    return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
+  }
 
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.
    */
-  private compareLastPartOfAddress(address1: string, address2: string): boolean {
+  private compareLastPartOfAddress(
+    address1: string,
+    address2: string,
+  ): boolean {
     const lastPart1 = address1.split(',').pop()?.trim();
     const lastPart2 = address2.split(',').pop()?.trim();
     console.log(lastPart1, lastPart2);
     return lastPart1 === lastPart2;
   }
-  
+
   /**
    * Hàm tính tổng trọng lượng của các sản phẩm.
    */
-  private async calculateTotalWeight(orderItems: mongoose.Types.ObjectId[]): Promise<number> {
+  private async calculateTotalWeight(
+    orderItems: mongoose.Types.ObjectId[],
+  ): Promise<number> {
     // Lấy danh sách OrderItems liên quan
-    const items = await this.orderItemModel.find({ _id: { $in: orderItems } }).populate('productId');
-  
+    const items = await this.orderItemModel
+      .find({ _id: { $in: orderItems } })
+      .populate('productId');
+
     if (items.length === 0) {
-      throw new BadRequestException('Không tìm thấy sản phẩm nào để tính trọng lượng');
+      throw new BadRequestException(
+        'Không tìm thấy sản phẩm nào để tính trọng lượng',
+      );
     }
-  
+
     // Tính tổng trọng lượng = trọng lượng sản phẩm * số lượng
     return items.reduce((totalWeight, item) => {
       const product = item.productId as any;
       if (!product.weight) {
-        throw new BadRequestException(`Sản phẩm ${item.productName} không có thông tin trọng lượng`);
+        throw new BadRequestException(
+          `Sản phẩm ${item.productName} không có thông tin trọng lượng`,
+        );
       }
       return totalWeight + product.weight * item.quantity;
     }, 0);
   }
-  
+
   /**
    * Hàm tính phí vận chuyển.
    */
@@ -1003,21 +1090,20 @@ if (searchKey) {
   ): number {
     const service = isIntraProvince ? ghn.intraProvince : ghn.interProvince;
     const baseFee = service.fee;
-  
+
     // Chuyển đổi gram thành kg
     totalWeight = totalWeight / 1000;
-  
-    console.log(`Total weight: ${totalWeight}kg, Mass limit: ${service.mass}kg`);
-  
+
+    console.log(
+      `Total weight: ${totalWeight}kg, Mass limit: ${service.mass}kg`,
+    );
+
     // Tính thêm phí nếu trọng lượng vượt quá giới hạn
     const additionalFee =
       totalWeight > service.mass
         ? Math.ceil((totalWeight - service.mass) / 0.5) * service.more // Tính mỗi 0.5kg thêm phí "more"
         : 0;
-  
+
     return baseFee + additionalFee;
   }
-  
-  
-
 }

@@ -1,4 +1,4 @@
 export enum RatingTypeE {
-    PRODUCT = "product",
+    PRODUCT = "sale",
     EXCHANGE = "exchange"
 }

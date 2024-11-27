@@ -108,3 +108,45 @@ export class UpdateShippingDto{
     @MaxLength(255)
     note:string
 }
+export class RequestRefundDto{
+
+    @ApiProperty({
+        description: 'Banking number',
+        example: '123456789',
+    })
+    @IsString()
+    @IsNotEmpty()
+    bankingNumber:string
+
+    @ApiProperty({
+        description: 'Banking name',
+        example: 'Vietcombank',
+    })
+    @IsString()
+    @IsNotEmpty()
+    bankingName:string
+
+    @ApiProperty({
+        description: 'Banking name user',
+        example: 'Nguyen Van A',
+    })
+    @IsString()
+    @IsNotEmpty()
+    bankingNameUser:string
+
+    @ApiProperty({
+        description: 'Banking branch',
+        example: 'HCM',
+    })
+    @IsString()
+    @IsNotEmpty()
+    bankingBranch:string
+
+    @ApiProperty({
+        description: 'Reason',
+        example: 'Nguoi ban khong gui hang',
+    })
+    @IsString()
+    @IsNotEmpty()
+    reason:string
+}

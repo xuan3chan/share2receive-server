@@ -10,7 +10,7 @@ import {
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ApiTags } from '@nestjs/swagger';
-import { CreateOrderByProductDto } from '@app/libs/common/dto/order.dto';
+import { CreateOrderByProductDto, RequestRefundDto } from '@app/libs/common/dto/order.dto';
 import { TransactionService } from 'src/transaction/transaction.service';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { MailerService } from 'src/mailer/mailer.service';
@@ -136,7 +136,7 @@ export class OrdersService {
       if (seller && seller.email) {
         this.mailerService.sendEmailNewOrder(
           seller.email,
-          subOrder.orderUUID,
+          subOrder.subOrderUUID,
           orderInfo,
         );
       }
@@ -309,7 +309,7 @@ export class OrdersService {
       ' cái';
     this.mailerService.sendEmailNewOrder(
       userData.email,
-      subOrder.orderUUID,
+      subOrder.subOrderUUID,
       orderInfo,
     );
     this.EventGateway.sendAuthenticatedNotification(
@@ -319,21 +319,60 @@ export class OrdersService {
     );
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
-  async getOrdersByUserService(userId: string): Promise<any> {
+  async getOrdersByUserService(
+    userId: string,
+    paymentStatus?: string,
+    dateFrom?: Date,
+    dateTo?: Date,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'createdAt',
+    sortOrder: string | 'desc' = 'desc',
+    searchKey?: string
+  ): Promise<any> {
+    const query: any = { userId };
+  
+    // Lọc theo trạng thái thanh toán
+    if (paymentStatus) {
+      query.paymentStatus = paymentStatus;
+    }
+  
+    // Lọc theo khoảng thời gian
+    if (dateFrom && dateTo) {
+      const dateToObj = new Date(dateTo);
+      dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
+      query.createdAt = { $gte: dateFrom, $lte: dateToObj };
+    }
+  
+    // Tìm kiếm không phân biệt dấu
+ // Kiểm tra và normalize searchKey
+if (searchKey) {
+  const normalizedSearchKey = searchKey.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  console.log('Normalized Search Key:', normalizedSearchKey); // In ra kiểm tra
+
+  // Tạo truy vấn tìm kiếm không phân biệt dấu
+  query.$or = [
+    { orderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã đơn hàng
+  ];
+} else {
+  console.log('Search key is empty or invalid.');
+}
+
+    // Tìm đơn hàng và sử dụng populate
     const orders = await this.orderModel
-      .find({ userId })
+      .find(query)
       .populate({
         path: 'subOrders',
-        select: '-createdAt -updatedAt',
+        select: '-createdAt -updatedAt', // Chỉ lấy các trường cần thiết
         populate: [
           {
-            path: 'products', // Populate sản phẩm trong subOrder
+            path: 'products',
             model: 'OrderItem',
             select: '-createdAt -updatedAt',
             populate: {
-              path: 'productId',
+              path: 'productId', // Lấy thông tin chi tiết sản phẩm
               model: 'Product',
-              select: 'imgUrls',
+              select: 'productName', // Lấy trường productName từ Product
             },
           },
           {
@@ -343,12 +382,25 @@ export class OrdersService {
           },
         ],
       })
-      .populate('userId', 'firstname lastname address phone avatar email');
+      .populate('userId', 'firstname lastname address phone avatar email') // Thông tin người mua
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo trường sortBy và sortOrder
+      .skip((page - 1) * limit) // Phân trang: bỏ qua (page - 1) * limit
+      .limit(limit); // Giới hạn số lượng đơn hàng trả về
   
+    // Đếm tổng số đơn hàng để tính phân trang
+    const totalOrders = await this.orderModel.countDocuments(query);
+  
+    // Trả về dữ liệu cùng thông tin phân trang
     return {
       data: orders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalOrders / limit),
+        totalOrders,
+      },
     };
   }
+  
   
   
   async cancelOrderService(orderId: string, userId: string): Promise<any> {
@@ -431,18 +483,60 @@ export class OrdersService {
     return { message: 'Đơn hàng đã được hủy' };
   }
 
-  async getOrdersBySellerService(sellerId: string): Promise<any> {
+  async getOrdersBySellerService(
+    sellerId: string,
+    dateFrom?: Date,
+    dateTo?: Date,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'createdAt',
+    sortOrder: string | 'asc' | 'desc' = 'desc',
+    searchKey?: string
+  ): Promise<any> {
+    const query: any = { sellerId };
+    // Lọc theo khoảng thời gian (nếu có)
+    if (dateFrom) {
+      query.createdAt = { $gte: dateFrom }; // Chỉ cần dateFrom nếu có
+    }
+    if (dateTo) {
+      const dateToObj = new Date(dateTo);
+      dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
+      query.createdAt = { ...query.createdAt, $lte: dateToObj };
+    }
+  
+    // Tìm kiếm theo subOrderUUID hoặc mã sản phẩm nếu có searchKey
+    if (searchKey) {
+      const normalizedSearchKey = searchKey.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // Xử lý tìm kiếm không phân biệt dấu
+      console.log('Normalized Search Key:', normalizedSearchKey);
+  
+      query.$or = [
+        { subOrderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã subOrderUUID
+        { 'products.productName': { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo tên sản phẩm
+      ];
+    }
+  
+    // Kiểm tra và xử lý các tham số sortBy và sortOrder
+    const validSortFields = ['createdAt', 'paymentStatus', 'totalAmount', 'subOrderUUID']; // Các trường hợp hợp lệ cho sắp xếp
+    if (!validSortFields.includes(sortBy)) {
+      sortBy = 'createdAt'; // Nếu sortBy không hợp lệ, sử dụng mặc định
+    }
+  
+    // Đảm bảo sortOrder hợp lệ
+    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+      sortOrder = 'desc'; // Nếu sortOrder không hợp lệ, sử dụng mặc định
+    }
+  
+    // Tạo truy vấn để lấy danh sách các đơn hàng
     const orders = await this.subOrderModel
-      .find({ sellerId })
+      .find(query)
       .populate({
         path: 'orderId',
-        select: 'paymentStatus address phone',
+        select: 'paymentStatus address phone createdAt',
         populate: {
           path: 'userId',
           select: 'email firstname lastname',
-        }
-      }
-    )
+        },
+      })
       .populate({
         path: 'products',
         model: 'OrderItem',
@@ -452,16 +546,31 @@ export class OrdersService {
           model: 'Product',
           select: 'imgUrls',
         },
-      });
+      })
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortBy và sortOrder
+      .skip((page - 1) * limit) // Phân trang
+      .limit(limit); // Giới hạn số lượng kết quả trả về
   
-    return { data: orders };
+    // Đếm tổng số đơn hàng để tính phân trang
+    const totalOrders = await this.subOrderModel.countDocuments(query);
+  
+    // Trả về dữ liệu cùng với thông tin phân trang
+    return {
+      data: orders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalOrders / limit),
+        totalOrders,
+      },
+    };
   }
+  
+  
   async updateSubOrderStatusService(
     sellerId: string,
     subOrderId: string,
     status: string,
   ): Promise<any> {
-    console.log(subOrderId);
     // Kiểm tra subOrder thuộc về sellerId
     const subOrder = await this.subOrderModel
       .findOne({ _id: subOrderId, sellerId })
@@ -797,7 +906,6 @@ export class OrdersService {
       (total, sub) => total + sub.subTotal + sub.shippingFee,
       0,
     );
-    console.log(newTotalAmount);
     await this.orderModel.updateOne(
       { _id: order._id },
       { $set: { totalAmount: newTotalAmount } },
@@ -805,6 +913,53 @@ export class OrdersService {
   
     return { message: 'Cập nhật dịch vụ vận chuyển thành công!' };
   }
+  async requestRefundService(
+    subOrderId: string,
+    requestRefundDto: RequestRefundDto,
+  ): Promise<any> {
+    const { reason, bankingName, bankingNameUser, bankingNumber,bankingBranch } = requestRefundDto;
+  
+    // Tìm SubOrder theo subOrderId
+    const subOrder = await this.subOrderModel.findOne({ _id: subOrderId });
+    if (!subOrder) {
+      throw new BadRequestException('Không tìm thấy SubOrder');
+    }
+  
+    // Kiểm tra trạng thái của SubOrder
+    if (subOrder.status === 'canceled') {
+      throw new BadRequestException('Không thể yêu cầu hoàn tiền cho SubOrder đã được giao');
+    }
+  
+    // Kiểm tra trạng thái thanh toán của Order
+    const order = await this.orderModel.findOne({ subOrders: subOrderId });
+    if (!order) {
+      throw new BadRequestException('Không tìm thấy Order liên quan');
+    }
+    if (order.paymentStatus !== 'paid') {
+      throw new BadRequestException('Chỉ có thể yêu cầu hoàn tiền cho đơn hàng đã thanh toán');
+    }
+  
+    // Tạo yêu cầu hoàn tiền trong SubOrder
+    subOrder.requestRefund = {
+      reason,
+      bankingName,
+      bankingNameUser,
+      bankingBranch,
+      bankingNumber,
+      status: 'pending', // Mặc định là pending khi yêu cầu được tạo
+    };
+  
+    // Lưu lại SubOrder với thông tin yêu cầu hoàn tiền
+    await subOrder.save();
+  
+    // Cập nhật trạng thái của Order (nếu cần thiết
+    // Trả về kết quả sau khi tạo yêu cầu hoàn tiền thành công
+    return {
+      message: 'Yêu cầu hoàn tiền đã được tạo thành công',
+      subOrder,
+    };
+  }
+  
 
 
   /**

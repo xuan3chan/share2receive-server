@@ -159,7 +159,7 @@ export class CheckoutService {
       const orderInfo =
         'Thanh toán đơn hàng của bạn - ' +
         (myOrder.subOrders as any[])
-          .map((subOrder) => subOrder.orderUUID.toString())
+          .map((subOrder) => subOrder.subOrderUUID.toString())
           .join(', ');
 
       const extraData = orderID;

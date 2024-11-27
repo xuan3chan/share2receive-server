@@ -10,6 +10,7 @@ import {
   Req,
   UseGuards,
   Query,
+  Put,
 } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Request } from 'express';
@@ -17,10 +18,11 @@ import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import {
   CreateOrderByProductDto,
+  RequestRefundDto,
   UpdateInfoOrderDto,
   UpdateShippingDto,
 } from '@app/libs/common/dto/order.dto';
-import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { MemberGuard } from '@app/libs/common/gaurd';
 
 @ApiTags('Orders')
@@ -51,10 +53,67 @@ export class OrdersController {
     return this.ordersService.createOrderService(userId);
   }
   @Get('get-order-for-seller')
+  @ApiQuery({
+    name: 'dateFrom',
+    required: false,
+    type: String,
+    example: '2024-11-01', // Định dạng chuẩn ISO
+  })
+  @ApiQuery({
+    name: 'dateTo',
+    required: false,
+    type: String,
+    example: '2024-11-30', // Định dạng chuẩn ISO
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    type: String,
+    enum: ['asc', 'desc'], // Giới hạn giá trị hợp lệ
+  })
+  @ApiQuery({
+    name: 'searchKey',
+    required: false,
+    type: String,
+  })
   @UseGuards(MemberGuard)
-  async getOrdersForSellerController(@Req() request: Request) {
+  async getOrdersForSellerController(@Req() request: Request,
+    @Query('dateFrom') dateFrom: Date,
+    @Query('dateTo') dateTo: Date,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: string,
+    @Query('searchKey') searchKey: string,
+) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    console.log(typeof pageNumber);
     const userId = this.getUserIdFromToken(request);
-    return this.ordersService.getOrdersBySellerService(userId);
+    return this.ordersService.getOrdersBySellerService(userId,
+      dateFrom,
+      dateTo,
+      pageNumber,
+      limitNumber,
+      sortBy,
+      sortOrder,
+      searchKey,
+    );
   }
   @Get(':id')
   @UseGuards(MemberGuard)
@@ -96,11 +155,84 @@ export class OrdersController {
   }
 
   @Get()
-  @UseGuards(MemberGuard)
-  async getOrdersByUserController(@Req() request: Request) {
-    const userId = this.getUserIdFromToken(request);
-    return this.ordersService.getOrdersByUserService(userId);
-  }
+@ApiQuery({
+  name: 'paymentStatus',
+  required: false,
+  type: String,
+})
+@ApiQuery({
+  name: 'dateFrom',
+  required: false,
+  type: String,
+  example: '2024-11-01', // Định dạng chuẩn ISO
+})
+@ApiQuery({
+  name: 'dateTo',
+  required: false,
+  type: String,
+  example: '2024-11-30', // Định dạng chuẩn ISO
+})
+@ApiQuery({
+  name: 'page',
+  required: false,
+  type: Number,
+})
+@ApiQuery({
+  name: 'limit',
+  required: false,
+  type: Number,
+})
+@ApiQuery({
+  name: 'sortBy',
+  required: false,
+  type: String,
+})
+@ApiQuery({
+  name: 'sortOrder',
+  required: false,
+  type: String,
+  enum: ['asc', 'desc'], // Giới hạn giá trị hợp lệ
+})
+@ApiQuery({
+  name: 'searchKey',
+  required: false,
+  type: String,
+})
+@UseGuards(MemberGuard)
+async getOrdersByUserController(
+  @Req() request: Request,
+  @Query('paymentStatus') paymentStatus: string,
+  @Query('dateFrom') dateFrom: string,
+  @Query('dateTo') dateTo: string,
+  @Query('page') page: string,
+  @Query('limit') limit: string,
+  @Query('sortBy') sortBy: string,
+  @Query('sortOrder') sortOrder: string,
+  @Query('searchKey') searchKey: string,
+) {
+  const userId = this.getUserIdFromToken(request);
+
+  // Chuyển đổi dateFrom và dateTo thành Date nếu có
+  const dateFromObj = dateFrom ? new Date(dateFrom) : undefined;
+  const dateToObj = dateTo ? new Date(dateTo) : undefined;
+
+  // Chuyển đổi page và limit thành number, nếu không có giá trị thì dùng mặc định
+  const pageNumber = page ? parseInt(page, 10) : 1;
+  const limitNumber = limit ? parseInt(limit, 10) : 10;
+
+  return this.ordersService.getOrdersByUserService(
+    userId,
+    paymentStatus,
+    dateFromObj,
+    dateToObj,
+    pageNumber,
+    limitNumber,
+    sortBy,
+    sortOrder,
+    searchKey,
+  );
+}
+
   @Patch('cancel/:id')
   @UseGuards(MemberGuard)
   async cancelOrderController(
@@ -154,7 +286,7 @@ export class OrdersController {
   ) {
     return this.ordersService.deleteOrderItemService(subOrderId, orderItemId);
   }
-  
+
   @Patch('update-shipping-service/:id')
   @UseGuards(MemberGuard)
   async updateShippingController(
@@ -165,6 +297,18 @@ export class OrdersController {
       subOrderId,
       updateShippingDto.shippingService,
       updateShippingDto.note,
+    );
+  }
+  @Put('request-refund/:subOrderId')
+  @UseGuards(MemberGuard)
+  async requestRefundController(
+    @Req() request: Request,
+    @Param('subOrderId') subOrderId: string,
+    @Body() requestRefundDto: RequestRefundDto,
+  ) {
+    return this.ordersService.requestRefundService(
+      subOrderId,
+      requestRefundDto
     );
   }
 }

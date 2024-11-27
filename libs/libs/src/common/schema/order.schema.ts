@@ -9,7 +9,7 @@ export class Order extends Document {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   userId: string; // Người mua
   @Prop({ type: String }) //
-  oderUUID: string;
+  orderUUID: string;
   @Prop({ type: String, default: null })
   phone: string; // Số điện thoại người mua
 
@@ -46,7 +46,7 @@ export const OrderSchema = SchemaFactory.createForClass(Order);
 })
 export class SubOrder extends Document {
   @Prop({ type: String }) //
-  orderUUID: string; // Mã đơn hàng
+  subOrderUUID: string; // Mã đơn hàng
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Order' })
   orderId: mongoose.Schema.Types.ObjectId; // ID của đơn hàng cha
 
@@ -72,9 +72,26 @@ export class SubOrder extends Document {
   @Prop({ type: mongoose.Schema.Types.String, default: null })
   note: string;
 
+  @Prop({ 
+    type:{
+    status: { type: mongoose.Schema.Types.String, enum: ['accepted', 'rejected', 'pending'] },
+    bankingNumber: { type: mongoose.Schema.Types.String, },
+    bankingName: { type: mongoose.Schema.Types.String, },
+    bankingNameUser: { type: mongoose.Schema.Types.String, },
+    bankingBranch: { type: mongoose.Schema.Types.String, },
+    reason: { type: mongoose.Schema.Types.String, },
+   },default: null })
+  requestRefund: {
+    status: string;
+    bankingNumber: string;
+    bankingNameUser: string;
+    bankingName: string;
+    bankingBranch: string;
+    reason: string;
+  };
   @Prop({
     type: String,
-    enum: ['pending', 'shipping', 'delivered', 'complete', 'canceled'],
+    enum: ['pending', 'shipping', 'delivered', 'completed', 'canceled'],
     default: 'pending',
   })
   status: string; // Trạng thái đơn hàng
@@ -99,7 +116,7 @@ export class OrderItem extends Document {
   })
   productId: string; // ID sản phẩm
 
-  @Prop({ type: String })
+  @Prop({ type: String,text: true })
   productName: string; // Tên sản phẩm (snapshot để tránh thay đổi nếu sản phẩm bị xóa)
 
   @Prop({ type: Number, required: true, min: 1 })
@@ -120,14 +137,14 @@ export const OrderItemSchema = SchemaFactory.createForClass(OrderItem);
 
 // tạo mã đơn hàng
 SubOrderSchema.pre<SubOrder>('save', function (next) {
-  if (!this.orderUUID) {
-    this.orderUUID = 'SUB-ORD-' + uuidv4().replace(/-/g, '').slice(0, 12);
+  if (!this.subOrderUUID) {
+    this.subOrderUUID = 'SUB-ORD-' + uuidv4().replace(/-/g, '').slice(0, 12);
   }
   next();
 });
 OrderSchema.pre<Order>('save', function (next) {
-  if (!this.oderUUID) {
-    this.oderUUID = 'ORD-' + uuidv4().replace(/-/g, '').slice(0, 12);
+  if (!this.orderUUID) {
+    this.orderUUID = 'ORD-' + uuidv4().replace(/-/g, '').slice(0, 12);
   }
   next();
 });

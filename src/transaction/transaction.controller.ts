@@ -44,4 +44,10 @@ export class TransactionController {
     const userId = this.getUserIdFromToken(request);
     return this.transactionService.checkTransactionIsPaid(userId,orderId);
   }
+  // @ApiTags('ManagerTran')
+  // @Get('get-transaction')
+  // async getTransaction(
+  // ) {
+  //   return this.transactionService.getAllTransactionFoManageService()
+  // }
 }

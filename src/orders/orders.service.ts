@@ -1037,7 +1037,101 @@ export class OrdersService {
     await subOrder.save();
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
+//manage list suborder
+  async getListSubOrderForManagerService(
+    dateFrom?: Date,
+    dateTo?: Date,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'createdAt',
+    sortOrder: string | 'asc' | 'desc' = 'desc',
+    searchKey?: string,
+  ){
+    const query: any = {};
+    // Lọc theo khoảng thời gian (nếu có)
+    if (dateFrom) {
+      query.createdAt = { $gte: dateFrom }; // Chỉ cần dateFrom nếu có
+    }
+    if (dateTo) {
+      const dateToObj = new Date(dateTo);
+      dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
+      query.createdAt = { ...query.createdAt, $lte: dateToObj };
+    
+    }
+    // Tìm kiếm theo subOrderUUID hoặc mã sản phẩm nếu có searchKey
+    if (searchKey) {
+      const normalizedSearchKey = searchKey
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); // Xử lý tìm kiếm không phân biệt dấu
+      console.log('Normalized Search Key:', normalizedSearchKey);
 
+      query.$or = [
+        { subOrderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã subOrderUUID
+        {
+          'products.productName': {
+            $regex: normalizedSearchKey,
+            $options: 'i',
+          },
+        }, // Tìm kiếm theo tên sản phẩm
+      ];
+    }
+
+    // Kiểm tra và xử lý các tham số sortBy và sortOrder
+    const validSortFields = [
+      'createdAt',
+      'paymentStatus',
+      'totalAmount',
+      'subOrderUUID',
+    ]; // Các trường hợp hợp lệ cho sắp xếp
+    if (!validSortFields.includes(sortBy)) {
+      sortBy = 'createdAt'; // Nếu sortBy không hợp lệ, sử dụng mặc định
+    }
+
+    // Đảm bảo sortOrder hợp lệ
+    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+      sortOrder = 'desc'; // Nếu sortOrder không hợp lệ, sử dụng mặc định
+    }
+
+    // Tạo truy vấn để lấy danh sách các đơn hàng
+    const orders = await this.subOrderModel
+      .find(query)
+      // Remove empty populate call
+  .populate({
+    path: 'orderId',
+    select: 'paymentStatus address phone createdAt',
+    populate: {
+      path: 'userId',
+      select: 'email firstname lastname',
+    },
+  })
+  .populate({
+    path: 'products',
+    model: 'OrderItem',
+    select: '-createdAt -updatedAt',
+    populate: {
+      path: 'productId',
+      model: 'Product',
+      select: 'imgUrls',
+    },
+  }).populate('sellerId','email firstname lastname address phone'  )
+  .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortBy và sortOrder
+  .skip((page - 1) * limit) // Phân trang
+  .limit(limit); // Giới hạn số lượng kết quả trả về
+
+    // Đếm tổng số đơn hàng để tính phân trang
+    const totalOrders = await this.subOrderModel.countDocuments(query);
+
+    // Trả về dữ liệu cùng với thông tin phân trang
+    return {
+  data: orders,
+  pagination: {
+    currentPage: page,
+    totalPages: Math.ceil(totalOrders / limit),
+    totalOrders,
+  },
+    };
+  }
+  
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.
    */

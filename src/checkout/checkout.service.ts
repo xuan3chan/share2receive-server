@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import {
-  Cart,
   Order,
   OrderItem,
   Product,
@@ -21,7 +20,6 @@ import { TransactionService } from 'src/transaction/transaction.service';
 @Injectable()
 export class CheckoutService {
   constructor(
-    @InjectModel(Cart.name) private cartModel: Model<Cart>,
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(SubOrder.name) private subOrderModel: Model<SubOrder>,
@@ -388,4 +386,5 @@ export class CheckoutService {
       }
     }
   }
+
 }

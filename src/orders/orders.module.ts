@@ -21,6 +21,8 @@ import {
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { GatewayModule } from '@app/libs/common/util/gateway.module';
 import { MailerModule } from 'src/mailer/mailer.module';
+import { AdminModule } from 'src/admin/admin.module';
+import { AbilityFactory } from '@app/libs/common/abilities';
 
 @Module({
   imports: [
@@ -34,13 +36,14 @@ import { MailerModule } from 'src/mailer/mailer.module';
       
       
     ]),
+    AdminModule,
     TransactionModule,
     GatewayModule,
     MailerModule
     
   ],
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService,AbilityFactory],
   exports: [OrdersService], // Nếu cần sử dụng ở module khác
 })
 export class OrdersModule {}

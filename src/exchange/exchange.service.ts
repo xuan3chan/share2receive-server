@@ -667,18 +667,43 @@ export class ExchangeService {
   async getListExchangeForManageService(
     page: number = 1,
     limit: number = 10,
-  ): Promise<{ total: number; data: any[] }> {
-    const total = await this.exchangeModel.countDocuments();
+    sortBy: string = 'createdAt',
+    sortOrder: string|'asc' | 'desc' = 'desc',
+  ): Promise<{ total: number; data: any[]; pagination: { currentPage: number; totalPages: number; totalItems: number } }> {
+    // Đếm tổng số giao dịch để tính phân trang
+    const totalItems = await this.exchangeModel.countDocuments();
+  
+    // Xử lý các tham số sortBy và sortOrder
+    const validSortFields = [
+      'createdAt',
+      'requesterId',
+      'receiverId',
+      'requestProduct',
+      'receiveProduct',
+    ]; // Các trường hợp hợp lệ để sắp xếp
+  
+    // Nếu sortBy không hợp lệ, sử dụng mặc định là 'createdAt'
+    if (!validSortFields.includes(sortBy)) {
+      sortBy = 'createdAt';
+    }
+  
+    // Nếu sortOrder không hợp lệ, sử dụng mặc định là 'desc'
+    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+      sortOrder = 'desc';
+    }
+  
+    // Lấy danh sách giao dịch, hỗ trợ phân trang và sắp xếp
     const listExchange = await this.exchangeModel
       .find()
       .populate('requesterId', 'firstname lastname email')
       .populate('receiverId', 'firstname lastname email')
       .populate('requestProduct.requesterProductId', 'productName')
       .populate('receiveProduct.receiverProductId', 'productName')
-      .skip((page - 1) * limit)
-      .limit(limit)
+      .skip((page - 1) * limit)  // Phân trang: bỏ qua (page - 1) * limit bản ghi
+      .limit(limit)  // Giới hạn số lượng bản ghi trả về
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })  // Sắp xếp theo sortBy và sortOrder
       .lean();
-
+  
     // Sử dụng Promise.all để lấy đánh giá của mỗi giao dịch trong listExchange song song
     const dataWithRatings = await Promise.all(
       listExchange.map(async (exchange) => {
@@ -689,7 +714,7 @@ export class ExchangeService {
             targetType: 'exchange',
           })
           .lean();
-
+  
         const receiverRating = await this.ratingModel
           .findOne({
             userId: exchange.receiverId,
@@ -697,7 +722,7 @@ export class ExchangeService {
             targetType: 'exchange',
           })
           .lean();
-
+  
         return {
           ...exchange,
           ratings: {
@@ -707,10 +732,21 @@ export class ExchangeService {
         };
       }),
     );
-
+  
+    // Tính số trang
+    const totalPages = Math.ceil(totalItems / limit);
+  
+    // Trả về dữ liệu cùng với thông tin phân trang
     return {
-      total,
-      data: dataWithRatings,
+      total: totalItems,  // Tổng số giao dịch
+      data: dataWithRatings,  // Dữ liệu giao dịch đã phân trang và sắp xếp
+      pagination: {
+        currentPage: page,  // Trang hiện tại
+        totalPages,         // Tổng số trang
+        totalItems,         // Tổng số giao dịch
+      },
     };
   }
+  
+
 }

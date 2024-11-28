@@ -6,6 +6,7 @@ import { IMomoPaymentResponse } from '@app/libs/common/interface';
 import * as https from 'https';
 import * as crypto from 'crypto';
 import { path } from '@ffmpeg-installer/ffmpeg';
+import { first } from 'rxjs';
 
 @Injectable()
 export class TransactionService {
@@ -223,6 +224,17 @@ export class TransactionService {
       req.end();
     });
   }
-  
+  //manage
+  async getAllTransactionFoManageService(
+   page: number,
+   limit: number,
+   sortBy: string,
+   sortOrder: string |'asc'|'desc' = 'asc',
+   search: string,
+  ) {
+    // khi truy vấn xong mới search
+    const transaction =  this.transactionModel.find().select('orderS2RId _id userId orderId amount orderInfo transId orderType payType createdAt').populate('userId', 'firstname lastname phone address email').exec();
+    //
+  }
   
 }

@@ -6,7 +6,7 @@ export class Transaction extends Document {
 
   @Prop({ type:mongoose.Schema.Types.ObjectId, })
   orderS2RId:mongoose.Schema.Types.ObjectId; // ID của đơn hàng S2R
-  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId,ref:'User', required: true })
   userId: mongoose.Schema.Types.ObjectId; // ID của người dùng
   @Prop({ type: String, required: true })
   orderId: string; // Mã đơn hàng (do hệ thống tạo)

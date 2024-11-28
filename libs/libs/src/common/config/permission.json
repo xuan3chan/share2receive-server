@@ -154,5 +154,11 @@
     "namePermission": "approveproduct",
     "action": "approve",
     "subject": "product"
+  },
+  {
+    "id":30,
+    "namePermission": "readorder",
+    "action": "read",
+    "subject": "order"
   }
   ]

@@ -24,7 +24,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { MemberGuard } from '@app/libs/common/gaurd';
+import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { ConfirmStatusE, ExchangeStatusE } from '@app/libs/common/enum';
 import { ShippingStatusE } from '@app/libs/common/enum/shipping-status.enum';
 
@@ -131,14 +131,22 @@ export class ExchangeController {
     return this.exchangeService.getExchangeDetailService(userId, id);
   }
   //***********manage */
+  @ApiTags('ManagerTran')
+  // @UseGuards(PermissionGuard)
   @Get('get-list-exchange-manage')
   @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Limit per page', example: 10 })
+  @ApiQuery({ name: 'sortBy', required: false, description: 'Sort by field' })
+  @ApiQuery({ name: 'SortOrder', required: false, description: 'Sort order',enum:['asc','desc'] })
   @ApiOperation({ summary: 'Get list of exchanges' })
   async getListExchangeManage(
     @Query('page') page: number,
     @Query('limit') limit: number,
+    @Query('sortBy') sortBy: string,
+    @Query('SortOrder') sortOrder: string,
   ) {
-    return this.exchangeService.getListExchangeForManageService(page, limit);
+    const pageNumber = page ? parseInt(page.toString()) : 1;
+    const limitNumber = limit ? parseInt(limit.toString()) : 10;
+    return this.exchangeService.getListExchangeForManageService(pageNumber, limitNumber,sortBy,sortOrder);
   }
 }

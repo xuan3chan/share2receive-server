@@ -88,4 +88,5 @@ export class RatingController {
     const userId = this.getUserIdFromToken(request);
     return this.ratingService.getRatingForSaleService(userId, targetId);
   }
+
 }

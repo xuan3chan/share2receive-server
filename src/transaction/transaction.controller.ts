@@ -3,8 +3,9 @@ import { TransactionService } from './transaction.service';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
-import { MemberGuard } from '@app/libs/common/gaurd';
+import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Action, Subject } from '@app/libs/common/decorator';
 
 @ApiTags('Transaction')
 @Controller('transaction')
@@ -46,6 +47,9 @@ export class TransactionController {
   }
   @ApiTags('ManagerTran')
   @Get('get-transaction')
+  @UseGuards(PermissionGuard)
+  @Subject('transaction')
+  @Action('read')
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'sortBy', required: false })

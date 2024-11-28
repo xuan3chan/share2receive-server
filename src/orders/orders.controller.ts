@@ -214,7 +214,7 @@ export class OrdersController {
     required: false,
     type: String,
   })
-  // @UseGuards(PermissionGuard)
+  @UseGuards(PermissionGuard)
   @Subject('order')
   @Action('read')
   async getOrdersForManagerController(
@@ -406,6 +406,9 @@ export class OrdersController {
     );
   }
   @ApiTags('ManagerTran')
+  @UseGuards(PermissionGuard)
+  @Action('update')
+  @Subject('order')
   @Patch('update-status-refund')
   @ApiBody({
     schema: {

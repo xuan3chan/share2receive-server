@@ -8,12 +8,15 @@ import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { AuthModule } from 'src/auth/auth.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { MessagesModule } from 'src/messages/messages.module';
+import { AbilityFactory } from '@app/libs/common/abilities';
+import { AdminModule } from 'src/admin/admin.module';
 
 @Module({
   imports: [
     AuthModule,
     NotificationModule,
     MessagesModule,
+    AdminModule,
     MongooseModule.forFeature([
       { name: Exchange.name, schema: ExchangeSchema },
       { name: Product.name, schema: ProductSchema },
@@ -23,6 +26,6 @@ import { MessagesModule } from 'src/messages/messages.module';
   ],
 
   controllers: [ExchangeController],
-  providers: [ExchangeService],
+  providers: [ExchangeService,AbilityFactory],
 })
 export class ExchangeModule {}

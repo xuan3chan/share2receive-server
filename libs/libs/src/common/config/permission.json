@@ -138,7 +138,7 @@
     "subject": "brand"
   },
   {
-    "id":27,
+    "id": 27,
     "namePermission": "readProduct",
     "action": "read",
     "subject": "product"
@@ -156,9 +156,46 @@
     "subject": "product"
   },
   {
-    "id":30,
+    "id": 30,
     "namePermission": "readorder",
     "action": "read",
     "subject": "order"
+  },
+  {
+    "id": 31,
+    "namePermission": "readTransaction",
+    "action": "read",
+    "subject": "trangsaction"
+  },
+  {
+    "id": 32,
+    "namePermission": "readexchange",
+    "action": "read",
+    "subject": "exchange"
+  },
+  {
+    "id": 33,
+    "namePermission": "updateOrder",
+    "action": "update",
+    "subject": "order"
+  },
+  {
+    "id": 34,
+    "namePermission": "readReport",
+    "action": "read",
+    "subject": "report"
+  },
+  {
+    "id": 35,
+    "namePermission": "blockReport",
+    "action": "block",
+    "subject": "report"
+  },
+  {
+    "id": 36,
+    "namePermission": "warningReport",
+    "action": "warning",
+    "subject": "report"
   }
-  ]
+
+]

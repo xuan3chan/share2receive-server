@@ -27,6 +27,7 @@ import {
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { ConfirmStatusE, ExchangeStatusE } from '@app/libs/common/enum';
 import { ShippingStatusE } from '@app/libs/common/enum/shipping-status.enum';
+import { Action, Subject } from '@app/libs/common/decorator';
 
 @ApiTags('Exchange')
 @Controller('Exchange')
@@ -132,7 +133,9 @@ export class ExchangeController {
   }
   //***********manage */
   @ApiTags('ManagerTran')
-  // @UseGuards(PermissionGuard)
+  @UseGuards(PermissionGuard)
+  @Action('read')
+  @Subject('exchange')
   @Get('get-list-exchange-manage')
   @ApiQuery({ name: 'page', required: false, description: 'Page number', example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Limit per page', example: 10 })

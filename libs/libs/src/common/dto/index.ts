@@ -5,3 +5,4 @@ export * from './user.dto';
 export * from './product.dto';
 export * from './exchange.dto';
 export * from './rating.dto';
+export * from './report.dto';

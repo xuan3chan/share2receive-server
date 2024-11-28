@@ -22,7 +22,7 @@ import {
   UpdateInfoOrderDto,
   UpdateShippingDto,
 } from '@app/libs/common/dto/order.dto';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiProperty, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 
@@ -214,7 +214,7 @@ export class OrdersController {
     required: false,
     type: String,
   })
-  @UseGuards(PermissionGuard)
+  // @UseGuards(PermissionGuard)
   @Subject('order')
   @Action('read')
   async getOrdersForManagerController(
@@ -404,5 +404,30 @@ export class OrdersController {
       orderId,
       status,
     );
+  }
+  @ApiTags('ManagerTran')
+  @Patch('update-status-refund')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        subOrderIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Danh sách các subOrderId cần cập nhật',
+        },
+        status: {
+          type: 'string',
+          enum: ['accepted', 'rejected'],
+          description: 'Trạng thái hoàn tiền mới',
+        },
+      },
+    },
+  })
+  async updateStatusRefundController(
+    @Body('subOrderIds') subOrderIds: string[],  // Nhận mảng subOrderId
+    @Body('status') status: string,
+  ) {
+    return this.ordersService.updateStatusForRefunds(subOrderIds, status);  // Gọi service với mảng subOrderId
   }
 }

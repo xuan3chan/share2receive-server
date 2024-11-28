@@ -17,6 +17,8 @@ import {
   UserSchema,
   Transaction,
   TransactionSchema,
+  Rating,
+  RatingSchema,
 } from '@app/libs/common/schema';
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { GatewayModule } from '@app/libs/common/util/gateway.module';
@@ -33,6 +35,7 @@ import { AbilityFactory } from '@app/libs/common/abilities';
       { name: Product.name, schema: ProductSchema },
       {name:Cart.name,schema:CartSchema},
       {name:User.name,schema:UserSchema},
+      { name: Rating.name, schema: RatingSchema },
       
       
     ]),

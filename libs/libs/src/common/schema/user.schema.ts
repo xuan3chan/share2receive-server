@@ -105,8 +105,8 @@ export class User extends Document {
   @Prop({ type: mongoose.Schema.Types.Number, default: 0 })
   numberOfRating: number;
   
-  
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 export type UserDocument = HydratedDocument<User>;
+UserSchema.index({ firstname: 'text', lastname: 'text', email: 'text' });

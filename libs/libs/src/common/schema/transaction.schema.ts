@@ -50,3 +50,4 @@ export class Transaction extends Document {
 
 export type TransactionDocument = Transaction & Document;
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
+TransactionSchema.index({ orderInfo: 'text' });

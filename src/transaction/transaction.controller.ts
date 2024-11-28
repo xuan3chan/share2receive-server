@@ -1,10 +1,10 @@
-import { Controller, Get, Param, Put, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Put, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { TransactionService } from './transaction.service';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
 import { MemberGuard } from '@app/libs/common/gaurd';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Transaction')
 @Controller('transaction')
@@ -44,10 +44,26 @@ export class TransactionController {
     const userId = this.getUserIdFromToken(request);
     return this.transactionService.checkTransactionIsPaid(userId,orderId);
   }
-  // @ApiTags('ManagerTran')
-  // @Get('get-transaction')
-  // async getTransaction(
-  // ) {
-  //   return this.transactionService.getAllTransactionFoManageService()
-  // }
+  @ApiTags('ManagerTran')
+  @Get('get-transaction')
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'sortBy', required: false })
+  @ApiQuery({ name: 'sortOrder', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  async getTransaction(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: string,
+    @Query('search') search: string,
+  ) {
+    return this.transactionService.getAllTransactionFoManageService(
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      search,
+    )
+  }
 }

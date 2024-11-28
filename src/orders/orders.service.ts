@@ -6,6 +6,7 @@ import {
   Product,
   Cart,
   User,
+  Rating,
 } from '@app/libs/common/schema';
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -27,6 +28,7 @@ export class OrdersService {
     @InjectModel(Product.name) private productModel: Model<Product>,
     @InjectModel(Cart.name) private cartModel: Model<Cart>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Rating.name) private ratingModel: Model<Rating>,
     private EventGateway: EventGateway,
     private mailerService: MailerService,
     private transactionService: TransactionService,
@@ -1120,18 +1122,55 @@ export class OrdersService {
 
     // Đếm tổng số đơn hàng để tính phân trang
     const totalOrders = await this.subOrderModel.countDocuments(query);
+    // target id là suborder id
+
+    // target id là suborder id
+    const ratings = await Promise.all(
+      orders.map(async (order) => {
+        return await this.ratingModel.findOne({ targetId: order._id });
+      })
+    );
+
+    const mappedOrders = orders.map((order) => {
+      const rating = ratings.find((r) => r && r.targetId.toString() === order._id.toString());
+      return {
+        ...order.toObject(),
+        rating: rating ? rating.rating : null,
+      };
+    });
 
     // Trả về dữ liệu cùng với thông tin phân trang
     return {
-  data: orders,
-  pagination: {
-    currentPage: page,
-    totalPages: Math.ceil(totalOrders / limit),
-    totalOrders,
-  },
+      data: mappedOrders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalOrders / limit),
+        totalOrders,
+      },
     };
   }
-  
+  async updateStatusForRefunds(subOrderIds: string[], status: string) {
+    // Kiểm tra trạng thái cho SubOrder đã được hoàn tiền chưa
+    const subOrders = await this.subOrderModel.find({
+      _id: { $in: subOrderIds },
+      'requestRefund.status': { $ne: 'refunded' }, // Đảm bảo trạng thái không phải là "refunded"
+    });
+
+    if (subOrders.length !== subOrderIds.length) {
+      throw new BadRequestException('Một hoặc nhiều SubOrder đã được hoàn tiền');
+    }
+    // Cập nhật trạng thái hoàn tiền cho nhiều SubOrder cùng một lúc
+    const result = await this.subOrderModel.updateMany(
+      { _id: { $in: subOrderIds } },
+      { $set: { 'requestRefund.status': status, status: 'canceled' } }
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new BadRequestException('Không có SubOrder nào được cập nhật');
+    }
+    // tim các order
+    return { message: 'Cập nhật trạng thái hoàn tiền cho các SubOrder thành công!' };
+  }
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.
    */

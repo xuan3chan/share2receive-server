@@ -13,6 +13,7 @@ export class TransactionService {
   constructor(
     @InjectModel(Transaction.name) private transactionModel: Model<Transaction>,
     @InjectModel(Order.name) private orderModel: Model<Order>,
+    @InjectModel('User') private userModel: Model<any>,
   ) {}
 
   async saveTransaction(
@@ -226,15 +227,83 @@ export class TransactionService {
   }
   //manage
   async getAllTransactionFoManageService(
-   page: number,
-   limit: number,
-   sortBy: string,
-   sortOrder: string |'asc'|'desc' = 'asc',
-   search: string,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'createdAt',
+    sortOrder:string| 'asc' | 'desc' = 'desc',
+    search: string = ''
   ) {
-    // khi truy vấn xong mới search
-    const transaction =  this.transactionModel.find().select('orderS2RId _id userId orderId amount orderInfo transId orderType payType createdAt').populate('userId', 'firstname lastname phone address email').exec();
-    //
+    const query: any = {};
+  
+    // Nếu có tìm kiếm
+    if (search) {
+      // Loại bỏ dấu tiếng Việt để tìm kiếm không phân biệt dấu
+      const normalizedSearch = search
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); 
+  
+      // Kiểm tra nếu search chứa mã đơn hàng SUB-ORD<digits>
+      const regexPattern = new RegExp(`SUB-ORD\\d+`, 'i');  // Tìm các chuỗi bắt đầu bằng "SUB-ORD" và theo sau là dãy số
+  
+      // Tìm kiếm theo orderInfo có chứa mã đơn hàng
+      query.orderInfo = { $regex: regexPattern }; // Tìm kiếm "SUB-ORD" + dãy số trong orderInfo
+  
+      // Nếu bạn muốn tìm chính xác chuỗi "SUB-ORD<dãy số>" thì dùng dạng như sau:
+      // query.orderInfo = { $regex: `.*SUB-ORD${normalizedSearch}.*`, $options: 'i' }; 
+    }
+  
+    // Kiểm tra các trường hợp sắp xếp hợp lệ
+    const validSortFields = [
+      'createdAt',
+      'amount',
+      'orderS2RId',
+      'transId',
+      'orderType',
+      'payType',
+    ];
+  
+    if (!validSortFields.includes(sortBy)) {
+      sortBy = 'createdAt'; // Mặc định là 'createdAt'
+    }
+  
+    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+      sortOrder = 'asc'; // Mặc định là 'asc'
+    }
+  
+    // Truy vấn danh sách giao dịch với phân trang và sắp xếp
+    const transactions = await this.transactionModel
+      .find(query) // Sử dụng query với điều kiện tìm kiếm
+      .select('orderS2RId _id userId orderId amount orderInfo transId orderType payType createdAt') // Chỉ định các trường cần lấy
+      .populate('userId', 'firstname lastname phone address email') // Populate userId để lấy thông tin người dùng
+      .skip((page - 1) * limit) // Phân trang
+      .limit(limit) // Giới hạn số lượng bản ghi
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo sortBy và sortOrder
+      .exec();
+  
+    // Đếm tổng số giao dịch
+    const totalTransactions = await this.transactionModel.countDocuments(query);
+  
+    // Tính tổng số trang
+    const totalPages = Math.ceil(totalTransactions / limit);
+  
+    // Trả về kết quả với dữ liệu và thông tin phân trang
+    return {
+      total: totalTransactions,
+      data: transactions,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalTransactions,
+      },
+    };
   }
+  
+  
+  
+  
+  
+  
+  
+  
   
 }

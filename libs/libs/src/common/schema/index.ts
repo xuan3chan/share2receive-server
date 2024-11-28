@@ -13,3 +13,4 @@ export * from './cart.schema';
 export * from './order.schema';
 export * from './order.schema';
 export * from './transaction.schema';
+export * from './report.schema';

@@ -95,7 +95,6 @@ export class UpdateShippingDto{
     })
     @IsString()
     @IsOptional()
-    @IsNotEmpty()
     shippingService:string
 
     @ApiProperty({
@@ -104,7 +103,6 @@ export class UpdateShippingDto{
     })
     @IsString()
     @IsOptional()
-    @IsNotEmpty()
     @MaxLength(255)
     note:string
 }

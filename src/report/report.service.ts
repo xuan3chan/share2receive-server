@@ -31,9 +31,6 @@ export class ReportService {
         if (!subOrder) {
           throw new BadRequestException('SubOrder not found');
         }
-        if (subOrder.status !== 'completed') {
-          throw new BadRequestException('SubOrder is not completed');
-        }
       }
       if (createReportDto.reportType === 'product') {
         const product = await this.productModel.findById(

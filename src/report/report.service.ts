@@ -90,7 +90,7 @@ export class ReportService {
         if (report.reportType === 'product') {
           targetData = await this.productModel
             .findById(report.targetId)
-            .select('_id productName userId isBlock');
+            .select('_id productName userId isBlock imgUrls price');
         } else if (report.reportType === 'order') {
           targetData = await this.subOrderModel
             .findById(report.targetId)

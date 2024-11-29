@@ -535,6 +535,9 @@ export class OrdersService {
       'totalAmount',
       'subOrderUUID',
       'subTotal',
+      'status',
+      'shippingFee',
+
     ]; // Các trường hợp hợp lệ cho sắp xếp
     if (!validSortFields.includes(sortBy)) {
       sortBy = 'createdAt'; // Nếu sortBy không hợp lệ, sử dụng mặc định

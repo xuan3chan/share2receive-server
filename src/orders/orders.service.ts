@@ -19,6 +19,7 @@ import { TransactionService } from 'src/transaction/transaction.service';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { MailerService } from 'src/mailer/mailer.service';
 import { IShipping } from '@app/libs/common/interface';
+import { RatingService } from 'src/rating/rating.service';
 @Injectable()
 export class OrdersService {
   constructor(
@@ -32,6 +33,7 @@ export class OrdersService {
     private EventGateway: EventGateway,
     private mailerService: MailerService,
     private transactionService: TransactionService,
+
   ) {}
 
   async createOrderService(userId: string): Promise<any> {
@@ -337,50 +339,44 @@ export class OrdersService {
     searchKey?: string,
   ): Promise<any> {
     const query: any = { userId };
-
+  
     // Lọc theo trạng thái thanh toán
     if (paymentStatus) {
       query.paymentStatus = paymentStatus;
     }
-
+  
     // Lọc theo khoảng thời gian
     if (dateFrom && dateTo) {
       const dateToObj = new Date(dateTo);
       dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
       query.createdAt = { $gte: dateFrom, $lte: dateToObj };
     }
-
+  
     // Tìm kiếm không phân biệt dấu
-    // Kiểm tra và normalize searchKey
     if (searchKey) {
       const normalizedSearchKey = searchKey
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
-      console.log('Normalized Search Key:', normalizedSearchKey); // In ra kiểm tra
-
-      // Tạo truy vấn tìm kiếm không phân biệt dấu
       query.$or = [
-        { orderUUID: { $regex: normalizedSearchKey, $options: 'i' } }, // Tìm kiếm theo mã đơn hàng
+        { orderUUID: { $regex: normalizedSearchKey, $options: 'i' } },
       ];
-    } else {
-      console.log('Search key is empty or invalid.');
     }
-
-    // Tìm đơn hàng và sử dụng populate
+  
+    // Lấy danh sách orders cùng subOrders và user thông qua populate
     const orders = await this.orderModel
       .find(query)
       .populate({
         path: 'subOrders',
-        select: '-createdAt -updatedAt', // Chỉ lấy các trường cần thiết
+        select: '-createdAt -updatedAt',
         populate: [
           {
             path: 'products',
             model: 'OrderItem',
             select: '-createdAt -updatedAt',
             populate: {
-              path: 'productId', // Lấy thông tin chi tiết sản phẩm
+              path: 'productId',
               model: 'Product',
-              select: 'productName', // Lấy trường productName từ Product
+              select: 'productName',
             },
           },
           {
@@ -390,17 +386,43 @@ export class OrdersService {
           },
         ],
       })
-      .populate('userId', 'firstname lastname address phone avatar email') // Thông tin người mua
-      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 }) // Sắp xếp theo trường sortBy và sortOrder
-      .skip((page - 1) * limit) // Phân trang: bỏ qua (page - 1) * limit
-      .limit(limit); // Giới hạn số lượng đơn hàng trả về
-
-    // Đếm tổng số đơn hàng để tính phân trang
+      .populate('userId', 'firstname lastname address phone avatar email')
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+  
+    // Đếm tổng số đơn hàng
     const totalOrders = await this.orderModel.countDocuments(query);
-
-    // Trả về dữ liệu cùng thông tin phân trang
+  
+    // Lấy ratings cho từng subOrder
+    const mappedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const subOrdersWithRatings = await Promise.all(
+          order.subOrders.map(async (subOrderId) => {
+            const subOrder = await this.subOrderModel.findById(subOrderId).lean();
+            const rating = await this.ratingModel.findOne({
+              targetId: subOrderId,
+            });
+            return {
+              ...subOrder,
+              rating: {
+                rating: rating?.rating || 0,
+                comment: rating?.comment || '',
+              }
+            };
+          })
+        );
+  
+        return {
+          ...order.toObject(),
+          subOrders: subOrdersWithRatings, // Cập nhật subOrders với thông tin rating
+        };
+      })
+    );
+  
+    // Trả về dữ liệu
     return {
-      data: orders,
+      data: mappedOrders,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalOrders / limit),
@@ -408,6 +430,7 @@ export class OrdersService {
       },
     };
   }
+  
 
   async cancelOrderService(orderId: string, userId: string): Promise<any> {
     // Tìm đơn hàng theo ID và userId

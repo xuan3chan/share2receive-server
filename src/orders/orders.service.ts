@@ -183,38 +183,61 @@ export class OrdersService {
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
-
+  
     if (!order) {
       throw new BadRequestException(
         'Order not found or you do not have access to it.',
       );
     }
-
-    // Tính toán `summary` nếu cần
+  
+    // Tính toán `summary` và thêm `ratings`
     let totalAmount = 0;
     let totalPrice = 0;
     let totalShippingFee = 0;
     const uniqueProductIds = new Set<string>();
-
-    if (order.subOrders) {
-      order.subOrders.forEach((subOrder: any) => {
+  
+    const subOrdersWithRatings = await Promise.all(
+      order.subOrders.map(async (subOrder: any) => {
         totalShippingFee += subOrder.shippingFee || 0;
-        if (Array.isArray(subOrder.products)) {
-          subOrder.products.forEach((product: any) => {
+  
+        const productsWithRatings = await Promise.all(
+          subOrder.products.map(async (product: any) => {
             totalAmount += product.quantity;
             totalPrice += product.quantity * product.price;
+  
             if (product.productId) {
               uniqueProductIds.add(product.productId.toString());
             }
-          });
-        }
-      });
-    }
-
+  
+            // Lấy thông tin đánh giá (rating)
+            const rating = await this.ratingModel.findOne({
+              targetId: product.productId,
+            });
+  
+            return {
+              ...product.toObject(),
+              rating: {
+                rating: rating?.rating || 0,
+                comment: rating?.comment || '',
+              },
+            };
+          }),
+        );
+  
+        return {
+          ...subOrder.toObject(),
+          products: productsWithRatings,
+        };
+      }),
+    );
+  
     const totalTypes = uniqueProductIds.size;
-
+  
     return {
-      data: order,
+      data: {
+        ...order.toObject(),
+        subOrders: subOrdersWithRatings,
+      },
       summary: {
         totalAmount,
         totalTypes,
@@ -223,6 +246,7 @@ export class OrdersService {
       },
     };
   }
+  
 
   async updateInfoOrderService(
     orderId: string,

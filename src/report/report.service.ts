@@ -94,7 +94,8 @@ export class ReportService {
         } else if (report.reportType === 'order') {
           targetData = await this.subOrderModel
             .findById(report.targetId)
-            .select('_id sellerId subTotal shippingService shippingFee note status createdAt');
+            .select('_id sellerId subTotal shippingService shippingFee note status createdAt')
+            .populate('sellerId', 'firstname lastname phone address email');
         }
   
         reportData.target = targetData;

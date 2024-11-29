@@ -183,49 +183,36 @@ export class OrdersService {
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
-  
+
     if (!order) {
       throw new BadRequestException(
         'Order not found or you do not have access to it.',
       );
     }
-  
-    // Tính toán `summary`
+
+    // Tính toán `summary` nếu cần
     let totalAmount = 0;
     let totalPrice = 0;
     let totalShippingFee = 0;
     const uniqueProductIds = new Set<string>();
-  
+
     if (order.subOrders) {
-      // Thêm ratings vào subOrders
-      const subOrdersWithRatings = await Promise.all(
-        order.subOrders.map(async (subOrder: any) => {
-          const rating = await this.ratingModel.findOne({ targetId: subOrder._id });
-          if (Array.isArray(subOrder.products)) {
-            subOrder.products.forEach((product: any) => {
-              totalAmount += product.quantity;
-              totalPrice += product.quantity * product.price;
-              if (product.productId) {
-                uniqueProductIds.add(product.productId.toString());
-              }
-            });
-          }
-          totalShippingFee += subOrder.shippingFee || 0;
-  
-          // Thêm trường rating vào subOrder
-          return {
-            ...subOrder.toObject(),
-            rating: rating ? rating.rating : null,
-          };
-        })
-      );
-  
-      // Cập nhật subOrders với rating
-      order.subOrders = subOrdersWithRatings;
+      order.subOrders.forEach((subOrder: any) => {
+        totalShippingFee += subOrder.shippingFee || 0;
+        if (Array.isArray(subOrder.products)) {
+          subOrder.products.forEach((product: any) => {
+            totalAmount += product.quantity;
+            totalPrice += product.quantity * product.price;
+            if (product.productId) {
+              uniqueProductIds.add(product.productId.toString());
+            }
+          });
+        }
+      });
     }
-  
+
     const totalTypes = uniqueProductIds.size;
-  
+
     return {
       data: order,
       summary: {
@@ -236,7 +223,6 @@ export class OrdersService {
       },
     };
   }
-  
 
   async updateInfoOrderService(
     orderId: string,

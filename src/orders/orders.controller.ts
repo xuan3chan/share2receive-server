@@ -199,6 +199,16 @@ export class OrdersController {
     type: Number,
   })
   @ApiQuery({
+    name: 'filterBy',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'filterValue',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
     name: 'sortBy',
     required: false,
     type: String,
@@ -222,6 +232,8 @@ export class OrdersController {
     @Query('dateTo') dateTo: Date,
     @Query('page') page: string,
     @Query('limit') limit: string,
+    @Query('filterBy') filterBy: string,
+    @Query('filterValue') filterValue: string,
     @Query('sortBy') sortBy: string,
     @Query('sortOrder') sortOrder: string,
     @Query('searchKey') searchKey: string,
@@ -233,6 +245,8 @@ export class OrdersController {
       dateTo,
       pageNumber,
       limitNumber,
+      filterBy,
+      filterValue,
       sortBy,
       sortOrder,
       searchKey,

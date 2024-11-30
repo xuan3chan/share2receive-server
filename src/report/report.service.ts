@@ -154,7 +154,9 @@ export class ReportService {
     }
   
     user.isBlock = true; // Cập nhật trạng thái chặn
+    report.status = 'Processed'; // Cập nhật trạng thái báo cáo
     await user.save();
+    await report.save();
   
     return {
       message: 'User successfully blocked',
@@ -182,9 +184,10 @@ export class ReportService {
     if (product.isBlock) {
       throw new BadRequestException('Product is already blocked');
     }
-  
+    report.status = 'Processed'; // Cập nhật trạng thái báo cáo
     product.isBlock = true;
     await product.save();
+    await report.save();
   
     return {
       message: 'Product successfully blocked',
@@ -237,7 +240,9 @@ export class ReportService {
         'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.'
       );
     this.mailerService.sendEmailNotify(user.email,'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các')
-      return {
+    report.status = 'Processed'; // Cập nhật trạng thái báo cáo
+    await report.save();  
+    return {
         message: 'User successfully warned',
       };
   } 

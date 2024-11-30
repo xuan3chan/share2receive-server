@@ -60,8 +60,7 @@ export class ReportService {
     page: number = 1,
     limit: number = 10,
     sortBy: string = 'createdAt',
-    sortOrder:string | 'asc' | 'desc' = 'desc',
-    search?: string,
+    sortOrder: string|'asc' | 'desc' = 'desc',
   ) {
     const skip = (page - 1) * limit;
   
@@ -69,45 +68,6 @@ export class ReportService {
     const filter: any = {};
     if (reportType) {
       filter.reportType = reportType; // Thêm điều kiện lọc reportType
-    }
-  
-    // Nếu có điều kiện tìm kiếm (search)
-    if (search) {
-      if (reportType === 'product') {
-        // Tìm kiếm trong thông tin người dùng liên quan đến sản phẩm
-        const users = await this.userModel.find({
-          $or: [
-            { firstname: { $regex: search, $options: 'i' } },
-            { lastname: { $regex: search, $options: 'i' } },
-            { phone: { $regex: search, $options: 'i' } },
-            { email: { $regex: search, $options: 'i' } },
-          ],
-        });
-  
-        const userIds = users.map((user) => user._id);
-        filter.userId = { $in: userIds };
-      } else if (reportType === 'order') {
-        // Tìm kiếm theo mã subOrderUUID hoặc thông tin seller
-        const sellers = await this.userModel.find({
-          $or: [
-            { firstname: { $regex: search, $options: 'i' } },
-            { lastname: { $regex: search, $options: 'i' } },
-            { phone: { $regex: search, $options: 'i' } },
-            { email: { $regex: search, $options: 'i' } },
-          ],
-        });
-  
-        const sellerIds = sellers.map((seller) => seller._id);
-        const orders = await this.subOrderModel.find({
-          $or: [
-            { subOrderUUID: { $regex: search, $options: 'i' } },
-            { sellerId: { $in: sellerIds } },
-          ],
-        });
-  
-        const orderIds = orders.map((order) => order._id);
-        filter.targetId = { $in: orderIds };
-      }
     }
   
     // Tổng số lượng báo cáo sau khi lọc
@@ -141,7 +101,7 @@ export class ReportService {
   
         reportData.target = targetData;
         return reportData;
-      }),
+      })
     );
   
     return {
@@ -151,7 +111,6 @@ export class ReportService {
       data: populatedReports,
     };
   }
-  
   
   async blockFromReportService(reportId: string) {
     // Tìm báo cáo cơ bản

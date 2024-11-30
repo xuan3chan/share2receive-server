@@ -65,7 +65,7 @@ export class ReportController {
     }
   }
   @Get()
-  // @UseGuards(PermissionGuard)
+  @UseGuards(PermissionGuard)
   @Action('read')
   @Subject('report')
   @ApiQuery({ name: 'reportType', required: false,enum:['order','product'] })
@@ -73,14 +73,12 @@ export class ReportController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'sortBy', required: false })
   @ApiQuery({ name: 'sortOrder', required: false })
-  @ApiQuery({ name: 'search', required: false })
   async getListReportService(
     @Query('reportType') reportType: string,
     @Query('page') page: number,
     @Query('limit') limit: number,
     @Query('sortBy') sortBy: string,
     @Query('sortOrder') sortOrder: string,
-    @Query('search') search: string,
   ) {
     const pageNumber = page ? parseInt(page.toString()) : 1;
     const limitNumber = limit ? parseInt(limit.toString()) : 10;
@@ -90,7 +88,6 @@ export class ReportController {
       limitNumber,
       sortBy,
       sortOrder,
-      search,
 
     );
    } 

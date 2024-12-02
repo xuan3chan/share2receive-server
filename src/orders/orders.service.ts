@@ -37,37 +37,61 @@ export class OrdersService {
   ) {}
 
   async createOrderService(userId: string): Promise<any> {
-    // 1. Lấy các sản phẩm trong giỏ hàng của người dùng
+    const shippingServices: Record<string, IShipping> = {
+      GHN: {
+        name: 'GHN',
+        intraProvince: {
+          mass: 3, // kg
+          fee: 15000,
+          more: 2500,
+        },
+        interProvince: {
+          mass: 0.5, // kg
+          fee: 29000,
+          more: 5000,
+        },
+      },
+      GHTK: {
+        name: 'GHTK',
+        intraProvince: {
+          mass: 3, // kg
+          fee: 22000,
+          more: 2500,
+        },
+        interProvince: {
+          mass: 0.5, // kg
+          fee: 30000,
+          more: 2500,
+        },
+      },
+    };
     const cartItems = await this.cartModel
       .find({ userId, isCheckedOut: false })
-      .populate('productId') // Populate để lấy thông tin sản phẩm
+      .populate('productId') // Populate to get product info
       .populate('userId', 'address phone');
-
+  
     if (cartItems.length === 0) {
       throw new BadRequestException('Không có sản phẩm nào trong giỏ hàng!');
     }
-
-    // 2. Nhóm sản phẩm trong giỏ hàng theo người bán (sellerId)
+  
     const groupedBySeller = cartItems.reduce((result, item) => {
-      const sellerId = (item.productId as any).userId.toString(); // sellerId của sản phẩm
+      const sellerId = (item.productId as any).userId.toString(); // sellerId of the product
       if (!result[sellerId]) {
         result[sellerId] = [];
       }
       result[sellerId].push(item);
       return result;
     }, {});
-
-    // 3. Tạo các đơn hàng con (SubOrder) và sản phẩm trong đơn hàng (OrderItem)
+  
     const subOrders = [];
     for (const [sellerId, items] of Object.entries(groupedBySeller) as [
       string,
       any[],
     ][]) {
-      // Tạo danh sách sản phẩm cho SubOrder
       const orderItems = await Promise.all(
-        (items as any[]).map(async (item) => {
-          const orderItem = await this.orderItemModel.create({
-            subOrderId: null, // Sẽ cập nhật sau khi SubOrder được tạo
+        items.map(async (item) => {
+          return await this.orderItemModel.create({
+            subOrderId: null, // Will be updated later
             productId: item.productId._id,
             productName: item.productId.productName,
             quantity: item.amount,
@@ -75,35 +99,40 @@ export class OrdersService {
             size: item.size,
             color: item.color,
           });
-          return orderItem;
         }),
       );
-
-      // Tính tổng tiền của SubOrder
-      const subTotal = items.reduce((sum, item) => sum + item.total, 0);
-
-      // Tạo SubOrder
+  
+      const subTotal = items.reduce((sum, item) => sum + item.price * item.amount, 0);
+      
+      const buyerAddress = (cartItems[0].userId as any).address;
+      const sellerAddress = await this.userModel.findById(items[0].productId.userId).select('address').lean();
+      const totalWeight = items.reduce((sum, item) => sum + item.productId.weight * item.amount, 0); // Calculate total weight
+      
+      const isIntraProvince = this.compareLastPartOfAddress(buyerAddress, sellerAddress.address);
+      
+      const shippingFee = this.calculateShippingFee(shippingServices['GHN'], totalWeight, isIntraProvince);
       const subOrder = await this.subOrderModel.create({
-        orderId: null, // Sẽ cập nhật sau khi Order được tạo
+        orderId: null, // Will be updated later
         sellerId,
         subTotal,
         products: orderItems.map((item) => item._id),
+        shippingService: 'GHN', // Default shipping service
+        shippingFee,
       });
-
-      // Cập nhật subOrderId cho các OrderItem
+      console.log('Shipping Fee:', shippingFee);
       await this.orderItemModel.updateMany(
         { _id: { $in: orderItems.map((item) => item._id) } },
         { $set: { subOrderId: subOrder._id } },
       );
-
+  
       subOrders.push(subOrder);
     }
-
-    // 4. Tạo Order tổng
+  
     const totalAmount = subOrders.reduce(
-      (sum, subOrder) => sum + subOrder.subTotal,
+      (sum, subOrder) => sum + subOrder.subTotal + subOrder.shippingFee,
       0,
     );
+    console.log('Total Amount:', totalAmount);
     const order = await this.orderModel.create({
       userId,
       phone: (cartItems[0].userId as any).phone,
@@ -113,19 +142,17 @@ export class OrdersService {
       TransactionId: null,
       subOrders: subOrders.map((subOrder) => subOrder._id),
     });
-
-    // Cập nhật orderId cho từng SubOrder
+  
     await this.subOrderModel.updateMany(
       { _id: { $in: subOrders.map((subOrder) => subOrder._id) } },
       { $set: { orderId: order._id } },
     );
-
-    // 5. Đánh dấu các sản phẩm trong giỏ hàng là đã thanh toán
+  
     await this.cartModel.updateMany(
       { _id: { $in: cartItems.map((item) => item._id) } },
       { $set: { isCheckedOut: true } },
     );
-    // gui tin nhan cho cac nguoi ban lam sao lay orderUUID trong subOrder
+  
     for (const sellerId of Object.keys(groupedBySeller)) {
       const sellerItems = groupedBySeller[sellerId];
       const orderInfo = sellerItems
@@ -134,12 +161,13 @@ export class OrdersService {
             `${item.productId.productName} ${item.size} ${item.color} ${item.amount} cái`,
         )
         .join(', ');
-
+  
       const seller = await this.userModel.findById(sellerId).lean();
       const subOrder = await this.subOrderModel
         .findOne({ sellerId })
         .sort({ createdAt: -1 })
         .lean();
+  
       if (seller && seller.email) {
         this.mailerService.sendEmailNewOrder(
           seller.email,
@@ -147,14 +175,14 @@ export class OrdersService {
           orderInfo,
         );
       }
-
+  
       this.EventGateway.sendAuthenticatedNotification(
         sellerId,
         'Bạn có đơn hàng mới',
         'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
       );
     }
-
+  
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
 
@@ -348,6 +376,11 @@ export class OrdersService {
       product.userId,
       'Bạn có đơn hàng mới',
       'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
+    );
+    await Promise.all(
+      order.subOrders.map(async (subOrderId) => {
+        await this.updateShippingService(subOrderId.toString(), 'GHN');
+      }),
     );
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
@@ -937,10 +970,7 @@ export class OrdersService {
       throw new BadRequestException('Dịch vụ vận chuyển không hợp lệ');
     }
 
-    // Nếu dịch vụ vận chuyển mới được chọn
-    if (shippingService && subOrder.shippingService === shippingService) {
-      throw new BadRequestException('Dịch vụ vận chuyển đã được chọn');
-    }
+
 
     const addressOfBuyer = (subOrder.orderId as any).address;
     const addressOfSeller = (subOrder.sellerId as any).address;
@@ -1247,6 +1277,7 @@ async getListSubOrderForManagerService(
     address1: string,
     address2: string,
   ): boolean {
+    console.log(address1, address2);
     const lastPart1 = address1.split(',').pop()?.trim();
     const lastPart2 = address2.split(',').pop()?.trim();
     console.log(lastPart1, lastPart2);

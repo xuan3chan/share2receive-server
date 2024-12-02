@@ -66,7 +66,7 @@ export class SubOrder extends Document {
   })
   shippingService: string; // Dịch vụ vận chuyển
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number })
   shippingFee: number; // Phí vận chuyển
 
   @Prop({ type: mongoose.Schema.Types.String, default: null })

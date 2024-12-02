@@ -24,36 +24,46 @@ export class ReportService {
     createReportDto: CreateReportDto,
   ): Promise<Report> {
     try {
+      let targetUserId: string | null = null; // Variable to store the target user ID
+  
       if (createReportDto.reportType === 'order') {
-        const subOrder = await this.subOrderModel.findById(
-          createReportDto.targetId,
-        );
+        const subOrder = await this.subOrderModel.findById(createReportDto.targetId);
         if (!subOrder) {
           throw new BadRequestException('SubOrder not found');
         }
+        targetUserId = subOrder.sellerId?.toString(); // Capture the seller ID
       }
+  
       if (createReportDto.reportType === 'product') {
-        const product = await this.productModel.findById(
-          createReportDto.targetId,
-        );
+        const product = await this.productModel.findById(createReportDto.targetId);
         if (!product) {
           throw new BadRequestException('Product not found');
         }
+        targetUserId = product.userId?.toString(); // Capture the product owner's user ID
       }
+  
+      if (!targetUserId) {
+        throw new BadRequestException('Unable to determine target user for the report');
+      }
+  
       const { reportType, targetId, reason, description } = createReportDto;
+  console.log('reportType',targetUserId);
       const report = new this.reportModel({
         userId,
         reportType,
         targetId,
+        targetUserId, // Save the target user ID
         reason,
         description,
       });
+  
       return await report.save();
     } catch (error) {
       console.error('Error creating report:', error);
       throw new BadRequestException(error.message);
     }
   }
+  
 
   async getListReportService(
     reportType?: string, // Bổ sung reportType để lọc
@@ -275,8 +285,43 @@ export class ReportService {
     if (!report) {
       throw new BadRequestException('Report not found');
     }
+    // if (report.isCheckded) {
+    //   throw new BadRequestException('Report is already checked')
+    // }
     report.isCheckded = true;
     await report.save();
+
+    let userIdToCheck: string | null = null;
+
+    if (report.reportType === 'product') {
+      const product = await this.productModel.findById(report.targetId).select('userId');
+      if (product?.userId) {
+        userIdToCheck = product.userId.toString();
+      }
+    } else if (report.reportType === 'order') {
+      const subOrder = await this.subOrderModel.findById(report.targetId).select('sellerId');
+      if (subOrder?.sellerId) {
+        userIdToCheck = subOrder.sellerId.toString();
+      }
+    }
+    if (userIdToCheck) {
+      const userReports = await this.reportModel.countDocuments({
+        targetUserId: userIdToCheck.toString(),
+        isCheckded: true,
+      });
+      if (userReports >= 5) {
+        await this.blockFromReportService(reportId);
+      }else if (userReports >= 4) {
+        if (report.reportType === 'product') {
+          await this.blockProductService(reportId);
+        }
+        await this.warningUserService(reportId);
+      }
+       else if (userReports >= 3) {
+        await this.warningUserService(reportId);
+      }
+    }
+
     return {
       message: 'Report checked',
     };

@@ -61,7 +61,7 @@ export class SubOrder extends Document {
 
   @Prop({
     type: mongoose.Schema.Types.String,
-    default: 'agreement',
+    default: 'GHN',
     enum: ['GHN', 'GHTK', 'agreement'],
   })
   shippingService: string; // Dịch vụ vận chuyển
@@ -74,7 +74,7 @@ export class SubOrder extends Document {
 
   @Prop({ 
     type:{
-    status: { type: mongoose.Schema.Types.String, enum: ['accepted', 'rejected', 'pending'] },
+    status: { type: mongoose.Schema.Types.String, enum: ['accepted', 'rejected', 'pending','refuned'] },
     bankingNumber: { type: mongoose.Schema.Types.String, },
     bankingName: { type: mongoose.Schema.Types.String, },
     bankingNameUser: { type: mongoose.Schema.Types.String, },

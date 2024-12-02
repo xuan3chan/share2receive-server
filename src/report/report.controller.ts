@@ -47,7 +47,7 @@ export class ReportController {
   }
 
   @Post()
-  @UseGuards(MemberGuard)
+  // @UseGuards(MemberGuard)
   @ApiOperation({ summary: 'Create Report for user' })
   @ApiCreatedResponse({ description: 'Report created successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
@@ -120,4 +120,13 @@ export class ReportController {
         return await this.reportService.warningUserService(reportId);
     }
 
+    @Patch('check-report/:reportId')
+    @UseGuards(PermissionGuard)
+    @Action('check')
+    @Subject('report')
+    async checkReportController(
+      @Param('reportId') reportId: string,
+    ){
+        return await this.reportService.checkReportService(reportId);
+    }
 }

@@ -1203,6 +1203,7 @@ async getListSubOrderForManagerService(
     return {
       ...order.toObject(),
       rating: rating ? rating.rating : null,
+      comment: rating ? rating.comment : null,
     };
   });
 

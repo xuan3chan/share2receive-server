@@ -12,6 +12,8 @@ export class Report extends Document {
   reportType: string;
   @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
   targetId: string;
+  @Prop({ type: mongoose.Schema.Types.ObjectId })
+  targetUserId: string;
   @Prop({ type: String, required: true }) // theo chủ đề
   reason: string;
   @Prop({ type: String })

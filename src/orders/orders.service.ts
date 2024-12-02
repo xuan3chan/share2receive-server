@@ -198,31 +198,31 @@ export class OrdersService {
   
     const subOrdersWithRatings = await Promise.all(
       order.subOrders.map(async (subOrder: any) => {
-        totalShippingFee += subOrder.shippingFee || 0;
-  
-        const productsWithRatings = await Promise.all(
-          subOrder.products.map(async (product: any) => {
-            totalAmount += product.quantity;
-            totalPrice += product.quantity * product.price;
-  
-            if (product.productId) {
-              uniqueProductIds.add(product.productId.toString());
-            }
-  
-            // Lấy thông tin đánh giá (rating)
-            const rating = await this.ratingModel.findOne({
-              targetId: product.productId,
-            });
-  
-            return {
-              ...product.toObject(),
-              rating: {
-                rating: rating?.rating || 0,
-                comment: rating?.comment || '',
-              },
-            };
-          }),
-        );
+      totalShippingFee += subOrder.shippingFee || 0;
+    
+      const productsWithRatings = await Promise.all(
+        subOrder.products.map(async (product: any) => {
+        totalAmount += product.quantity;
+        totalPrice += product.quantity * product.price;
+    
+        if (product.productId) {
+          uniqueProductIds.add(product.productId.toString());
+        }
+    
+        // Lấy thông tin đánh giá (rating)
+        const rating = await this.ratingModel.findOne({
+          targetId: subOrder._id,
+        });
+    
+        return {
+          ...product.toObject(),
+          rating: {
+          rating: rating?.rating || 0,
+          comment: rating?.comment || '',
+          },
+        };
+        }),
+      );
   
         return {
           ...subOrder.toObject(),

@@ -74,7 +74,7 @@ export class SubOrder extends Document {
 
   @Prop({ 
     type:{
-    status: { type: mongoose.Schema.Types.String, enum: ['accepted', 'rejected', 'pending','refuned'] },
+    status: { type: mongoose.Schema.Types.String, enum: ['accepted', 'rejected', 'pending','refunded'] },
     bankingNumber: { type: mongoose.Schema.Types.String, },
     bankingName: { type: mongoose.Schema.Types.String, },
     bankingNameUser: { type: mongoose.Schema.Types.String, },

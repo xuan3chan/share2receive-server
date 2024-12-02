@@ -60,19 +60,19 @@ export class ReportService {
     page: number = 1,
     limit: number = 10,
     sortBy: string = 'createdAt',
-    sortOrder: string|'asc' | 'desc' = 'desc',
+    sortOrder: string | 'asc' | 'desc' = 'desc',
   ) {
     const skip = (page - 1) * limit;
-  
+
     // Điều kiện lọc dựa trên reportType
     const filter: any = {};
     if (reportType) {
       filter.reportType = reportType; // Thêm điều kiện lọc reportType
     }
-  
+
     // Tổng số lượng báo cáo sau khi lọc
     const totalReports = await this.reportModel.countDocuments(filter);
-  
+
     // Truy vấn dữ liệu ban đầu
     const reports = await this.reportModel
       .find(filter) // Áp dụng bộ lọc
@@ -80,30 +80,38 @@ export class ReportService {
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
       .skip(skip)
       .limit(limit);
-  
+
     // Xử lý logic populate targetId
     const populatedReports = await Promise.all(
       reports.map(async (report) => {
         const reportData = report.toObject() as unknown as PopulatedReport; // Ép kiểu sang PopulatedReport
         let targetData = null;
-  
+
         if (report.reportType === 'product') {
           targetData = await this.productModel
             .findById(report.targetId)
             .select('_id productName userId isBlock imgUrls price')
-            .populate('userId', 'firstname lastname phone address email isBlock');
+            .populate(
+              'userId',
+              'firstname lastname phone address email isBlock',
+            );
         } else if (report.reportType === 'order') {
           targetData = await this.subOrderModel
             .findById(report.targetId)
-            .select('_id sellerId subTotal shippingService shippingFee note status createdAt subOrderUUID')
-            .populate('sellerId', 'firstname lastname phone address email isBlock');
+            .select(
+              '_id sellerId subTotal shippingService shippingFee note status createdAt subOrderUUID',
+            )
+            .populate(
+              'sellerId',
+              'firstname lastname phone address email isBlock',
+            );
         }
-  
+
         reportData.target = targetData;
         return reportData;
-      })
+      }),
     );
-  
+
     return {
       totalReports,
       currentPage: page,
@@ -111,76 +119,82 @@ export class ReportService {
       data: populatedReports,
     };
   }
-  
+
   async blockFromReportService(reportId: string) {
     // Tìm báo cáo cơ bản
     const report = await this.reportModel
       .findById(reportId)
       .populate('userId', 'firstname lastname email'); // Populate thông tin người báo cáo
-  
+
     if (!report) {
       throw new BadRequestException('Report not found');
     }
-  
+
     let userIdToBlock: string | null = null;
-  
+
     // Nếu reportType là 'product', lấy userId từ Product
     if (report.reportType === 'product') {
-      const product = await this.productModel.findById(report.targetId).select('userId'); // Truy vấn Product để lấy userId
+      const product = await this.productModel
+        .findById(report.targetId)
+        .select('userId'); // Truy vấn Product để lấy userId
       if (product?.userId) {
         userIdToBlock = product.userId.toString(); // Lấy userId từ Product
       }
     }
     // Nếu reportType là 'order', lấy sellerId từ SubOrder
     else if (report.reportType === 'order') {
-      const subOrder = await this.subOrderModel.findById(report.targetId).select('sellerId'); // Truy vấn SubOrder để lấy sellerId
+      const subOrder = await this.subOrderModel
+        .findById(report.targetId)
+        .select('sellerId'); // Truy vấn SubOrder để lấy sellerId
       if (subOrder?.sellerId) {
         userIdToBlock = subOrder.sellerId.toString(); // Lấy sellerId từ SubOrder
       }
     }
-  
+
     if (!userIdToBlock) {
-      throw new BadRequestException('Unable to determine user to block from report');
+      throw new BadRequestException(
+        'Unable to determine user to block from report',
+      );
     }
-  
+
     // Chặn người dùng
     const user = await this.userModel.findById(userIdToBlock);
     if (!user) {
       throw new BadRequestException('User not found for blocking');
     }
-  
+
     if (user.isBlock) {
       throw new BadRequestException('User is already blocked');
     }
-  
+
     user.isBlock = true; // Cập nhật trạng thái chặn
     report.status = 'Processed'; // Cập nhật trạng thái báo cáo
     await user.save();
     await report.save();
-  
+
     return {
       message: 'User successfully blocked',
       blockedUserId: userIdToBlock,
     };
   }
-  
+
   async blockProductService(reportId: string) {
     const report = await this.reportModel
       .findById(reportId)
       .populate('userId', 'firstname lastname email');
-  
+
     if (!report) {
       throw new BadRequestException('Report not found');
     }
-    if(report.reportType !== 'product'){
-        throw new BadRequestException('Report is not a product report');
-        }
-  
+    if (report.reportType !== 'product') {
+      throw new BadRequestException('Report is not a product report');
+    }
+
     const product = await this.productModel.findById(report.targetId);
     if (!product) {
       throw new BadRequestException('Product not found');
     }
-  
+
     if (product.isBlock) {
       throw new BadRequestException('Product is already blocked');
     }
@@ -188,7 +202,7 @@ export class ReportService {
     product.isBlock = true;
     await product.save();
     await report.save();
-  
+
     return {
       message: 'Product successfully blocked',
       blockedProductId: product._id,
@@ -199,52 +213,72 @@ export class ReportService {
     const report = await this.reportModel
       .findById(reportId)
       .populate('userId', 'firstname lastname email'); // Populate thông tin người báo cáo
-  
+
     if (!report) {
       throw new BadRequestException('Report not found');
     }
-  
+
     let userIdToBlock: string | null = null;
-  
+
     // Nếu reportType là 'product', lấy userId từ Product
     if (report.reportType === 'product') {
-      const product = await this.productModel.findById(report.targetId).select('userId'); // Truy vấn Product để lấy userId
+      const product = await this.productModel
+        .findById(report.targetId)
+        .select('userId'); // Truy vấn Product để lấy userId
       if (product?.userId) {
         userIdToBlock = product.userId.toString(); // Lấy userId từ Product
       }
     }
     // Nếu reportType là 'order', lấy sellerId từ SubOrder
     else if (report.reportType === 'order') {
-      const subOrder = await this.subOrderModel.findById(report.targetId).select('sellerId'); // Truy vấn SubOrder để lấy sellerId
+      const subOrder = await this.subOrderModel
+        .findById(report.targetId)
+        .select('sellerId'); // Truy vấn SubOrder để lấy sellerId
       if (subOrder?.sellerId) {
         userIdToBlock = subOrder.sellerId.toString(); // Lấy sellerId từ SubOrder
       }
     }
-  
+
     if (!userIdToBlock) {
-      throw new BadRequestException('Unable to determine user to block from report');
+      throw new BadRequestException(
+        'Unable to determine user to block from report',
+      );
     }
-  
+
     // Chặn người dùng
     const user = await this.userModel.findById(userIdToBlock);
     if (!user) {
       throw new BadRequestException('User not found for blocking');
     }
-  
+
     if (user.isBlock) {
       throw new BadRequestException('User is already blocked');
     }
     this.eventGateway.sendAuthenticatedNotification(
-        user._id.toString(),
-        'Cảnh báo vi phạm',
-        'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.'
-      );
-    this.mailerService.sendEmailNotify(user.email,'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các')
+      user._id.toString(),
+      'Cảnh báo vi phạm',
+      'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.',
+    );
+    this.mailerService.sendEmailNotify(
+      user.email,
+      'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các',
+    );
     report.status = 'Processed'; // Cập nhật trạng thái báo cáo
-    await report.save();  
+    await report.save();
     return {
-        message: 'User successfully warned',
-      };
-  } 
-  
+      message: 'User successfully warned',
+    };
+  }
+
+  async checkReportService(reportId: string) {
+    const report = await this.reportModel.findById(reportId);
+    if (!report) {
+      throw new BadRequestException('Report not found');
+    }
+    report.isCheckded = true;
+    await report.save();
+    return {
+      message: 'Report checked',
+    };
+  }
 }

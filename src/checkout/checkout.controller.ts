@@ -63,5 +63,23 @@ export class CheckoutController {
 
     // Kiểm tra các trường cần thiết
   }
+  @Post('checkoutout-agreement/:orderId')
+  @UseGuards(MemberGuard)
+  async checkoutWithAgreement(
+    @Req() request: Request,
+    @Param('orderId') orderId: string,
+  ) {
+    try {
+      const userId = this.getUserIdFromToken(request);
+      const result = await this.checkoutService.checkoutByAgreementService(userId, orderId);
+      return {
+        message: 'Thành công khi thanh toán khi nhận hàng',
+        ...result,
+      };
+    } catch (error) {
+      return { message: error.message };
+    }
+  }
+
 
 }

@@ -1101,6 +1101,7 @@ export class OrdersService {
       bankingNameUser,
       bankingBranch,
       bankingNumber,
+      createdAt: new Date(),
       status: 'pending', // Mặc định là pending khi yêu cầu được tạo
     };
 

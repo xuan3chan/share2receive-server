@@ -27,6 +27,22 @@ export class CheckoutService {
     private transactionService: TransactionService,
   ) {}
 
+  async checkoutByAgreementService(userId: string, orderID: string): Promise<any> {
+    const order = await this.orderModel.findOne({ _id: orderID, userId });
+    if (!order) {
+      throw new BadRequestException('Đơn hàng không tồn tại!');
+    }
+    if (order.paymentStatus === 'paid') {
+      throw new BadRequestException('Đơn hàng đã được thanh toán!');
+    }
+
+    // Cập nhật trạng thái thanh toán
+    await this.orderModel.findByIdAndUpdate(orderID, {
+      paymentStatus: 'PayPickup',
+      type: 'agreement',
+    });
+    return { message: 'Thành công khi thanh toán khi nhận hàng', };
+  }
   // MoMo payment
   async momoPayment(userId: string, orderID: string): Promise<any> {
     try {
@@ -105,7 +121,10 @@ export class CheckoutService {
           }
         }
       }
-
+      await this.orderModel.findByIdAndUpdate(orderID, {
+        paymentStatus: 'pending',
+        type: 'momo_wallet',
+      });
       // Lấy danh sách sản phẩm từ các `subOrders`
       const items = (
         await Promise.all(

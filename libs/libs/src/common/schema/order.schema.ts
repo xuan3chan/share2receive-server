@@ -21,7 +21,7 @@ export class Order extends Document {
 
   @Prop({
     type: String,
-    enum: ['pending', 'paid', 'failed'],
+    enum: ['pending', 'paid','PayPickup', 'failed'],
     default: 'pending',
   })
   paymentStatus: string; // Trạng thái thanh toán
@@ -80,6 +80,7 @@ export class SubOrder extends Document {
     bankingNameUser: { type: mongoose.Schema.Types.String, },
     bankingBranch: { type: mongoose.Schema.Types.String, },
     reason: { type: mongoose.Schema.Types.String, },
+    createdAt: { type: mongoose.Schema.Types.Date, },
    },default: null })
   requestRefund: {
     status: string;
@@ -88,6 +89,7 @@ export class SubOrder extends Document {
     bankingName: string;
     bankingBranch: string;
     reason: string;
+    createdAt: Date;
   };
   @Prop({
     type: String,

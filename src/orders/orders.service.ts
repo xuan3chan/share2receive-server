@@ -217,8 +217,8 @@ export class OrdersService {
         return {
           ...product.toObject(),
           rating: {
-          rating: rating?.rating || 0,
-          comment: rating?.comment || '',
+          rating: rating?.rating || null,
+          comment: rating?.comment || null,
           },
         };
         }),
@@ -623,9 +623,25 @@ export class OrdersService {
     // Đếm tổng số đơn hàng để tính phân trang
     const totalOrders = await this.subOrderModel.countDocuments(query);
 
+    // Lấy ratings cho từng subOrder
+    const mappedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const rating = await this.ratingModel.findOne({
+          targetId: order._id,
+        });
+        return {
+          ...order.toObject(),
+          rating: {
+            rating: rating?.rating || null,
+            comment: rating?.comment || null,
+          },
+        };
+      })
+    );
+
     // Trả về dữ liệu cùng với thông tin phân trang
     return {
-      data: orders,
+      data: mappedOrders,
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(totalOrders / limit),

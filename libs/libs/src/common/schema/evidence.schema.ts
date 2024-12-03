@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
     },
 )
 export class Evidence extends Document {
+  [x: string]: any;
   @Prop({ type: mongoose.Schema.Types.String })
   batchUUID: string;
   @Prop({ type: mongoose.Schema.Types.String })

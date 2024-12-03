@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Res,
   Put,
+  Query,
 } from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -129,7 +130,55 @@ export class EvidenceController {
   }
 
   @Get()
-  async getEvidenceController() {
-    return this.evidenceService.getEvidenceService();
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'filterBy',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'filterValue',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    type: String,
+  })
+  async getEvidenceController(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('filterBy') filterBy: string,
+    @Query('filterValue') filterValue: string,
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
+    
+  ) {
+    // ep kieu
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    return this.evidenceService.getEvidenceService(
+      pageNumber,
+      limitNumber,
+      filterBy,
+      filterValue,
+      sortBy,
+      sortOrder,
+    );
   }
 }

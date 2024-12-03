@@ -140,20 +140,43 @@ export class EvidenceService {
     return updatedEvidence;
   }
 
-  async getEvidenceService(): Promise<Evidence[]> {
-    const evidences = await this.evidenceModel.find().lean(); // Lấy danh sách evidence
+  async getEvidenceService(
+    page: number,
+    limit: number,
+    filterBy?: string,
+    filterValue?: string,
+    sortBy: string = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc',
+  ): Promise<{ evidences: Evidence[], pagination: { currentPage: number, totalPages: number, total: number } }> {
+    const skip = (page - 1) * limit;
 
-    const domain = process.env.DOMAIN || 'https://share2receive-server.onrender.com'; // Domain của server
-  
-    return evidences.map((evidence) => ({
+    const filter = filterBy && filterValue ? { [filterBy]: filterValue } : {};
+
+    const total = await this.evidenceModel.countDocuments(filter);
+
+    const evidences = await this.evidenceModel
+      .find(filter)
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const domain = process.env.DOMAIN || 'https://share2receive-server.onrender.com';
+
+    const formattedEvidences = evidences.map((evidence) => ({
       ...evidence,
-      fileExport: evidence.fileExport
-        ? `${domain}${evidence.fileExport}`
-        : null,
-      fileEvidence: evidence.fileEvidence
-        ? `${domain}${evidence.fileEvidence}`
-        : null,
+      fileExport: evidence.fileExport ? `${domain}${evidence.fileExport}` : null,
+      fileEvidence: evidence.fileEvidence ? `${domain}${evidence.fileEvidence}` : null,
     }));
+
+    return {
+      evidences: formattedEvidences,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        total: total,
+      },
+    };
   }
   
 }

@@ -289,7 +289,7 @@ export class ReportService {
     // if (report.isCheckded) {
     //   throw new BadRequestException('Report is already checked')
     // }
-    report.isCheckded = isChecked;
+    report.isChecked = isChecked;
     await report.save();
 
     let userIdToCheck: string | null = null;

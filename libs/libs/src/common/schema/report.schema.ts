@@ -19,7 +19,7 @@ export class Report extends Document {
   @Prop({ type: String })
   description: string;
   @Prop({ type: mongoose.Schema.Types.Boolean, default: null }) // đã kiểm tra
-  isCheckded:boolean;
+  isChecked:boolean;
   @Prop({ type: String, default: 'pending',enum:['pending','Processed'] }) // trạng thái
   status: string;
 }

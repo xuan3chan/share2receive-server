@@ -3,7 +3,11 @@ import { Document, HydratedDocument } from 'mongoose';
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
-@Schema()
+@Schema(
+    {
+        timestamps: true,
+    },
+)
 export class Evidence extends Document {
   @Prop({ type: mongoose.Schema.Types.String, required: true })
   batchUUID: string;
@@ -18,13 +22,10 @@ export class Evidence extends Document {
   type: string;
   @Prop({
     type: {
-      date: { type: mongoose.Schema.Types.Date, default: null },
       decisionBy: { type: mongoose.Schema.Types.String, default: null },
       description: { type: mongoose.Schema.Types.String, default: null },
     },
     default: {
-      approveStatus: 'pending',
-      date: null,
       description: null,
       decisionBy: null,
     },

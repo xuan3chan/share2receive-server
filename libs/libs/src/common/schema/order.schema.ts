@@ -82,7 +82,7 @@ export class SubOrder extends Document {
     reason: { type: mongoose.Schema.Types.String, },
     createdAt: { type: mongoose.Schema.Types.Date, },
     updatedAt: { type: mongoose.Schema.Types.Date,default: null },
-   },default: null,required: false })
+   },default: null })
   requestRefund: {
     status: string;
     bankingNumber: string;

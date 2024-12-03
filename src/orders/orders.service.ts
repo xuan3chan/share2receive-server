@@ -1258,7 +1258,6 @@ export class OrdersService {
         comment: rating ? rating.comment : null,
       };
     });
-
     return {
       data: mappedOrders,
       pagination: {

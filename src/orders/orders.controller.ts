@@ -252,7 +252,7 @@ export class OrdersController {
     required: false,
     type: String,
   })
-  @UseGuards(PermissionGuard)
+  // @UseGuards(PermissionGuard)
   @Subject('order')
   @Action('read')
   async getOrdersForManagerController(

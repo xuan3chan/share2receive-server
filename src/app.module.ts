@@ -26,6 +26,7 @@ import { CheckoutModule } from './checkout/checkout.module';
 import { OrdersModule } from './orders/orders.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ReportModule } from './report/report.module';
+import { EvidenceModule } from './evidence/evidence.module';
 @Module({
   imports: [
     SearchModule,
@@ -67,6 +68,7 @@ import { ReportModule } from './report/report.module';
     OrdersModule,
     TransactionModule,
     ReportModule,
+    EvidenceModule,
   ],
 })
 export class AppModule {}

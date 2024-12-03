@@ -57,7 +57,7 @@ export class OrdersController {
     return this.ordersService.cancelOrderService(orderId, userId);
   }
   @ApiTags('ManagerTran')
-  // @UseGuards(PermissionGuard)
+  @UseGuards(PermissionGuard)
   @Action('update')
   @Subject('order')
   @Patch('update-status-refund')

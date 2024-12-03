@@ -81,7 +81,8 @@ export class SubOrder extends Document {
     bankingBranch: { type: mongoose.Schema.Types.String, },
     reason: { type: mongoose.Schema.Types.String, },
     createdAt: { type: mongoose.Schema.Types.Date, },
-   },default: null })
+    updatedAt: { type: mongoose.Schema.Types.Date,default: null },
+   },default: null,required: false })
   requestRefund: {
     status: string;
     bankingNumber: string;
@@ -90,6 +91,7 @@ export class SubOrder extends Document {
     bankingBranch: string;
     reason: string;
     createdAt: Date;
+    updatedAt?: Date;
   };
   @Prop({
     type: String,

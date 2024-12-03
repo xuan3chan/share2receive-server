@@ -33,7 +33,6 @@ export class OrdersService {
     private EventGateway: EventGateway,
     private mailerService: MailerService,
     private transactionService: TransactionService,
-
   ) {}
 
   async createOrderService(userId: string): Promise<any> {
@@ -69,11 +68,11 @@ export class OrdersService {
       .find({ userId, isCheckedOut: false })
       .populate('productId') // Populate to get product info
       .populate('userId', 'address phone');
-  
+
     if (cartItems.length === 0) {
       throw new BadRequestException('Không có sản phẩm nào trong giỏ hàng!');
     }
-  
+
     const groupedBySeller = cartItems.reduce((result, item) => {
       const sellerId = (item.productId as any).userId.toString(); // sellerId of the product
       if (!result[sellerId]) {
@@ -82,7 +81,7 @@ export class OrdersService {
       result[sellerId].push(item);
       return result;
     }, {});
-  
+
     const subOrders = [];
     for (const [sellerId, items] of Object.entries(groupedBySeller) as [
       string,
@@ -101,16 +100,32 @@ export class OrdersService {
           });
         }),
       );
-  
-      const subTotal = items.reduce((sum, item) => sum + item.price * item.amount, 0);
-      
+
+      const subTotal = items.reduce(
+        (sum, item) => sum + item.price * item.amount,
+        0,
+      );
+
       const buyerAddress = (cartItems[0].userId as any).address;
-      const sellerAddress = await this.userModel.findById(items[0].productId.userId).select('address').lean();
-      const totalWeight = items.reduce((sum, item) => sum + item.productId.weight * item.amount, 0); // Calculate total weight
-      
-      const isIntraProvince = this.compareLastPartOfAddress(buyerAddress, sellerAddress.address);
-      
-      const shippingFee = this.calculateShippingFee(shippingServices['GHN'], totalWeight, isIntraProvince);
+      const sellerAddress = await this.userModel
+        .findById(items[0].productId.userId)
+        .select('address')
+        .lean();
+      const totalWeight = items.reduce(
+        (sum, item) => sum + item.productId.weight * item.amount,
+        0,
+      ); // Calculate total weight
+
+      const isIntraProvince = this.compareLastPartOfAddress(
+        buyerAddress,
+        sellerAddress.address,
+      );
+
+      const shippingFee = this.calculateShippingFee(
+        shippingServices['GHN'],
+        totalWeight,
+        isIntraProvince,
+      );
       const subOrder = await this.subOrderModel.create({
         orderId: null, // Will be updated later
         sellerId,
@@ -124,10 +139,10 @@ export class OrdersService {
         { _id: { $in: orderItems.map((item) => item._id) } },
         { $set: { subOrderId: subOrder._id } },
       );
-  
+
       subOrders.push(subOrder);
     }
-  
+
     const totalAmount = subOrders.reduce(
       (sum, subOrder) => sum + subOrder.subTotal + subOrder.shippingFee,
       0,
@@ -142,17 +157,17 @@ export class OrdersService {
       TransactionId: null,
       subOrders: subOrders.map((subOrder) => subOrder._id),
     });
-  
+
     await this.subOrderModel.updateMany(
       { _id: { $in: subOrders.map((subOrder) => subOrder._id) } },
       { $set: { orderId: order._id } },
     );
-  
+
     await this.cartModel.updateMany(
       { _id: { $in: cartItems.map((item) => item._id) } },
       { $set: { isCheckedOut: true } },
     );
-  
+
     for (const sellerId of Object.keys(groupedBySeller)) {
       const sellerItems = groupedBySeller[sellerId];
       const orderInfo = sellerItems
@@ -161,13 +176,13 @@ export class OrdersService {
             `${item.productId.productName} ${item.size} ${item.color} ${item.amount} cái`,
         )
         .join(', ');
-  
+
       const seller = await this.userModel.findById(sellerId).lean();
       const subOrder = await this.subOrderModel
         .findOne({ sellerId })
         .sort({ createdAt: -1 })
         .lean();
-  
+
       if (seller && seller.email) {
         this.mailerService.sendEmailNewOrder(
           seller.email,
@@ -175,14 +190,14 @@ export class OrdersService {
           orderInfo,
         );
       }
-  
+
       this.EventGateway.sendAuthenticatedNotification(
         sellerId,
         'Bạn có đơn hàng mới',
         'Bạn có đơn hàng mới vui lòng kiểm tra đơn bán của bạn',
       );
     }
-  
+
     return { message: 'Đơn hàng được tạo thành công!', order };
   }
 
@@ -211,56 +226,56 @@ export class OrdersService {
         ],
       })
       .populate('userId', 'firstname lastname address phone avatar email');
-  
+
     if (!order) {
       throw new BadRequestException(
         'Order not found or you do not have access to it.',
       );
     }
-  
+
     // Tính toán `summary` và thêm `ratings`
     let totalAmount = 0;
     let totalPrice = 0;
     let totalShippingFee = 0;
     const uniqueProductIds = new Set<string>();
-  
+
     const subOrdersWithRatings = await Promise.all(
       order.subOrders.map(async (subOrder: any) => {
-      totalShippingFee += subOrder.shippingFee || 0;
-    
-      const productsWithRatings = await Promise.all(
-        subOrder.products.map(async (product: any) => {
-        totalAmount += product.quantity;
-        totalPrice += product.quantity * product.price;
-    
-        if (product.productId) {
-          uniqueProductIds.add(product.productId.toString());
-        }
-    
-        // Lấy thông tin đánh giá (rating)
-        const rating = await this.ratingModel.findOne({
-          targetId: subOrder._id,
-        });
-    
-        return {
-          ...product.toObject(),
-          rating: {
-          rating: rating?.rating || null,
-          comment: rating?.comment || null,
-          },
-        };
-        }),
-      );
-  
+        totalShippingFee += subOrder.shippingFee || 0;
+
+        const productsWithRatings = await Promise.all(
+          subOrder.products.map(async (product: any) => {
+            totalAmount += product.quantity;
+            totalPrice += product.quantity * product.price;
+
+            if (product.productId) {
+              uniqueProductIds.add(product.productId.toString());
+            }
+
+            // Lấy thông tin đánh giá (rating)
+            const rating = await this.ratingModel.findOne({
+              targetId: subOrder._id,
+            });
+
+            return {
+              ...product.toObject(),
+              rating: {
+                rating: rating?.rating || null,
+                comment: rating?.comment || null,
+              },
+            };
+          }),
+        );
+
         return {
           ...subOrder.toObject(),
           products: productsWithRatings,
         };
       }),
     );
-  
+
     const totalTypes = uniqueProductIds.size;
-  
+
     return {
       data: {
         ...order.toObject(),
@@ -274,7 +289,6 @@ export class OrdersService {
       },
     };
   }
-  
 
   async updateInfoOrderService(
     orderId: string,
@@ -396,19 +410,19 @@ export class OrdersService {
     searchKey?: string,
   ): Promise<any> {
     const query: any = { userId };
-  
+
     // Lọc theo trạng thái thanh toán
     if (paymentStatus) {
       query.paymentStatus = paymentStatus;
     }
-  
+
     // Lọc theo khoảng thời gian
     if (dateFrom && dateTo) {
       const dateToObj = new Date(dateTo);
       dateToObj.setHours(23, 59, 59, 999); // Đảm bảo bao gồm hết ngày
       query.createdAt = { $gte: dateFrom, $lte: dateToObj };
     }
-  
+
     // Tìm kiếm không phân biệt dấu
     if (searchKey) {
       const normalizedSearchKey = searchKey
@@ -418,7 +432,7 @@ export class OrdersService {
         { orderUUID: { $regex: normalizedSearchKey, $options: 'i' } },
       ];
     }
-  
+
     // Lấy danh sách orders cùng subOrders và user thông qua populate
     const orders = await this.orderModel
       .find(query)
@@ -447,16 +461,18 @@ export class OrdersService {
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-  
+
     // Đếm tổng số đơn hàng
     const totalOrders = await this.orderModel.countDocuments(query);
-  
+
     // Lấy ratings cho từng subOrder
     const mappedOrders = await Promise.all(
       orders.map(async (order) => {
         const subOrdersWithRatings = await Promise.all(
           order.subOrders.map(async (subOrderId) => {
-            const subOrder = await this.subOrderModel.findById(subOrderId).lean();
+            const subOrder = await this.subOrderModel
+              .findById(subOrderId)
+              .lean();
             const rating = await this.ratingModel.findOne({
               targetId: subOrderId,
             });
@@ -465,18 +481,18 @@ export class OrdersService {
               rating: {
                 rating: rating?.rating || 0,
                 comment: rating?.comment || '',
-              }
+              },
             };
-          })
+          }),
         );
-  
+
         return {
           ...order.toObject(),
           subOrders: subOrdersWithRatings, // Cập nhật subOrders với thông tin rating
         };
-      })
+      }),
     );
-  
+
     // Trả về dữ liệu
     return {
       data: mappedOrders,
@@ -487,7 +503,6 @@ export class OrdersService {
       },
     };
   }
-  
 
   async cancelOrderService(orderId: string, userId: string): Promise<any> {
     // Tìm đơn hàng theo ID và userId
@@ -617,7 +632,6 @@ export class OrdersService {
       'subTotal',
       'status',
       'shippingFee',
-
     ]; // Các trường hợp hợp lệ cho sắp xếp
     if (!validSortFields.includes(sortBy)) {
       sortBy = 'createdAt'; // Nếu sortBy không hợp lệ, sử dụng mặc định
@@ -669,7 +683,7 @@ export class OrdersService {
             comment: rating?.comment || null,
           },
         };
-      })
+      }),
     );
 
     // Trả về dữ liệu cùng với thông tin phân trang
@@ -970,8 +984,6 @@ export class OrdersService {
       throw new BadRequestException('Dịch vụ vận chuyển không hợp lệ');
     }
 
-
-
     const addressOfBuyer = (subOrder.orderId as any).address;
     const addressOfSeller = (subOrder.sellerId as any).address;
 
@@ -1079,7 +1091,7 @@ export class OrdersService {
     // Kiểm tra trạng thái của SubOrder
     if (subOrder.status === 'canceled') {
       throw new BadRequestException(
-        'Không thể yêu cầu hoàn tiền cho SubOrder đã được giao',
+        'Không thể yêu cầu hoàn tiền cho SubOrder đã bị hủy hoặc đã gửi',
       );
     }
 
@@ -1125,8 +1137,10 @@ export class OrdersService {
     if (!subOrder) {
       throw new BadRequestException('Không tìm thấy SubOrder');
     }
-    if(subOrder.sellerId === userId){
-      throw new BadRequestException('Bạn không thể xác nhận đã nhận hàng cho đơn hàng của mình');
+    if (subOrder.sellerId === userId) {
+      throw new BadRequestException(
+        'Bạn không thể xác nhận đã nhận hàng cho đơn hàng của mình',
+      );
     }
     if (subOrder.status != 'delivered') {
       throw new BadRequestException(
@@ -1137,117 +1151,123 @@ export class OrdersService {
     await subOrder.save();
     return { message: 'Cập nhật trạng thái SubOrder thành công!', subOrder };
   }
-//manage list suborder
-async getListSubOrderForManagerService(
-  dateFrom?: Date,
-  dateTo?: Date,
-  page: number = 1,
-  limit: number = 10,
-  filterBy?: string,
-  filterValue?: string,
-  sortBy?: string,
-  sortOrder: string | 'asc' | 'desc' = 'desc',
-  searchKey?: string,
-) {
-  const query: any = {};
+  //manage list suborder
+  async getListSubOrderForManagerService(
+    dateFrom?: Date,
+    dateTo?: Date,
+    page: number = 1,
+    limit: number = 10,
+    filterBy?: string,
+    filterValue?: string,
+    sortBy?: string,
+    sortOrder: string | 'asc' | 'desc' = 'desc',
+    searchKey?: string,
+  ) {
+    const query: any = {};
 
-  // Lọc theo khoảng thời gian (nếu có)
-  if (dateFrom) {
-    query.createdAt = { $gte: dateFrom };
-  }
-  if (dateTo) {
-    const dateToObj = new Date(dateTo);
-    dateToObj.setHours(23, 59, 59, 999);
-    query.createdAt = { ...query.createdAt, $lte: dateToObj };
-  }
-
-  // Tìm kiếm theo searchKey (nếu có)
-  if (searchKey) {
-    const normalizedSearchKey = searchKey
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
-    query.$or = [
-      { subOrderUUID: { $regex: normalizedSearchKey, $options: 'i' } },
-      { 'products.productName': { $regex: normalizedSearchKey, $options: 'i' } },
-    ];
-  }
-
-  // Lọc theo filterBy và filterValue
-  if (filterBy && filterValue) {
-    const validFields = Object.keys(this.subOrderModel.schema.paths);
-    if (filterBy === 'requestRefund.status') {
-      // Xử lý riêng cho requestRefund.status
-      query['requestRefund.status'] = filterValue;
-    } else if (validFields.includes(filterBy)) {
-      query[filterBy] = filterValue;
+    // Lọc theo khoảng thời gian (nếu có)
+    if (dateFrom) {
+      query.createdAt = { $gte: dateFrom };
     }
-  }
+    if (dateTo) {
+      const dateToObj = new Date(dateTo);
+      dateToObj.setHours(23, 59, 59, 999);
+      query.createdAt = { ...query.createdAt, $lte: dateToObj };
+    }
 
-  // Xử lý sortBy động
-  const validSortFields = Object.keys(this.subOrderModel.schema.paths);
-  if (!sortBy || !validSortFields.includes(sortBy)) {
-    sortBy = 'createdAt'; // Mặc định
-  }
+    // Tìm kiếm theo searchKey (nếu có)
+    if (searchKey) {
+      const normalizedSearchKey = searchKey
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+      query.$or = [
+        { subOrderUUID: { $regex: normalizedSearchKey, $options: 'i' } },
+        {
+          'products.productName': {
+            $regex: normalizedSearchKey,
+            $options: 'i',
+          },
+        },
+      ];
+    }
 
-  // Đảm bảo sortOrder hợp lệ
-  if (sortOrder !== 'asc' && sortOrder !== 'desc') {
-    sortOrder = 'desc'; // Mặc định
-  }
+    // Lọc theo filterBy và filterValue
+    if (filterBy && filterValue) {
+      const validFields = Object.keys(this.subOrderModel.schema.paths);
+      if (filterBy === 'requestRefund.status') {
+        // Xử lý riêng cho requestRefund.status
+        query['requestRefund.status'] = filterValue;
+      } else if (validFields.includes(filterBy)) {
+        query[filterBy] = filterValue;
+      }
+    }
 
-  // Lấy danh sách đơn hàng
-  const orders = await this.subOrderModel
-    .find(query)
-    .populate({
-      path: 'orderId',
-      select: 'paymentStatus address phone createdAt',
-      populate: {
-        path: 'userId',
-        select: 'email firstname lastname',
-      },
-    })
-    .populate({
-      path: 'products',
-      model: 'OrderItem',
-      select: '-createdAt -updatedAt',
-      populate: {
-        path: 'productId',
-        model: 'Product',
-        select: 'imgUrls',
-      },
-    })
-    .populate('sellerId', 'email firstname lastname address phone')
-    .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-    .skip((page - 1) * limit)
-    .limit(limit);
+    // Xử lý sortBy động
+    const validSortFields = Object.keys(this.subOrderModel.schema.paths);
+    if (!sortBy || !validSortFields.includes(sortBy)) {
+      sortBy = 'createdAt'; // Mặc định
+    }
 
-  const totalOrders = await this.subOrderModel.countDocuments(query);
+    // Đảm bảo sortOrder hợp lệ
+    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+      sortOrder = 'desc'; // Mặc định
+    }
 
-  // Lấy đánh giá
-  const ratings = await Promise.all(
-    orders.map(async (order) => {
-      return await this.ratingModel.findOne({ targetId: order._id });
-    })
-  );
+    // Lấy danh sách đơn hàng
+    const orders = await this.subOrderModel
+      .find(query)
+      .populate({
+        path: 'orderId',
+        select: 'paymentStatus address phone createdAt',
+        populate: {
+          path: 'userId',
+          select: 'email firstname lastname',
+        },
+      })
+      .populate({
+        path: 'products',
+        model: 'OrderItem',
+        select: '-createdAt -updatedAt',
+        populate: {
+          path: 'productId',
+          model: 'Product',
+          select: 'imgUrls',
+        },
+      })
+      .populate('sellerId', 'email firstname lastname address phone')
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
 
-  const mappedOrders = orders.map((order) => {
-    const rating = ratings.find((r) => r && r.targetId.toString() === order._id.toString());
+    const totalOrders = await this.subOrderModel.countDocuments(query);
+
+    // Lấy đánh giá
+    const ratings = await Promise.all(
+      orders.map(async (order) => {
+        return await this.ratingModel.findOne({ targetId: order._id });
+      }),
+    );
+
+    const mappedOrders = orders.map((order) => {
+      const rating = ratings.find(
+        (r) => r && r.targetId.toString() === order._id.toString(),
+      );
+      return {
+        ...order.toObject(),
+        rating: rating ? rating.rating : null,
+        comment: rating ? rating.comment : null,
+      };
+    });
+
     return {
-      ...order.toObject(),
-      rating: rating ? rating.rating : null,
-      comment: rating ? rating.comment : null,
+      data: mappedOrders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalOrders / limit),
+        totalOrders,
+      },
     };
-  });
-
-  return {
-    data: mappedOrders,
-    pagination: {
-      currentPage: page,
-      totalPages: Math.ceil(totalOrders / limit),
-      totalOrders,
-    },
-  };
-}
-
+  }
 
   async updateStatusForRefunds(subOrderIds: string[], status: string) {
     // Kiểm tra trạng thái cho SubOrder đã được hoàn tiền chưa
@@ -1257,19 +1277,29 @@ async getListSubOrderForManagerService(
     });
 
     if (subOrders.length !== subOrderIds.length) {
-      throw new BadRequestException('Một hoặc nhiều SubOrder đã được hoàn tiền');
+      throw new BadRequestException(
+        'Một hoặc nhiều SubOrder đã được hoàn tiền',
+      );
     }
     // Cập nhật trạng thái hoàn tiền cho nhiều SubOrder cùng một lúc
     const result = await this.subOrderModel.updateMany(
       { _id: { $in: subOrderIds } },
-      { $set: { 'requestRefund.status': status, status: 'canceled' } }
+      {
+        $set: {
+          'requestRefund.status': status,
+          'requestRefund.updatedAt': new Date(),
+          status: 'canceled',
+        },
+      },
     );
 
     if (result.modifiedCount === 0) {
       throw new BadRequestException('Không có SubOrder nào được cập nhật');
     }
     // tim các order
-    return { message: 'Cập nhật trạng thái hoàn tiền cho các SubOrder thành công!' };
+    return {
+      message: 'Cập nhật trạng thái hoàn tiền cho các SubOrder thành công!',
+    };
   }
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.

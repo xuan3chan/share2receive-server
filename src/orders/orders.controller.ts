@@ -56,6 +56,34 @@ export class OrdersController {
     const userId = this.getUserIdFromToken(request);
     return this.ordersService.cancelOrderService(orderId, userId);
   }
+  @ApiTags('ManagerTran')
+  // @UseGuards(PermissionGuard)
+  @Action('update')
+  @Subject('order')
+  @Patch('update-status-refund')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        subOrderIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Danh sách các subOrderId cần cập nhật',
+        },
+        status: {
+          type: 'string',
+          enum: ['accepted', 'rejected'],
+          description: 'Trạng thái hoàn tiền mới',
+        },
+      },
+    },
+  })
+  async updateStatusRefundController(
+    @Body('subOrderIds') subOrderIds: string[],  // Nhận mảng subOrderId
+    @Body('status') status: string,
+  ) {
+    return this.ordersService.updateStatusForRefunds(subOrderIds, status);  // Gọi service với mảng subOrderId
+  }
 
   @Post()
   @UseGuards(MemberGuard)
@@ -355,7 +383,7 @@ export class OrdersController {
   }
 
   @Patch('update-shipping-service/:id')
-  @UseGuards(MemberGuard)
+  @UseGuards(MemberGuard)  
   async updateShippingController(
     @Param('id') subOrderId: string,
     @Body() updateShippingDto: UpdateShippingDto,
@@ -419,32 +447,5 @@ export class OrdersController {
       status,
     );
   }
-  @ApiTags('ManagerTran')
-  @UseGuards(PermissionGuard)
-  @Action('update')
-  @Subject('order')
-  @Patch('update-status-refund')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        subOrderIds: {
-          type: 'array',
-          items: { type: 'string' },
-          description: 'Danh sách các subOrderId cần cập nhật',
-        },
-        status: {
-          type: 'string',
-          enum: ['accepted', 'rejected'],
-          description: 'Trạng thái hoàn tiền mới',
-        },
-      },
-    },
-  })
-  async updateStatusRefundController(
-    @Body('subOrderIds') subOrderIds: string[],  // Nhận mảng subOrderId
-    @Body('status') status: string,
-  ) {
-    return this.ordersService.updateStatusForRefunds(subOrderIds, status);  // Gọi service với mảng subOrderId
-  }
+
 }

@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
     },
 )
 export class Evidence extends Document {
-  @Prop({ type: mongoose.Schema.Types.String, required: true })
+  @Prop({ type: mongoose.Schema.Types.String })
   batchUUID: string;
   @Prop({ type: mongoose.Schema.Types.String })
   fileExport: string;
@@ -30,7 +30,7 @@ export class Evidence extends Document {
       decisionBy: null,
     },
   })
-  approved: {
+  shall: {
     decisionBy: string;
     description: string;
     date: Date;

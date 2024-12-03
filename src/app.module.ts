@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { AdminModule } from './admin/admin.module';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -27,6 +27,7 @@ import { OrdersModule } from './orders/orders.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { ReportModule } from './report/report.module';
 import { EvidenceModule } from './evidence/evidence.module';
+import { StaticFileMiddleware } from '@app/libs/common/middleware/file.mid';
 @Module({
   imports: [
     SearchModule,
@@ -71,4 +72,8 @@ import { EvidenceModule } from './evidence/evidence.module';
     EvidenceModule,
   ],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(StaticFileMiddleware).forRoutes('*');
+  }
+}

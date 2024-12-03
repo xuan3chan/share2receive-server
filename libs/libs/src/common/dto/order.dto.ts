@@ -34,13 +34,7 @@ export class UpdateInfoOrderDto{
     @IsOptional()
     phone:string
 
-    @ApiProperty({
-        description: 'Type of the order',
-        example: 'momo_wallet',
-    })
-    @IsString()
-    @IsOptional()
-    type:string
+
 }
 
 export class CreateOrderByProductDto{

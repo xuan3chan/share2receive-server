@@ -19,6 +19,7 @@ import { JwtPayload } from 'jsonwebtoken';
 
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
   ApiOperation,
@@ -121,12 +122,22 @@ export class ReportController {
     }
 
     @Patch('check-report/:reportId')
+    @ApiBody({
+      schema: {
+        type: 'object',
+        properties: {
+          isChecked: { type: 'boolean' },
+        },
+        required: ['isChecked'],
+      },
+    })
     @UseGuards(PermissionGuard)
     @Action('check')
     @Subject('report')
     async checkReportController(
       @Param('reportId') reportId: string,
+      @Body('isCheckded') isCheckded: boolean,
     ){
-        return await this.reportService.checkReportService(reportId);
+        return await this.reportService.checkReportService(reportId,isCheckded);
     }
 }

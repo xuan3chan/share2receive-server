@@ -136,8 +136,8 @@ export class ReportController {
     @Subject('report')
     async checkReportController(
       @Param('reportId') reportId: string,
-      @Body('isCheckded') isCheckded: boolean,
+      @Body('isChecked') isChecked: boolean,
     ){
-        return await this.reportService.checkReportService(reportId,isCheckded);
+        return await this.reportService.checkReportService(reportId,isChecked);
     }
 }

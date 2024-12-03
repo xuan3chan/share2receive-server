@@ -280,7 +280,8 @@ export class ReportService {
     };
   }
 
-  async checkReportService(reportId: string,isCheckded:boolean) {
+  async checkReportService(reportId: string,isChecked:boolean) {
+    console.log('reportId',isChecked);
     const report = await this.reportModel.findById(reportId);
     if (!report) {
       throw new BadRequestException('Report not found');
@@ -288,7 +289,7 @@ export class ReportService {
     // if (report.isCheckded) {
     //   throw new BadRequestException('Report is already checked')
     // }
-    report.isCheckded = isCheckded;
+    report.isCheckded = isChecked;
     await report.save();
 
     let userIdToCheck: string | null = null;

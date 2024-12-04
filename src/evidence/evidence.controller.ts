@@ -193,4 +193,11 @@ export class EvidenceController {
       sortOrder,
     );
   }
+
+  // in ra toan bo file co trong thu muc uploads
+  @Get('all')
+  async getAllFiles(@Res() res: Response) {
+    const files = fs.readdirSync(join(__dirname, '..', 'uploads'));
+    return res.json(files);
+  }
 }

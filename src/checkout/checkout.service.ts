@@ -437,6 +437,7 @@ export class CheckoutService {
         partnerCode: 'MOMO',
         redirectUrl: 'https://share2receive-client.vercel.app/', // URL redirect sau khi thanh toán
         ipnUrl:
+          process.env.MOMO_IPN_URL ||
           'https://share2receive-server.onrender.com/api/checkout/callback/momo', // URL callback
         requestType: 'payWithMethod',
         lang: 'vi',

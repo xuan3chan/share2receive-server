@@ -34,7 +34,19 @@ export class WalletService implements OnModuleInit {
             throw new Error(`Error adding points: ${error.message}`);
         }
     }
-
+    // Lấy thông tin ví của người dùng
+    async getWalletService(userId: string): Promise<WalletDocument> {
+        try {
+            // Kiểm tra ví người dùng
+            const wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) }).lean();
+            if (!wallet) {
+                throw new Error('Wallet not found');
+            }
+            return wallet;
+        } catch (error) {
+            throw new Error(`Error retrieving wallet: ${error.message}`);
+        }
+    }
     // Kiểm tra ví của người dùng, tạo mới nếu chưa tồn tại
     async checkWallet(userId: string): Promise<WalletDocument> {
         try {

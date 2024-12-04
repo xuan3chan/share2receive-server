@@ -5,8 +5,11 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Admin, AdminSchema, Evidence, EvidenceSchema } from '@app/libs/common/schema';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AbilityFactory } from '@app/libs/common/abilities';
+import { AdminModule } from 'src/admin/admin.module';
 @Module({
   imports:[
+    AdminModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // Thư mục chứa file
       serveRoot: '/files', // URL để truy cập file
@@ -16,6 +19,6 @@ import { join } from 'path';
     {name:Admin.name,schema:AdminSchema},
   ]),],
   controllers: [EvidenceController],
-  providers: [EvidenceService],
+  providers: [EvidenceService,AbilityFactory],
 })
 export class EvidenceModule {}

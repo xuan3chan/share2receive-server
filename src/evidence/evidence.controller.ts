@@ -12,6 +12,7 @@ import {
   Res,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -22,6 +23,8 @@ import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { join } from 'path';
+import { PermissionGuard } from '@app/libs/common/gaurd';
+import { Action, Subject } from '@app/libs/common/decorator';
 @ApiTags('Evidence')
 @Controller('evidence')
 export class EvidenceController {
@@ -41,7 +44,10 @@ export class EvidenceController {
       throw new UnauthorizedException('Invalid or expired token');
     }
   }
-  @Post('upload') // Đường dẫn phù hợp
+  @Post() // Đường dẫn phù hợp
+  @UseGuards(PermissionGuard) // Sử dụng guard
+  @Action('create')
+  @Subject('evidence')
   @ApiConsumes('multipart/form-data') // Khai báo rằng endpoint này nhận multipart data
   @ApiBody({
     schema: {
@@ -94,6 +100,9 @@ export class EvidenceController {
     res.sendFile(filePath);
   }
   @Put(':evidenceId')
+  @UseGuards(PermissionGuard) // Sử dụng guard
+  @Action('update')
+  @Subject('evidence')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -130,6 +139,9 @@ export class EvidenceController {
   }
 
   @Get()
+  @UseGuards(PermissionGuard) // Sử dụng guard
+  @Action('read')
+  @Subject('evidence')
   @ApiQuery({
     name: 'page',
     required: false,

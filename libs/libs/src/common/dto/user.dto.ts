@@ -134,8 +134,6 @@ export class UpdateUserProfileDto {
   @IsString()
   @MaxLength(20)
   @MinLength(2)
-  // @Matches(/^[a-zA-Z\s]*$/, {
-  //   message: 'Firstname must contain only letters and spaces',
   @IsOptional()
   firstname?: string;
 
@@ -192,8 +190,40 @@ export class UpdateUserProfileDto {
   @IsOptional()
   @MaxLength(1000)
   description?: string;
-}
 
+  @ApiProperty({
+    description: 'Banking number of user',
+    example: '123456789',
+  })
+  @IsString()
+  @IsOptional()
+  bankingNumber?: string;
+
+  @ApiProperty({
+    description: 'Banking name of user',
+    example: 'Vietcombank',
+  })
+  @IsString()
+  @IsOptional()
+  bankingName?: string;
+
+  @ApiProperty({
+    description: 'Name of the banking user',
+    example: 'Nguyen Van A',
+  })
+  @IsString()
+  @IsOptional()
+  bankingNameUser?: string;
+
+  @ApiProperty({
+    description: 'Branch of the banking user',
+    example: 'Ho Chi Minh City',
+  })
+  @IsString()
+  @IsOptional()
+  bankingBranch?: string;
+
+}
 
   export class DeleteUserDto {
     

@@ -196,6 +196,24 @@
     "namePermission": "warningReport",
     "action": "warning",
     "subject": "report"
+  },
+  {
+    "id":37,
+    "namePermission": "createEvident",
+    "action": "create",
+    "subject": "evident"
+  },
+  {
+    "id":38,
+    "namePermission": "readEvident",
+    "action": "read",
+    "subject": "evident"
+  },
+  {
+    "id":39,
+    "namePermission": "updateEvident",
+    "action": "update",
+    "subject": "evident"
   }
 
 ]

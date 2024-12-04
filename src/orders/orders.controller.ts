@@ -346,7 +346,79 @@ export class OrdersController {
       searchKey,
     );
   }
-
+  @Get('get-payment-for-seller')
+  @UseGuards(MemberGuard)
+  async getPaymentForSellerController(
+    @Req() request: Request,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.ordersService.getPaymentSummaryForSellerService(userId);
+  }
+  @ApiTags('ManagerTran')
+  @Get('get-payment-for-manager')
+  // @UseGuards(PermissionGuard)
+  // @Subject('order')
+  // @Action('read')
+  @ApiQuery({
+    name: 'dateFrom',
+    required: false,
+    type: String,
+    example: '2024-11-01', // Định dạng chuẩn ISO
+  })
+  @ApiQuery({
+    name: 'dateTo',
+    required: false,
+    type: String,
+    example: '2024-11-30', // Định dạng chuẩn ISO
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    type: String,
+    enum: ['asc', 'desc'], // Giới hạn giá trị hợp lệ
+  })
+  @ApiQuery({
+    name: 'payProcessStatus',
+    required: false,
+    type: String,
+    enum: ['pending', 'processing', 'completed'], // Giới hạn giá trị hợp lệ
+  })
+  async getPaymentForManagerController(
+    @Query('dateFrom') dateFrom: Date,
+    @Query('dateTo') dateTo: Date,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('sortBy') sortBy: string,
+    @Query('sortOrder') sortOrder: string,
+    @Query('payProcessStatus') payProcessStatus: string,
+  ) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    return this.ordersService.getPaymentSummaryListForAdminService(
+      dateFrom,
+      dateTo,
+      pageNumber,
+      limitNumber,
+      sortBy,
+      sortOrder,
+      payProcessStatus,
+    );
+  }
   @Get(':id')
   @UseGuards(MemberGuard)
   async getOrderController(
@@ -447,5 +519,6 @@ export class OrdersController {
       status,
     );
   }
+
 
 }

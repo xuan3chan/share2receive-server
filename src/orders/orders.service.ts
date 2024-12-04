@@ -1300,6 +1300,114 @@ export class OrdersService {
       message: 'Cập nhật trạng thái hoàn tiền cho các SubOrder thành công!',
     };
   }
+  // xem tổng hợp thanh toán theo tháng của các nhà bán hàng từ subOrder
+  async getPaymentSummaryForSellerService(
+    sellerId: string,
+    
+  ) {
+    // Tìm các SubOrder của sellerId trong khoảng thời gian từ dateFrom đến dateTo
+    const subOrders = await this.subOrderModel.find({
+      sellerId,
+      status: 'completed',
+      payProcessStatus: 'pending',
+    }).populate({
+      path: 'orderId',
+      match: { paymentStatus: 'paid' },
+    }).exec();
+
+    // Filter out subOrders where orderId is null (i.e., paymentStatus did not match)
+    const filteredSubOrders = subOrders.filter(subOrder => subOrder.orderId);
+    // Tính tổng số tiền đã thanh toán và hoàn tiền
+    const totalPaid = subOrders.reduce(
+      (total, subOrder) => {
+      if (!subOrder.requestRefund || subOrder.requestRefund.status !== 'refunded') {
+        return total + subOrder.subTotal + subOrder.shippingFee;
+      }
+      return total;
+      },
+      0,
+    );
+
+    const totalRefunded = subOrders.reduce((total, subOrder) => {
+      if (subOrder.requestRefund && subOrder.requestRefund.status === 'refunded') {
+      return total + subOrder.subTotal + subOrder.shippingFee;
+      }
+      return total;
+    }, 0);
+
+    return {
+      totalPaid,
+      totalRefunded,
+    };
+  }
+
+  // xem danh sách tổng hợp thanh toán theo tháng của các nhà bán hàng từ subOrder
+  async getPaymentSummaryListForAdminService(
+    dateFrom?: Date,
+    dateTo?: Date,
+    page: number = 1,
+    limit: number = 10,
+    sortBy: string = 'createdAt',
+    sortOrder: string|'asc' | 'desc' = 'desc',
+    payProcessStatus :string = 'pending',
+  ) {
+    const query: any = { status: 'completed', payProcessStatus: payProcessStatus };
+
+    if (dateFrom) {
+      query.createdAt = { $gte: dateFrom };
+    }
+    if (dateTo) {
+      const dateToObj = new Date(dateTo);
+      dateToObj.setHours(23, 59, 59, 999);
+      query.createdAt = { ...query.createdAt, $lte: dateToObj };
+    }
+    console.log(query);
+    const subOrders = await this.subOrderModel
+      .find(query)
+      .populate({
+        path: 'orderId',
+        match: { paymentStatus: 'paid' },
+      })
+      .populate('sellerId', 'firstname lastname email banking phone')
+      .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
+       console.log(subOrders);
+    const filteredSubOrders = subOrders.filter(subOrder => subOrder.orderId);
+
+    const totalSubOrders = filteredSubOrders.length;
+
+    const paymentSummary = filteredSubOrders.reduce((summary, subOrder) => {
+      const sellerId = (subOrder.sellerId as any)._id.toString();
+      if (!summary[sellerId]) {
+        summary[sellerId] = {
+          seller: subOrder.sellerId,
+          totalPaid: 0,
+          totalRefunded: 0,
+          subOrdersPaid: [],
+          subOrdersRefunded: [],
+        };
+      }
+      if (!subOrder.requestRefund || subOrder.requestRefund.status !== 'refunded') {
+        summary[sellerId].totalPaid += subOrder.subTotal + subOrder.shippingFee;
+        summary[sellerId].subOrdersPaid.push(subOrder.subOrderUUID);
+      } else {
+        summary[sellerId].totalRefunded += subOrder.subTotal + subOrder.shippingFee;
+        summary[sellerId].subOrdersRefunded.push(subOrder.subOrderUUID);
+      }
+      return summary;
+    }, {});
+
+    return {
+      data: Object.values(paymentSummary),
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalSubOrders / limit),
+        totalSubOrders,
+      },
+    };
+  }
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.
    */

@@ -196,21 +196,36 @@ export class UsersService {
 
   async updateUserProfileService(
     _id: string,
-    updateUserProfileDto: UpdateUserProfileDto, // DTO chứa cả userStyle và các thuộc tính khác
+    updateUserProfileDto: UpdateUserProfileDto,
   ): Promise<User> {
+    const { bankingNumber, bankingName, bankingNameUser, bankingBranch, ...otherUpdates } = updateUserProfileDto;
+  
     const updatedUser = await this.userModel
       .findOneAndUpdate(
         { _id }, // Tìm theo _id của người dùng
         {
           $set: {
-            ...updateUserProfileDto, // Cập nhật các thuộc tính ngoài userStyle
+            ...otherUpdates, // Cập nhật các thuộc tính khác ngoài banking
+            ...(bankingNumber || bankingName || bankingNameUser || bankingBranch
+              ? {
+                  banking: {
+                    bankingNumber,
+                    bankingName,
+                    bankingNameUser,
+                    bankingBranch,
+                  },
+                }
+              : {}), // Cập nhật banking nếu có dữ liệu
           },
         },
-        { new: true }, // Trả về tài liệu đã được cập nhật
+        { new: true, upsert: false } // Trả về tài liệu đã được cập nhật
       )
       .exec();
+  
     return updatedUser;
   }
+  
+  
 
   async updateUserStyleService(
     _id: string,

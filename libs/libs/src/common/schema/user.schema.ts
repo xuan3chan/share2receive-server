@@ -105,6 +105,19 @@ export class User extends Document {
   @Prop({ type: mongoose.Schema.Types.Number, default: 0 })
   numberOfRating: number;
   
+  @Prop({ 
+    type:{
+    bankingNumber: { type: mongoose.Schema.Types.String, },
+    bankingName: { type: mongoose.Schema.Types.String, },
+    bankingNameUser: { type: mongoose.Schema.Types.String, },
+    bankingBranch: { type: mongoose.Schema.Types.String, },
+   },default: null })
+  banking: {
+    bankingNumber: string;
+    bankingNameUser: string;
+    bankingName: string;
+    bankingBranch: string;
+  };
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

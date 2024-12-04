@@ -89,4 +89,11 @@ export class RatingController {
     return this.ratingService.getRatingForSaleService(userId, targetId);
   }
 
+  @Get('get-list-rating-of-user')
+  @ApiOperation({ summary: 'Get list rating of user' })
+  async getAllRatingController(
+    @Query('userId') userId: string,
+  ) {
+    return this.ratingService.getAllRatingService(userId);
+  }
 }

@@ -356,9 +356,9 @@ export class OrdersController {
   }
   @ApiTags('ManagerTran')
   @Get('get-payment-for-manager')
-  // @UseGuards(PermissionGuard)
-  // @Subject('order')
-  // @Action('read')
+  @UseGuards(PermissionGuard)
+  @Subject('order')
+  @Action('read')
   @ApiQuery({
     name: 'dateFrom',
     required: false,
@@ -431,9 +431,9 @@ export class OrdersController {
   
   @ApiTags('ManagerTran')
   @Patch('update-pay-process-manager')
-  // @UseGuards(PermissionGuard)
-  // @Subject('order')
-  // @Action('update')
+  @UseGuards(PermissionGuard)
+  @Subject('order')
+  @Action('update')
   @ApiBody({
     schema: {
       type: 'object',

@@ -70,4 +70,17 @@ export class TransactionController {
       search,
     )
   }
+
+  @Get('get-list-transaction')
+  @UseGuards(MemberGuard)
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  async getListTransaction(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Req() request: Request,
+  ) {
+    const userId = this.getUserIdFromToken(request);
+    return this.transactionService.getAllTranOfUser(userId, page, limit);
+  }
 }

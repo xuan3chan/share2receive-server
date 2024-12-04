@@ -7,11 +7,8 @@ export class Wallet extends Document {
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true })
     userId: mongoose.Schema.Types.ObjectId;
 
-    @Prop({ type: mongoose.Schema, default: 0 })
-    balance: number;
-
-    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' }], default: [] })
-    transactions: mongoose.Schema.Types.ObjectId[];  // Array of transaction references
+    @Prop({ type: mongoose.Schema.Types.Number, default: 0 })
+    point: number;
 }
 
 export type WalletDocument = HydratedDocument<Wallet>;

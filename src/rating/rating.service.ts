@@ -38,6 +38,7 @@ export class RatingService {
           targetId,
           targetType,
           rating,
+          targetUserId: subOrder.sellerId,
           comment,
         });
         const user = await this.userModel.findById(subOrder.sellerId) as  UserDocument;
@@ -96,6 +97,7 @@ export class RatingService {
           userId,
           targetId,
           targetType,
+          targetUserId: ratedUserId,
           rating,
           comment,
         });
@@ -196,5 +198,12 @@ export class RatingService {
       ...rating.toObject(),
       seller,
     };
+  }
+  // get all rating of user
+  async getAllRatingService(userId: string): Promise<RatingDocument[]> {
+    return this.ratingModel.find
+    ({
+      targetUserId: userId,
+    }).lean();
   }
 }

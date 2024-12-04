@@ -6,13 +6,14 @@ import {
   UnauthorizedException,
   UseGuards,
   Get,
+  Body,
 } from '@nestjs/common';
 import { CheckoutService } from './checkout.service';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { MemberGuard } from '@app/libs/common/gaurd';
-import { ApiBadRequestResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBody, ApiTags } from '@nestjs/swagger';
 import { IMomoPaymentResponse } from '@app/libs/common/interface';
 
 @ApiTags('Checkout')
@@ -81,5 +82,24 @@ export class CheckoutController {
     }
   }
 
+  @Post('momo-point')
+  @ApiBody({ schema: { example: { point: 100 } } })
+  @UseGuards(MemberGuard)
+  @ApiBadRequestResponse({ description: 'Thanh toán với MoMo thất bại.' })
+  async momoPaymentPointController(
+    @Req() request: Request,
+    @Body('point') point: number,
+  ) {
+    try {
+      const userId = this.getUserIdFromToken(request);
+      const result = await this.checkoutService.momoPaymentPoint(userId, point);
+      return {
+        message: 'Thanh toán với MoMo được tạo thành công.',
+        ...result,
+      };
+    } catch (error) {
+      return { message: error.message };
+    }
+  }
 
 }

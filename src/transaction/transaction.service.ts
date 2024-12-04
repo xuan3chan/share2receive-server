@@ -15,9 +15,9 @@ export class TransactionService {
   ) {}
 
   async saveTransaction(
-    orderS2RId: string,
     userId: string,
     data: IMomoPaymentResponse,
+    orderS2RId?: string,
   ): Promise<Transaction> {
     try {
       console.log(`Saving transaction for user ${userId}`);
@@ -295,5 +295,30 @@ export class TransactionService {
       },
     };
      
+  }
+  async getAllTranOfUser(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const transactions = await this.transactionModel
+      .find({ userId })
+      .select('transId amount orderInfo orderType payType createdAt')
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    const totalTransactions = await this.transactionModel.countDocuments({ userId });
+    const totalPages = Math.ceil(totalTransactions / limit);
+
+    return {
+      total: totalTransactions,
+      data: transactions,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalTransactions,
+      },
+    };
   }
 }

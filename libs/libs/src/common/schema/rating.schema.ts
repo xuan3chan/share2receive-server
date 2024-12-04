@@ -13,6 +13,8 @@ import {RatingTypeE} from '@app/libs/common/enum/rating-type.enum';
     @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
     targetId: string; // Đây là ID của Product hoặc Exchange
   
+    @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+    targetUserId:string
     @Prop({ type: String, enum:RatingTypeE , required: true })
     targetType: string;
   

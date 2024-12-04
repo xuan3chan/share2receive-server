@@ -1419,12 +1419,12 @@ export class OrdersService {
     }
 
     // Cập nhật trạng thái thanh toán cho tất cả các SubOrder
-    await this.subOrderModel.updateMany(
-      { _id: { $in: subOrderIds } },
+    const updateSub = await this.subOrderModel.updateMany(
+      { subOrderUUID: { $in: subOrderIds } },
       { $set: { payProcessStatus } },
     );
 
-    return { message: 'Cập nhật trạng thái thanh toán thành công!', subOrders };
+    return { message: 'Cập nhật trạng thái thanh toán thành công!', updateSub };
   }
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.

@@ -428,7 +428,38 @@ export class OrdersController {
     const userId = this.getUserIdFromToken(request);
     return this.ordersService.getOrdersService(orderId, userId);
   }
-
+  
+  @ApiTags('ManagerTran')
+  @Patch('update-pay-process-manager')
+  // @UseGuards(PermissionGuard)
+  // @Subject('order')
+  // @Action('update')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        subOrderIds: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Danh sách các subOrderId cần cập nhật',
+        },
+        payProcessStatus: {
+          type: 'string',
+          enum: ['pending', 'processing', 'completed'],
+          description: 'Trạng thái xử lý thanh toán mới',
+        },
+      },
+    },
+  })
+  async updatePayProcessManagerController(
+    @Body('subOrderIds') subOrderIds: string[],
+    @Body('payProcessStatus') payProcessStatus: string,
+  ) {
+    return this.ordersService.updatePayprocessStatusService(
+      subOrderIds,
+      payProcessStatus,
+    );
+  }
   @Put('request-refund/:subOrderId')
   @UseGuards(MemberGuard)
   async requestRefundController(
@@ -437,7 +468,7 @@ export class OrdersController {
   ) {
     return this.ordersService.requestRefundService(subOrderId, requestRefundDto);
   }
-
+  
   @Patch(':id')
   @UseGuards(MemberGuard)
   async updateOrderController(
@@ -519,6 +550,7 @@ export class OrdersController {
       status,
     );
   }
-
+  
+  
 
 }

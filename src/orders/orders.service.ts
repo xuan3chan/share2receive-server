@@ -1408,6 +1408,24 @@ export class OrdersService {
       },
     };
   }
+  async updatePayprocessStatusService(
+    subOrderIds: string[],
+    payProcessStatus: string,
+  ): Promise<any> {
+    // Tìm các SubOrder theo subOrderIds
+    const subOrders = await this.subOrderModel.find({ subOrderUUID: { $in: subOrderIds } });
+    if (subOrders.length === 0) {
+      throw new BadRequestException('Không tìm thấy SubOrder nào');
+    }
+
+    // Cập nhật trạng thái thanh toán cho tất cả các SubOrder
+    await this.subOrderModel.updateMany(
+      { _id: { $in: subOrderIds } },
+      { $set: { payProcessStatus } },
+    );
+
+    return { message: 'Cập nhật trạng thái thanh toán thành công!', subOrders };
+  }
   /**
    * Hàm so sánh tỉnh/thành phố của hai địa chỉ.
    */

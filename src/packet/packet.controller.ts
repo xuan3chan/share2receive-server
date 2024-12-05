@@ -41,15 +41,6 @@ export class PacketController {
     return this.packetService.deletePacketService(packetId);
   }
 
-  @Get(':packetId')
-  @UseGuards(PermissionGuard)
-  @Subject('packet')
-  @Action('read')
-  async getPacketController(
-    @Param() packetId: string,
-  ) {
-    return this.packetService.getPacketService(packetId);
-  }
 
   @Get()
   @UseGuards(PermissionGuard)

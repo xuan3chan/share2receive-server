@@ -7,3 +7,4 @@ export * from './exchange.dto';
 export * from './rating.dto';
 export * from './report.dto';
 export * from './evidence.dto';
+export * from './packet.dto';

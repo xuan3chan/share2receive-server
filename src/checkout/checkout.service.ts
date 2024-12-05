@@ -7,7 +7,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Order, OrderItem, Product, SubOrder, User, UserDocument, Wallet, WalletDocument } from '@app/libs/common/schema';
+import { Order, OrderItem, Packet, Product, SubOrder, User, UserDocument, Wallet, WalletDocument } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { IMomoPaymentResponse } from '@app/libs/common/interface';
 import { TransactionService } from 'src/transaction/transaction.service';
@@ -21,7 +21,7 @@ export class CheckoutService {
     @InjectModel(SubOrder.name) private subOrderModel: Model<SubOrder>,
     @InjectModel(OrderItem.name) private orderItemModel: Model<OrderItem>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
+    @InjectModel(Packet.name) private packetModel: Model<Packet>,
     private transactionService: TransactionService,
     private walletService: WalletService,
   ) {
@@ -311,7 +311,32 @@ export class CheckoutService {
         console.error('Nạp tiền vào ví thất bại:', body.message);
         throw new BadRequestException(body.message);
       }
+    }else if (orderInfo.includes('Thanh toán gói nạp')) {
+      if (body.resultCode === 0) {
+        console.log('Thanh toán gói nạp thành công:', body.orderId);
+        
+        // Lưu giao dịch vào cơ sở dữ liệu
+        await this.transactionService.saveTransaction(body.extraData, body);
+        
+        // Trích xuất số điểm nạp từ orderInfo
+        const pointsMatch = orderInfo.match(/với điểm (\d+)/);
+        if (pointsMatch && pointsMatch[1]) {
+          const pointsToAdd = parseInt(pointsMatch[1], 10);
+          console.log(`Số điểm nạp: ${pointsToAdd}`);
+          
+          // Thêm điểm vào ví người dùng
+          await this.walletService.addPointService(body.extraData, pointsToAdd);
+        } else {
+          console.error('Không tìm thấy số điểm trong orderInfo:', orderInfo);
+          throw new BadRequestException('Không tìm thấy thông tin số điểm trong giao dịch');
+        }
+      } else {
+        console.error('Thanh toán gói nạp thất bại:', body.message);
+        throw new BadRequestException(body.message);
+      }
     }
+    
+    
 
 
     return { message: 'Callback từ MoMo đã được xử lý thành công.' };
@@ -549,4 +574,122 @@ export class CheckoutService {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+async checkoutPacketService(userId: string, packetId: string): Promise<any> {
+  const packet = await this.packetModel.findById(packetId).lean();
+  if (!packet) {
+    throw new BadRequestException('Gói không tồn tại!');
+  }
+
+  
+  const amount = packet.price;
+  const pointsToAdd = amount / 1000 + packet.promotionPoint;
+  const config = {
+    accessKey: 'F8BBA842ECF85',
+    secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
+    partnerCode: 'MOMO',
+    redirectUrl: 'https://share2receive-client.vercel.app/',
+    ipnUrl:
+      process.env.MOMO_IPN_URL ||
+      'https://share2receive-server.onrender.com/api/checkout/callback/momo',
+    requestType: 'payWithMethod',
+    lang: 'vi',
+  };
+
+  const nameUser = await this.userModel.findById(userId).select('firstname lastname').lean();
+  const orderInfo = `Thanh toán gói nạp ${packet.name} với điểm ${pointsToAdd}  vào ví của người dùng ${nameUser.firstname} ${nameUser.lastname}`;
+  const extraData = userId;
+  const autoCapture = true;
+
+  const orderId = config.partnerCode + new Date().getTime();
+  const requestId = orderId;
+
+  const rawSignature = [
+    `accessKey=${config.accessKey}`,
+    `amount=${amount}`,
+    `extraData=${extraData}`,
+    `ipnUrl=${config.ipnUrl}`,
+    `orderId=${orderId}`,
+    `orderInfo=${orderInfo}`,
+    `partnerCode=${config.partnerCode}`,
+    `redirectUrl=${config.redirectUrl}`,
+    `requestId=${requestId}`,
+    `requestType=${config.requestType}`,
+  ].join('&');
+
+  const signature = crypto
+    .createHmac('sha256', config.secretKey)
+    .update(rawSignature)
+    .digest('hex');
+
+  const requestBody = JSON.stringify({
+    partnerCode: config.partnerCode,
+    partnerName: 'Share2Receive',
+    storeId: 'MomoStore',
+    requestId,
+    amount,
+    orderId,
+    orderInfo,
+    redirectUrl: config.redirectUrl,
+    ipnUrl: config.ipnUrl,
+    lang: config.lang,
+    requestType: config.requestType,
+    autoCapture,
+    extraData,
+    signature,
+  });
+
+  const options = {
+    hostname: 'test-payment.momo.vn',
+    port: 443,
+    path: '/v2/gateway/api/create',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(requestBody),
+    },
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const response = JSON.parse(data);
+          if (response.resultCode === 0) {
+            resolve({ response });
+          } else {
+            reject(
+              new BadRequestException(
+                `Lỗi khi tạo thanh toán: ${response.message}`,
+              ),
+            );
+          }
+        } catch (error) {
+          reject(
+            new BadRequestException(
+              'Không thể phân tích phản hồi từ MoMo.',
+            ),
+          );
+        }
+      });
+    });
+
+    req.on('error', (e) => {
+      reject(
+        new InternalServerErrorException(
+          `Lỗi kết nối đến MoMo: ${e.message}`,
+        ),
+      );
+    });
+
+    req.write(requestBody);
+    req.end();
+  });
+}
 }

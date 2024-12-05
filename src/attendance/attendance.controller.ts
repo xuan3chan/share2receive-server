@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Post, Query, Req, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
+import { MemberGuard } from '@app/libs/common/gaurd';
 @ApiTags('Attendance')
 @Controller('attendance')
 export class AttendanceController {
@@ -26,6 +27,7 @@ export class AttendanceController {
     }
   }
   @Post()
+  @UseGuards(MemberGuard)
   @ApiBody(
     {
       schema:{
@@ -47,15 +49,11 @@ export class AttendanceController {
   }
 
   @Get('get-attendance')
-  @ApiQuery({ name: 'moth', required: true })
-  @ApiQuery({ name: 'year', required: true })
+  @UseGuards(MemberGuard)
   async getAttendanceController(
     @Req() request: Request,
-    @Query('moth') month: number,
-    @Query('year') year: number,
   ) {
     const userId = this.getUserIdFromToken(request);
-    return this.attendanceService.getWeeklyAttendanceService(userId,month,year);
+    return this.attendanceService.getWeeklyAttendanceService(userId);
   }
-  
 }

@@ -54,7 +54,7 @@ export class WalletService implements OnModuleInit {
             if (!wallet) {
                 wallet = new this.walletModel({
                     userId: new mongoose.Types.ObjectId(userId),
-                    point: 0,
+                    point: 50,
                 });
                 await wallet.save();
             }

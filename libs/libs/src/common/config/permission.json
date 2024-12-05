@@ -214,6 +214,33 @@
     "namePermission": "updateEvident",
     "action": "update",
     "subject": "evident"
+  },
+  {
+    "id":40,
+    "namePermission": "createPacket",
+    "action": "create",
+    "subject": "packet"
+  },
+  {
+    "id":41,
+    "namePermission": "readPacket",
+    "action": "read",
+    "subject": "packet"
+  },
+  {
+    "id":42,
+    "namePermission": "updatePacket",
+    "action": "update",
+    "subject": "packet"
+  },
+  {
+    "id":43,
+    "namePermission": "deletePacket",
+    "action": "delete",
+    "subject": "packet"
+  },
+  {
+    
   }
 
 ]

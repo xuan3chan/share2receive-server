@@ -101,5 +101,24 @@ export class CheckoutController {
       return { message: error.message };
     }
   }
-
+  @Post('momo-packet-point')
+  @ApiBody({ schema: { example: { packetId: '67514010014b30bb84740c3b' } } })
+  @UseGuards(MemberGuard)
+  @ApiBadRequestResponse({ description: 'Thanh toán với MoMo thất bại.' })
+  async checkoutPacketController(
+    @Req() request: Request,
+    @Body('packetId') packetId: string,
+  ) {
+    try {
+      const userId = this.getUserIdFromToken(request);
+      const result = await this.checkoutService.checkoutPacketService(userId, packetId);
+      return {
+        message: 'Thanh toán với MoMo được tạo thành công.',
+        ...result,
+      };
+    } catch (error) {
+      return { message: error.message };
+    }
+  }
+  
 }

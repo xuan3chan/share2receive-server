@@ -16,3 +16,4 @@ export * from './transaction.schema';
 export * from './report.schema';
 export * from './evidence.schema';
 export * from './attendance.schema';
+export * from './packet.schema';

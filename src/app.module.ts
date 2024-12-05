@@ -29,6 +29,7 @@ import { ReportModule } from './report/report.module';
 import { EvidenceModule } from './evidence/evidence.module';
 import { StaticFileMiddleware } from '@app/libs/common/middleware/file.mid';
 import { AttendanceModule } from './attendance/attendance.module';
+import { PacketModule } from './packet/packet.module';
 @Module({
   imports: [
     SearchModule,
@@ -72,6 +73,7 @@ import { AttendanceModule } from './attendance/attendance.module';
     ReportModule,
     EvidenceModule,
     AttendanceModule,
+    PacketModule,
   ],
 })
 export class AppModule {

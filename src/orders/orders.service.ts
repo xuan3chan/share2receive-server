@@ -1316,7 +1316,6 @@ export class OrdersService {
     }).exec();
 
     // Filter out subOrders where orderId is null (i.e., paymentStatus did not match)
-    const filteredSubOrders = subOrders.filter(subOrder => subOrder.orderId);
     // Tính tổng số tiền đã thanh toán và hoàn tiền
     const totalPaid = subOrders.reduce(
       (total, subOrder) => {

@@ -8,8 +8,7 @@ export class DropboxService {
 
   constructor() {
     // Khởi tạo Dropbox API với access token của bạn
-    const accessToken =
-      'sl.CCAJJzjRs-VFpl5F0l_nhU8UKQjbA6LzdjIJLfDT0G9WUFsN6Umz7KQuZuFQ8STAMI-8a-0fsCq-p1NMMXFoxB7drDm6nY87oHac6hashWdT0LtD6KIQDANIGri1tIfg6eaHiIkf83fs6DU'; // Lấy token từ OAuth hoặc từ cấu hình
+    const accessToken = process.env.DROPBOX_ACCESS_TOKEN;
     this.dropbox = new Dropbox({ accessToken, fetch });
   }
 

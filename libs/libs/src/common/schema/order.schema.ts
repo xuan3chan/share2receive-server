@@ -30,7 +30,7 @@ export class Order extends Document {
   transactionId: string; // Mã giao dịch từ MoMo
   @Prop({
     type: mongoose.Schema.Types.String,
-    enum: ['momo_wallet', 'agreement'],
+    enum: ['momo_wallet', 'agreement','point_wallet'],
     default: 'momo_wallet',
   })
   type: string; // Loại đơn hàng (momo_wallet, etc.)

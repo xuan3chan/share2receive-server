@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Wallet, WalletDocument } from '@app/libs/common/schema';
@@ -34,17 +34,37 @@ export class WalletService implements OnModuleInit {
             throw new Error(`Error adding points: ${error.message}`);
         }
     }
+    async deductPointService(userId: string, amount: number): Promise<WalletDocument> {
+        try {
+            // Kiểm tra
+            const wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+            if (!wallet) {
+                throw new Error('Wallet not found');
+            }
+            // Kiểm tra số điểm còn lại
+            if (wallet.point < amount) {
+                throw new Error('Not enough points');
+            }
+            // Trừ điểm
+            wallet.point -= amount;
+            // Lưu lại vào cơ sở dữ liệu
+            await wallet.save();
+            return wallet;
+        } catch (error) {
+            throw new BadRequestException(`Error deducting points: ${error.message}`);
+        }
+    }
     // Lấy thông tin ví của người dùng
     async getWalletService(userId: string): Promise<WalletDocument> {
         try {
             // Kiểm tra ví người dùng
             const wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) }).lean();
             if (!wallet) {
-                throw new Error('Wallet not found');
+                throw new BadRequestException('Wallet not found');
             }
             return wallet;
         } catch (error) {
-            throw new Error(`Error retrieving wallet: ${error.message}`);
+            throw new BadRequestException(`Error retrieving wallet: ${error.message}`);
         }
     }
     // Kiểm tra ví của người dùng, tạo mới nếu chưa tồn tại
@@ -60,7 +80,7 @@ export class WalletService implements OnModuleInit {
             }
             return wallet;
         } catch (error) {
-            throw new Error(`Error checking wallet: ${error.message}`);
+            throw new BadRequestException(`Error checking wallet: ${error.message}`);
         }
     }
 
@@ -83,7 +103,7 @@ export class WalletService implements OnModuleInit {
                 }
             }
         } catch (error) {
-            throw new Error(`Error initializing wallets for all users: ${error.message}`);
+            throw new BadRequestException(`Error initializing wallets for all users: ${error.message}`);
         }
     }
 }

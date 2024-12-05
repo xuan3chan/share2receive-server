@@ -83,22 +83,7 @@ export class EvidenceController {
       description,
     ); // Gọi service
   }
-  @Get('preview/:fileName')
-  async previewFile(@Param('fileName') fileName: string, @Res() res: Response) {
-    const filePath = join(__dirname, '..', 'uploads', fileName);
-
-    // Kiểm tra nếu file không tồn tại
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException('File not found');
-    }
-
-    // Thiết lập header để trình duyệt cố gắng xem trước file
-    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-    res.setHeader('Content-Type', 'application/octet-stream');
-
-    // Gửi file
-    res.sendFile(filePath);
-  }
+  
   @Put(':evidenceId')
   @UseGuards(PermissionGuard) // Sử dụng guard
   @Action('update')
@@ -194,10 +179,5 @@ export class EvidenceController {
     );
   }
 
-  // in ra toan bo file co trong thu muc uploads
-  @Get('all')
-  async getAllFiles(@Res() res: Response) {
-    const files = fs.readdirSync(join(__dirname, '..', 'uploads'));
-    return res.json(files);
-  }
+
 }

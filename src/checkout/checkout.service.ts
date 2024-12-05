@@ -27,6 +27,104 @@ export class CheckoutService {
   ) {
   }
 
+  async checkoutByWalletService(userId: string, orderID: string): Promise<any> {
+    const setPerpoint = 1000;
+    // Lấy thông tin đơn hàng
+    const myOrder = await this.orderModel
+      .findOne({ _id: orderID, userId })
+      .populate({
+        path: 'subOrders',
+        populate: [
+          {
+            path: 'products',
+            model: 'OrderItem', // Model của `OrderItem`
+            populate: {
+              path: 'productId',
+              model: 'Product', // Model của `Product`
+            },
+          },
+        ],
+      });
+
+    if (!myOrder) {
+      throw new BadRequestException('Đơn hàng không tồn tại!');
+    }
+    if (myOrder.paymentStatus === 'paid') {
+      throw new BadRequestException('Đơn hàng đã được thanh toán!');
+    }
+    if (myOrder.totalAmount <= 0) {
+      throw new BadRequestException('Tổng số tiền thanh toán không hợp lệ!');
+    }
+    if (myOrder.subOrders.length === 0) {
+      throw new BadRequestException('Không có sản phẩm nào trong đơn hàng!');
+    }
+
+    // Kiểm tra đơn giá của từng sản phẩm
+    for (const subOrderId of myOrder.subOrders) {
+      const subOrder = await this.subOrderModel
+        .findById(subOrderId)
+        .populate('products');
+      for (const productItem of subOrder.products) {
+        const orderItem = await this.orderItemModel
+          .findById(productItem)
+          .lean();
+        if (!orderItem) {
+          throw new BadRequestException(
+            `Sản phẩm không tồn tại: ${productItem}`,
+          );
+        }
+
+        const product = await this.productModel
+          .findById(orderItem.productId)
+          .lean();
+        if (!product) {
+          throw new BadRequestException(
+            `Sản phẩm không tồn tại: ${orderItem.productId}`,
+          );
+        }
+
+        // Tìm size và màu cụ thể trong sizeVariants
+        const sizeVariant = product.sizeVariants.find(
+          (variant) =>
+            variant.size === orderItem.size &&
+            variant.colors === orderItem.color,
+        );
+
+        if (!sizeVariant) {
+          throw new BadRequestException(
+            `Không tìm thấy phiên bản sản phẩm (size: ${orderItem.size}, màu: ${orderItem.color}).`,
+          );
+        }
+
+        // Kiểm tra tồn kho
+        if (sizeVariant.amount < orderItem.quantity) {
+          throw new BadRequestException(
+            `Sản phẩm '${product.productName}' (size: ${orderItem.size}, màu: ${orderItem.color}) không đủ hàng.`,
+          );
+        }
+
+      }
+    }
+    if (myOrder.totalAmount > 50000) {
+      throw new BadRequestException(
+        'Tổng số tiền thanh toán phải nhỏ hơn 50000 để thanh toán bằng ví.')
+    }
+    // Trừ tiền từ ví người dùng
+    const userWallet = await this.walletService.getWalletService(userId);
+    if (userWallet.point < myOrder.totalAmount / setPerpoint) {
+      throw new BadRequestException('Số dư ví không đủ để thanh toán!');
+    }
+
+    await this.walletService.deductPointService(userId, myOrder.totalAmount / 1000);
+
+    // Cập nhật trạng thái thanh toán
+    await this.orderModel.findByIdAndUpdate(orderID, {
+      paymentStatus: 'paid',
+      type: 'point_wallet',
+    });
+
+    return { message: 'Thanh toán bằng ví thành công' };
+  }
   async checkoutByAgreementService(
     userId: string,
     orderID: string,

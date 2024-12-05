@@ -30,6 +30,7 @@ import { EvidenceModule } from './evidence/evidence.module';
 import { StaticFileMiddleware } from '@app/libs/common/middleware/file.mid';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PacketModule } from './packet/packet.module';
+import { DropboxModule } from './dropbox/dropbox.module';
 @Module({
   imports: [
     SearchModule,
@@ -74,6 +75,7 @@ import { PacketModule } from './packet/packet.module';
     EvidenceModule,
     AttendanceModule,
     PacketModule,
+    DropboxModule,
   ],
 })
 export class AppModule {

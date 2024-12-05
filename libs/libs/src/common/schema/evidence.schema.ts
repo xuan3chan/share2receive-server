@@ -13,9 +13,13 @@ export class Evidence extends Document {
   @Prop({ type: mongoose.Schema.Types.String })
   batchUUID: string;
   @Prop({ type: mongoose.Schema.Types.String })
-  fileExport: string;
+  fileExportPath: string;
   @Prop({ type: mongoose.Schema.Types.String })
-  fileEvidence: string;
+  fileExportId: string;
+  @Prop({ type: mongoose.Schema.Types.String })
+  fileEvidencePath: string;
+  @Prop({ type: mongoose.Schema.Types.String })
+  fileEvidenceId: string;
   @Prop({
     type: mongoose.Schema.Types.String,
     enum: ['paymentPeriod', 'refundPeriod'],

@@ -14,6 +14,8 @@ import {
   ProductDocument,
   User,
   UserDocument,
+  Wallet,
+  WalletDocument,
 } from '@app/libs/common/schema';
 import { CreateProductDto, UpdateProductDto } from '@app/libs/common/dto';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
@@ -21,12 +23,14 @@ import { MailerService } from 'src/mailer/mailer.service';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { SearchService } from 'src/search/search.service';
+import { WalletService } from 'src/wallet/wallet.service';
 
 @Injectable()
 export class ProductService {
   constructor(
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    @InjectModel(Wallet.name) private readonly walletModel: Model<WalletDocument>,
     @InjectModel(Brand.name) private readonly brandModel: Model<BrandDocument>,
     @InjectModel(Category.name)
     private readonly categoryModel: Model<CategoryDocument>,
@@ -35,12 +39,24 @@ export class ProductService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectQueue('send-email') private readonly sendEmailQueue: Queue,
     private readonly searchService: SearchService,
+    private readonly walletService: WalletService
   ) {}
   async createProductService(
     userId: string,
     product: CreateProductDto,
   ): Promise<Product> {
     try {
+      const setPoint = 5;
+      const wallet = await this.walletModel.findOne({ userId });
+      if (!wallet) {
+        throw new BadRequestException('Không tìm thấy ví');
+      }
+      if (wallet.point < setPoint && product.type !== 'donate') {
+        throw new BadRequestException('Không đủ số dư điểm để đăng sản phẩm, vui lòng nạp thêm!');
+      }
+      if (product.type !== 'donate') {
+        await this.walletService.deductPointService(userId, setPoint);
+      }
       const [checkExist, checkCategory, checkBrand] = await Promise.all([
         this.productModel.findOne({ productName: product.productName }),
         product.categoryId
@@ -685,9 +701,6 @@ export class ProductService {
     }
   }
   
-  
-  
-
   //approved product
   async approveProductService(
     productId: string,

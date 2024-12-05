@@ -120,5 +120,23 @@ export class CheckoutController {
       return { message: error.message };
     }
   }
-  
+  @Post('wallet-point')
+  @ApiBody({ schema: { example: { orderId: '67514010014b30bb84740c3b' } } })
+  @UseGuards(MemberGuard)
+  @ApiBadRequestResponse({ description: 'Thanh toán với ví thất bại.' })
+  async walletPaymentPointController(
+    @Req() request: Request,
+    @Body('orderId') orderId: string
+  ) {
+    try {
+      const userId = this.getUserIdFromToken(request);
+      const result = await this.checkoutService.checkoutByWalletService(userId, orderId);
+      return {
+        message: 'Thanh toán với ví được tạo thành công.',
+        ...result,
+      };
+    } catch (error) {
+      return { message: error.message };
+    }
+  }
 }

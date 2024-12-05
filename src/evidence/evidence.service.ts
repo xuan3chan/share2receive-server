@@ -8,66 +8,23 @@ import {
 } from '@app/libs/common/schema';
 import { join } from 'path';
 import * as fs from 'fs';
+import { DropboxService } from 'src/dropbox/dropbox.service';
 
 @Injectable()
 export class EvidenceService {
   constructor(
     @InjectModel(Evidence.name) private evidenceModel: Model<EvidenceDocument>,
     @InjectModel('Admin') private adminModel: Model<AdminsDocument>,
+    private readonly dropboxService: DropboxService,
   ) {}
 
-  /**
-   * Lưu file vào server
-   */
-  private saveFileToServer(file: Express.Multer.File): string {
-    if (!file) {
-      throw new Error('File is undefined');
-    }
-
-    // Kiểm tra định dạng file
-    const allowedMimeTypes = [
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // Excel
-      'application/vnd.ms-excel', // Excel
-      'application/msword', // Word
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // Word
-      'application/pdf',
-      
-      
-
-    ];
-
-    if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new Error(
-        'Invalid file type. Only Excel and Word files are allowed.',
-      );
-    }
-
-    const uploadDir = join(__dirname, '..', 'uploads'); // Đường dẫn thư mục lưu tệp
-
-    // Kiểm tra thư mục, nếu chưa có thì tạo
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Lưu file
-    const fileName = `${Date.now()}-${file.originalname}`;
-    const filePath = join(uploadDir, fileName);
-    fs.writeFileSync(filePath, file.buffer);
-
-    // Trả về URL để truy cập tệp
-    return `/files/${fileName}`;
-  }
-
-  /**
-   * Tạo Evidence và xử lý upload file
-   */
   async createEvidenceService(
     userId: string,
     file: Express.Multer.File,
     type: string,
     description?: string,
   ): Promise<Evidence> {
-    const fileUrl = this.saveFileToServer(file); // Lưu file và nhận URL
+    const fileEx = await this.dropboxService.uploadFile(file); // Lưu file và nhận URL
     const admin = await this.adminModel
       .findById(userId)
       .select('adminName')
@@ -79,7 +36,8 @@ export class EvidenceService {
 
     const newEvidence = new this.evidenceModel({
       batchUUID: null, // Sẽ được tự động tạo thông qua middleware `pre('save')`
-      fileExport: fileUrl, // URL của file
+      fileExportPath: fileEx.path_display,
+      fileExportId: fileEx.id,
       type: type, // hoặc 'paymentPeriod', bạn có thể thay đổi theo logic cụ thể
       shall: {
         decisionBy: admin.adminName,
@@ -117,16 +75,25 @@ export class EvidenceService {
         fs.unlinkSync(oldFilePath); // Xóa file cũ
       }
     }
+    if (type === 'fileExport') {
+      // Xóa file trên Dropbox
+      await this.dropboxService.deleteFile(evidence.fileExportPath);
+    } else {
+      // Xóa file trên Dropbox
+      await this.dropboxService.deleteFile(evidence.fileEvidencePath);
+    }
 
     // Lưu file mới
-    const newFileUrl = this.saveFileToServer(file);
+    const newFile = await this.dropboxService.uploadFile(file);
+    const path_display = newFile.path_display;
+    const id = newFile.id;
 
     // Cập nhật evidence dựa trên type
-    const updateData =
-      type === 'fileExport'
-        ? { fileExport: newFileUrl }
-        : { fileEvidence: newFileUrl };
-
+    const updateData = {
+      [type === 'fileExport' ? 'fileExportPath' : 'fileEvidencePath']:
+        path_display,
+      [type === 'fileExport' ? 'fileExportId' : 'fileEvidenceId']: id,
+    };
     const updatedEvidence = await this.evidenceModel.findByIdAndUpdate(
       evidenceId,
       updateData,
@@ -147,7 +114,10 @@ export class EvidenceService {
     filterValue?: string,
     sortBy: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'desc',
-  ): Promise<{ evidences: Evidence[], pagination: { currentPage: number, totalPages: number, total: number } }> {
+  ): Promise<{
+    evidences: Evidence[];
+    pagination: { currentPage: number; totalPages: number; total: number };
+  }> {
     const skip = (page - 1) * limit;
 
     const filter = filterBy && filterValue ? { [filterBy]: filterValue } : {};
@@ -161,12 +131,17 @@ export class EvidenceService {
       .limit(limit)
       .lean();
 
-    const domain = process.env.DOMAIN || 'https://share2receive-server.onrender.com';
+    const domain =
+      process.env.DOMAIN || 'https://share2receive-server.onrender.com';
 
     const formattedEvidences = evidences.map((evidence) => ({
       ...evidence,
-      fileExport: evidence.fileExport ? `${domain}${evidence.fileExport}` : null,
-      fileEvidence: evidence.fileEvidence ? `${domain}${evidence.fileEvidence}` : null,
+      fileExport: evidence.fileExport
+        ? `${domain}${evidence.fileExport}`
+        : null,
+      fileEvidence: evidence.fileEvidence
+        ? `${domain}${evidence.fileEvidence}`
+        : null,
     }));
 
     return {
@@ -178,5 +153,4 @@ export class EvidenceService {
       },
     };
   }
-  
 }

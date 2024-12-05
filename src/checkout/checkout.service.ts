@@ -266,7 +266,7 @@ export class CheckoutService {
         accessKey: 'F8BBA842ECF85',
         secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
         partnerCode: 'MOMO',
-        redirectUrl: 'https://share2receive-client.vercel.app/',
+        redirectUrl: 'https://share2receive-client.vercel.app/orders-management',
         ipnUrl:
           process.env.MOMO_IPN_URL ||
           'https://share2receive-server.onrender.com/api/checkout/callback/momo',
@@ -558,7 +558,7 @@ export class CheckoutService {
         accessKey: 'F8BBA842ECF85',
         secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
         partnerCode: 'MOMO',
-        redirectUrl: 'https://share2receive-client.vercel.app/', // URL redirect sau khi thanh toán
+        redirectUrl: 'https://share2receive-client.vercel.app/orders-management', // URL redirect sau khi thanh toán
         ipnUrl:
           process.env.MOMO_IPN_URL ||
           'https://share2receive-server.onrender.com/api/checkout/callback/momo', // URL callback
@@ -686,7 +686,7 @@ async checkoutPacketService(userId: string, packetId: string): Promise<any> {
     accessKey: 'F8BBA842ECF85',
     secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
     partnerCode: 'MOMO',
-    redirectUrl: 'https://share2receive-client.vercel.app/',
+    redirectUrl: 'https://share2receive-client.vercel.app/orders-management',
     ipnUrl:
       process.env.MOMO_IPN_URL ||
       'https://share2receive-server.onrender.com/api/checkout/callback/momo',

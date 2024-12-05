@@ -100,7 +100,7 @@ export class SubOrder extends Document {
   })
   status: string; // Trạng thái đơn hàng
 
-  @Prop({ type: mongoose.Schema.Types.String,defaut:'pending',enum: ['processing', 'completed', 'pending'] })
+  @Prop({ type: mongoose.Schema.Types.String, default: 'pending', enum: ['processing', 'completed', 'pending'] })
   payProcessStatus: string;
 }
 

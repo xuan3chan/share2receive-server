@@ -31,7 +31,7 @@ export class EvidenceService {
       .lean(); // Lấy thông tin admin
 
     if (!admin) {
-      throw new Error('Admin not found'); // Xử lý lỗi nếu không tìm thấy admin
+      throw new BadRequestException('Admin not found'); // Xử lý lỗi nếu không tìm thấy admin
     }
 
     const newEvidence = new this.evidenceModel({
@@ -75,10 +75,10 @@ export class EvidenceService {
         fs.unlinkSync(oldFilePath); // Xóa file cũ
       }
     }
-    if (type === 'fileExport') {
+    if (type === 'fileExport' && evidence.fileExportPath) {
       // Xóa file trên Dropbox
       await this.dropboxService.deleteFile(evidence.fileExportPath);
-    } else {
+    } else if (evidence.fileEvidencePath) {
       // Xóa file trên Dropbox
       await this.dropboxService.deleteFile(evidence.fileEvidencePath);
     }

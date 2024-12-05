@@ -19,7 +19,7 @@ export class Packet extends Document {
     price: number;
     @Prop({ type: mongoose.Schema.Types.Number,required:true})
     promotionPoint: number;
-    @Prop({ type: mongoose.Schema.Types.String})
+    @Prop({ type: mongoose.Schema.Types.String, default: null })
     image: string;
     @Prop({ type: mongoose.Schema.Types.String, enum: ['active', 'inactive'], default: 'active' })
     status: string;

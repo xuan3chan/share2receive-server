@@ -31,7 +31,7 @@ export class WalletService implements OnModuleInit {
             await wallet.save();
             return wallet;
         } catch (error) {
-            throw new Error(`Error adding points: ${error.message}`);
+            throw new BadRequestException(`Error adding points: ${error.message}`);
         }
     }
     async deductPointService(userId: string, amount: number): Promise<WalletDocument> {
@@ -39,11 +39,12 @@ export class WalletService implements OnModuleInit {
             // Kiểm tra
             const wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) });
             if (!wallet) {
-                throw new Error('Wallet not found');
+                throw new BadRequestException('Wallet not found');
             }
+            
             // Kiểm tra số điểm còn lại
             if (wallet.point < amount) {
-                throw new Error('Not enough points');
+                throw new BadRequestException('Not enough points');
             }
             // Trừ điểm
             wallet.point -= amount;

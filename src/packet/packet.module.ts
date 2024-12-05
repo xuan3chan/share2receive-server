@@ -5,10 +5,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Packet, PacketSchema } from '@app/libs/common/schema';
 import { AdminModule } from 'src/admin/admin.module';
 import { AbilityFactory } from '@app/libs/common/abilities';
+import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 
 @Module({
   imports: [
     AdminModule,
+    CloudinaryModule,
     MongooseModule.forFeature([
       {
         name: Packet.name,

@@ -7,7 +7,7 @@ export class Wallet extends Document {
     @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true })
     userId: mongoose.Schema.Types.ObjectId;
 
-    @Prop({ type: mongoose.Schema.Types.Number, default: 0 })
+    @Prop({ type: mongoose.Schema.Types.Mixed, default: 0 })
     point: number;
 }
 

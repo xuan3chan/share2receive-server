@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Dropbox } from 'dropbox';
 import * as fetch from 'isomorphic-fetch'; // Đảm bảo rằng fetch được sử dụng trong môi trường Node.js
 
@@ -25,7 +25,7 @@ export class DropboxService {
       return response.result;
     } catch (error) {
       console.error('Error uploading file to Dropbox:', error);
-      throw new Error('Upload failed');
+      throw new BadRequestException('Upload failed');
     }
   }
   // Tải lên file vào Dropbox và trả về link tải về
@@ -41,7 +41,7 @@ export class DropboxService {
         'Error uploading file and getting link from Dropbox:',
         error,
       );
-      throw new Error('Upload and get link failed');
+      throw new BadRequestException('Upload and get link failed');
     }
   }
   //xóa file
@@ -53,7 +53,7 @@ export class DropboxService {
             console.log('File deleted from Dropbox:', filePath);
         } catch (error) {
             console.error('Error deleting file from Dropbox:', error);
-            throw new Error('Delete failed');
+            throw new BadRequestException('Delete failed');
         }
     }
   // share file
@@ -66,7 +66,7 @@ export class DropboxService {
       return response.result.url;
     } catch (error) {
       console.error('Error sharing file on Dropbox:', error);
-      throw new Error('Share failed');
+      throw new BadRequestException('Share failed');
     }
   }
 
@@ -81,7 +81,7 @@ export class DropboxService {
       return response.result.link; // Đây là link tải xuống trực tiếp
     } catch (error) {
       console.error('Error getting temporary link:', error);
-      throw new Error('Failed to get temporary link');
+      throw new BadRequestException('Failed to get temporary link');
     }
   }
 }

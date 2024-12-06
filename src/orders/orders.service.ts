@@ -1367,7 +1367,7 @@ export class OrdersService {
         path: 'orderId',
         match: { paymentStatus: 'paid' },
       })
-      .populate('sellerId', 'firstname lastname email banking phone')
+      .populate('sellerId', 'firstname lastname email banking phone avatar')
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
       .skip((page - 1) * limit)
       .limit(limit)

@@ -31,7 +31,7 @@ export class PacketController {
     return this.packetService.updatePacketService(packetId,updatePacketDto);
   }
 
-  @Delete()
+  @Delete(':packetId')
   @UseGuards(PermissionGuard)
   @Subject('packet')
   @Action('delete')

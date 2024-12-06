@@ -14,7 +14,7 @@ export class AttendanceService {
         private readonly WalletService: WalletService
     ) {}
 
-    async getWeeklyAttendanceService(userId: string): Promise<any[]> {
+    async getWeeklyAttendanceService(userId: string): Promise<any> {
         // Lấy ngày hiện tại
         const currentDate = moment();
     
@@ -61,9 +61,8 @@ export class AttendanceService {
             attendances: weekAttendances
         });
     
-        return weeklyAttendance;
+        return { data: weeklyAttendance };
     }
-    
     
 
     

@@ -32,8 +32,6 @@ export class AttendanceService {
             date: { $gte: startDate.toDate(), $lte: endDate.toDate() }
         }).exec();
     
-        const weeklyAttendance = [];
-    
         // Duyệt qua tuần (chỉ có tuần hiện tại)
         const weekStart = startDate.clone();
         const weekEnd = endDate.clone();
@@ -54,16 +52,15 @@ export class AttendanceService {
             };
         });
     
-        // Thêm tuần và điểm danh vào mảng
-        weeklyAttendance.push({
+        // Thêm tuần và điểm danh vào đối tượng
+        const weeklyAttendance = {
             weekStart: weekStart.format('yy/MM/DD'),
             weekEnd: weekEnd.format('yy/MM/DD'),
             attendances: weekAttendances
-        });
+        };
     
         return { data: weeklyAttendance };
     }
-    
 
     
     // 2. Điểm danh thủ công (POST request để lưu điểm danh cho người dùng)

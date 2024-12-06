@@ -36,7 +36,7 @@ export class PacketController {
   @Subject('packet')
   @Action('delete')
   async deletePacketController(
-    @Param() packetId: string,
+    @Param('packetId') packetId: string,
   ) {
     return this.packetService.deletePacketService(packetId);
   }

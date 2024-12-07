@@ -82,4 +82,11 @@ export class PacketService {
             throw new BadRequestException(`Error updating packet image: ${error.message}`);
         }
     }
+    async getAllPacketsForClientService(): Promise<PacketDocument[]> {
+        try {
+            return await this.packetModel.find({ status: 'active' }).lean();
+        } catch (error) {
+            throw new BadRequestException(`Error retrieving packets: ${error.message}`);
+        }
+    }
 }

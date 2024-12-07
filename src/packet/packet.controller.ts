@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseGuard
 import { PacketService } from './packet.service';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CreatePacketDto, UpdatePacketDto } from '@app/libs/common/dto';
-import { PermissionGuard } from '@app/libs/common/gaurd';
+import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
@@ -64,4 +64,9 @@ export class PacketController {
     return this.packetService.updateImgService(packetId, file);
   }
 
+  @Get('get-packet-client')
+  @UseGuards(MemberGuard)
+  async getPacketClientController() {
+    return this.packetService.getAllPacketsForClientService();
+  }
 }

@@ -204,7 +204,7 @@ export class RatingService {
     try {
       return await this.ratingModel.find({
         targetUserId: userId,
-      }).lean();
+      }).populate('userId', 'firstname lastname avatar').lean();
     } catch (error) {
       throw new BadRequestException(error.message || 'Failed to get all ratings');
     }

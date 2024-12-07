@@ -201,9 +201,12 @@ export class RatingService {
   }
   // get all rating of user
   async getAllRatingService(userId: string): Promise<RatingDocument[]> {
-    return this.ratingModel.find
-    ({
-      targetUserId: userId,
-    }).lean();
+    try {
+      return await this.ratingModel.find({
+        targetUserId: userId,
+      }).lean();
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Failed to get all ratings');
+    }
   }
 }

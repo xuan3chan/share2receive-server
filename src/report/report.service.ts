@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Product, Report, SubOrder, User } from '@app/libs/common/schema';
+import { Product, Report, ReportHistory, SubOrder, User } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateReportDto } from '@app/libs/common/dto';
@@ -15,6 +15,7 @@ export class ReportService {
     @InjectModel('SubOrder') private readonly subOrderModel: Model<SubOrder>,
     @InjectModel('Product') private readonly productModel: Model<Product>,
     @InjectModel('User') private readonly userModel: Model<User>,
+    @InjectModel(ReportHistory.name) private readonly reportHistoryModel: Model<ReportHistory>,
     private readonly eventGateway: EventGateway,
     private readonly mailerService: MailerService,
   ) {}
@@ -47,7 +48,6 @@ export class ReportService {
       }
   
       const { reportType, targetId, reason, description } = createReportDto;
-  console.log('reportType',targetUserId);
       const report = new this.reportModel({
         userId,
         reportType,
@@ -56,7 +56,6 @@ export class ReportService {
         reason,
         description,
       });
-  
       return await report.save();
     } catch (error) {
       console.error('Error creating report:', error);
@@ -139,7 +138,7 @@ export class ReportService {
     if (!report) {
       throw new BadRequestException('Report not found');
     }
-
+    
     let userIdToBlock: string | null = null;
 
     // Nếu reportType là 'product', lấy userId từ Product
@@ -179,8 +178,19 @@ export class ReportService {
 
     user.isBlock = true; // Cập nhật trạng thái chặn
     report.status = 'Processed'; // Cập nhật trạng thái báo cáo
+    this.mailerService.sendEmailNotify(
+      user.email,
+      'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi. Vì Vậy tài khoản của bạn đã bị chặn. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.',
+    )
+    this.eventGateway.sendAuthenticatedNotification(
+      user._id.toString(),
+      'Cảnh báo vi phạm',
+      'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi. Vì Vậy tài khoản của bạn đã bị chặn. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.',
+    );
+    this.createHistoryService(userIdToBlock, 'block_user' );
     await user.save();
     await report.save();
+  
 
     return {
       message: 'User successfully blocked',
@@ -208,10 +218,21 @@ export class ReportService {
     if (product.isBlock) {
       throw new BadRequestException('Product is already blocked');
     }
+    const user = await this.userModel.findById(report.targetUserId).select('email').lean();
     report.status = 'Processed'; // Cập nhật trạng thái báo cáo
     product.isBlock = true;
+    this.mailerService.sendEmailNotify(
+      user.email,
+      'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi. Vì Vậy sản phẩm của bạn đã bị chặn. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.',
+    );
+    this.eventGateway.sendAuthenticatedNotification(
+      report.targetUserId,
+      'Cảnh báo vi phạm',
+      'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi. Vì Vậy sản phẩm của bạn đã bị chặn. Vui lòng xem lại quy định và tuân thủ để tránh các hình phạt nghiêm trọng hơn.',
+    );
     await product.save();
     await report.save();
+    this.createHistoryService(report.targetUserId, 'block_block_product' );
 
     return {
       message: 'Product successfully blocked',
@@ -274,6 +295,7 @@ export class ReportService {
       'Chúng tôi đã phát hiện bạn vi phạm chính sách của chúng tôi nhiều lần. Nếu hành vi này tiếp tục, tài khoản của bạn có thể bị đình chỉ. Vui lòng xem lại quy định và tuân thủ để tránh các',
     );
     report.status = 'Processed'; // Cập nhật trạng thái báo cáo
+    this.createHistoryService(report.targetUserId, 'warning' );
     await report.save();
     return {
       message: 'User successfully warned',
@@ -312,19 +334,35 @@ export class ReportService {
       });
       if (userReports >= 5) {
         await this.blockFromReportService(reportId);
+        console.log('5 diem');
       }else if (userReports >= 4) {
         if (report.reportType === 'product') {
           await this.blockProductService(reportId);
+        console.log('4 diem');
+
         }
         await this.warningUserService(reportId);
+        console.log('4 diem');
+
       }
        else if (userReports >= 3) {
         await this.warningUserService(reportId);
+        console.log('3 diem');
       }
     }
 
     return {
       message: 'Report checked',
     };
+  }
+  private async createHistoryService(
+    userId: string,
+    action: string,
+  ) {
+    const history = new this.reportHistoryModel({
+      userId,
+      action,
+    });
+    return await history.save();
   }
 }

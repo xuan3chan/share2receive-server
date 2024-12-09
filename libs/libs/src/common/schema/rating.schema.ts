@@ -23,8 +23,10 @@ import {RatingTypeE} from '@app/libs/common/enum/rating-type.enum';
     
     @Prop({ type: mongoose.Schema.Types.String })
     comment?: string;
+
   }
   
   
 export type RatingDocument = HydratedDocument<Rating>;
 export const RatingSchema = SchemaFactory.createForClass(Rating);
+

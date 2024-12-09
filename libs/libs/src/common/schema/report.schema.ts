@@ -26,3 +26,16 @@ export class Report extends Document {
 
 export type ReportDocument = HydratedDocument<Report>;
 export const ReportSchema = SchemaFactory.createForClass(Report);
+@Schema({
+  timestamps: true,
+})
+export class ReportHistory extends Document {
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  userId: string;
+
+  @Prop({ type: mongoose.Schema.Types.String,enums:['block_user','block_product','warning']})
+  action:string
+  
+}
+export type ReportHistoryDocument = HydratedDocument<ReportHistory>;
+export const ReportHistorySchema = SchemaFactory.createForClass(ReportHistory);

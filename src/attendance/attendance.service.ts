@@ -19,48 +19,53 @@ export class AttendanceService {
         const currentDate = moment();
     
         // Lấy startDate (Thứ Hai của tuần hiện tại)
-        const startDate = currentDate.clone().isoWeekday(1);  // Thứ Hai
+        const startDate = currentDate.clone().startOf('isoWeek'); // Thứ Hai (đầu tuần)
         // Lấy endDate (Chủ Nhật của tuần hiện tại)
-        const endDate = currentDate.clone().isoWeekday(7);  // Chủ Nhật
+        const endDate = currentDate.clone().endOf('isoWeek'); // Chủ Nhật (cuối tuần)
     
-        console.log('Start Date (Local):', startDate.toISOString());
-        console.log('End Date (Local):', endDate.toISOString());
+        console.log('Start Date (Local):', startDate.format());
+        console.log('End Date (Local):', endDate.format());
     
-        // Lấy tất cả các điểm danh của người dùng trong tuần hiện tại
+        // Truy vấn điểm danh của người dùng trong tuần hiện tại
         const attendances = await this.attendanceModel.find({
             userId,
-            date: { $gte: startDate.toDate(), $lte: endDate.toDate() }
+            date: {
+                $gte: startDate.toDate(), // Bắt đầu tuần
+                $lte: endDate.toDate()   // Kết thúc tuần
+            }
         }).exec();
     
-        // Duyệt qua tuần (chỉ có tuần hiện tại)
-        const weekStart = startDate.clone();
-        const weekEnd = endDate.clone();
-        console.log('Week Start (Local):', weekStart.format('yy/MM/DD'), 'Week End (Local):', weekEnd.format('yy/MM/DD'));
+        console.log('Attendances from DB:', attendances);
     
-        // Tạo mảng các ngày trong tuần từ startDate đến endDate
+        // Tạo danh sách tất cả các ngày trong tuần từ Thứ Hai đến Chủ Nhật
         const allWeekDays = [];
-        for (let day = weekStart.clone(); day.isBefore(weekEnd.clone().add(1, 'day'), 'day'); day.add(1, 'day')) {
-            allWeekDays.push(day.format('yy/MM/DD'));
+        for (let day = startDate.clone(); day.isSameOrBefore(endDate, 'day'); day.add(1, 'day')) {
+            allWeekDays.push(day.clone());
         }
     
-        // Lọc điểm danh trong tuần và kiểm tra ngày nào chưa có
+        console.log('All Week Days:', allWeekDays.map(day => day.format('YYYY-MM-DD')));
+    
+        // Tạo danh sách điểm danh trong tuần
         const weekAttendances = allWeekDays.map(day => {
-            const attendance = attendances.find(a => moment(a.date).format('yy/MM/DD') === day);
+            const attendance = attendances.find(a => moment(a.date).isSame(day, 'day')); // So sánh ngày
             return {
-                date: day,
-                isAttendance: attendance ? attendance.isAttendance : false  // Nếu không có điểm danh thì false
+                date: day.format('YYYY-MM-DD'), // Chuẩn hóa định dạng ngày
+                isAttendance: attendance ? attendance.isAttendance : false // Nếu không có điểm danh thì false
             };
         });
     
-        // Thêm tuần và điểm danh vào đối tượng
+        console.log('Weekly Attendance:', weekAttendances);
+    
+        // Định dạng dữ liệu trả về
         const weeklyAttendance = {
-            weekStart: weekStart.format('yy/MM/DD'),
-            weekEnd: weekEnd.format('yy/MM/DD'),
-            attendances: weekAttendances
+            weekStart: startDate.format('YYYY-MM-DD'), // Ngày bắt đầu tuần
+            weekEnd: endDate.format('YYYY-MM-DD'),     // Ngày kết thúc tuần
+            attendances: weekAttendances              // Danh sách điểm danh
         };
     
         return { data: weeklyAttendance };
     }
+    
 
     
     // 2. Điểm danh thủ công (POST request để lưu điểm danh cho người dùng)

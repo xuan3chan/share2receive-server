@@ -80,7 +80,7 @@ export class AttendanceService {
             throw new BadRequestException('Attendance already marked for today');
         } else {
             // Nếu chưa có, tạo mới bản ghi điểm danh
-            this.WalletService.addPointService(userId, 2);
+            this.WalletService.addPointForOutService(userId, 2);
             const newAttendance = new this.attendanceModel({
                 userId,
                 date: attendanceDate,

@@ -31,6 +31,7 @@ import { StaticFileMiddleware } from '@app/libs/common/middleware/file.mid';
 import { AttendanceModule } from './attendance/attendance.module';
 import { PacketModule } from './packet/packet.module';
 import { DropboxModule } from './dropbox/dropbox.module';
+import { RevenueModule } from './revenue/revenue.module';
 @Module({
   imports: [
     SearchModule,
@@ -76,6 +77,7 @@ import { DropboxModule } from './dropbox/dropbox.module';
     AttendanceModule,
     PacketModule,
     DropboxModule,
+    RevenueModule,
   ],
 })
 export class AppModule {

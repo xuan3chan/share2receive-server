@@ -12,6 +12,7 @@ import { Model } from 'mongoose';
 import { IMomoPaymentResponse } from '@app/libs/common/interface';
 import { TransactionService } from 'src/transaction/transaction.service';
 import { WalletService } from 'src/wallet/wallet.service';
+import { RevenueService } from 'src/revenue/revenue.service';
 
 @Injectable()
 export class CheckoutService {
@@ -24,6 +25,7 @@ export class CheckoutService {
     @InjectModel(Packet.name) private packetModel: Model<Packet>,
     private transactionService: TransactionService,
     private walletService: WalletService,
+    private revenueService: RevenueService,
   ) {
   }
 
@@ -418,12 +420,19 @@ export class CheckoutService {
         
         // Trích xuất số điểm nạp từ orderInfo
         const pointsMatch = orderInfo.match(/với điểm (\d+)/);
+        const promotionPointMatch = orderInfo.match(/đã cộng (\d+)/);  // Trích xuất promotionPoint
+    
         if (pointsMatch && pointsMatch[1]) {
           const pointsToAdd = parseInt(pointsMatch[1], 10);
+          const promotionPoint = promotionPointMatch && promotionPointMatch[1] 
+                                 ? parseInt(promotionPointMatch[1], 10)
+                                 : 0;  // Nếu không có promotionPoint, gán 0
           console.log(`Số điểm nạp: ${pointsToAdd}`);
+          console.log(`Số điểm khuyến mãi đã cộng: ${promotionPoint}`);
           
           // Thêm điểm vào ví người dùng
-          await this.walletService.addPointService(body.extraData, pointsToAdd);
+          const realPoints = pointsToAdd - promotionPoint;
+          await this.walletService.addPointService(body.extraData, realPoints,promotionPoint);
         } else {
           console.error('Không tìm thấy số điểm trong orderInfo:', orderInfo);
           throw new BadRequestException('Không tìm thấy thông tin số điểm trong giao dịch');
@@ -433,6 +442,7 @@ export class CheckoutService {
         throw new BadRequestException(body.message);
       }
     }
+    
     
     
 
@@ -612,7 +622,7 @@ export class CheckoutService {
         extraData,
         signature,
       });
-
+      
       // Gửi yêu cầu tới MoMo API
       const options = {
         hostname: 'test-payment.momo.vn',
@@ -624,7 +634,6 @@ export class CheckoutService {
           'Content-Length': Buffer.byteLength(requestBody),
         },
       };
-
       return new Promise((resolve, reject) => {
         const req = https.request(options, (res) => {
           let data = '';
@@ -695,7 +704,7 @@ async checkoutPacketService(userId: string, packetId: string): Promise<any> {
   };
 
   const nameUser = await this.userModel.findById(userId).select('firstname lastname').lean();
-  const orderInfo = `Thanh toán gói nạp ${packet.name} với điểm ${pointsToAdd}  vào ví của người dùng ${nameUser.firstname} ${nameUser.lastname}`;
+  const orderInfo = `Thanh toán gói nạp ${packet.name} với điểm ${pointsToAdd}(đã cộng ${packet.promotionPoint}) vào ví của người dùng ${nameUser.firstname} ${nameUser.lastname}`;
   const extraData = userId;
   const autoCapture = true;
 

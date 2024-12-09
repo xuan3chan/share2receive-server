@@ -4,16 +4,16 @@ import { Model } from 'mongoose';
 import { Wallet, WalletDocument } from '@app/libs/common/schema';
 import { User, UserDocument } from '@app/libs/common/schema';
 import mongoose from 'mongoose';
+import { RevenueService } from 'src/revenue/revenue.service';
 
 @Injectable()
 export class WalletService implements OnModuleInit {
     constructor(
         @InjectModel(Wallet.name) private readonly walletModel: Model<WalletDocument>,
         @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+        private readonly revenueService: RevenueService,
     ) {}
-
-    // Thêm điểm vào ví của người dùng
-    async addPointService(userId: string, amount: number): Promise<WalletDocument> {
+    async addPointForOutService(userId: string, amount: number): Promise<WalletDocument> {
         try {
             // Kiểm tra ví người dùng
             let wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) });
@@ -29,6 +29,33 @@ export class WalletService implements OnModuleInit {
             }
             // Lưu ví lại vào cơ sở dữ liệu
             await wallet.save();
+            await this.revenueService.createRevenue(userId, 'out', amount, 'promotion');
+            return wallet;
+        } catch (error) {
+            throw new BadRequestException(`Error adding points: ${error.message}`);
+        }
+    }
+    // Thêm điểm vào ví của người dùng
+    async addPointService(userId: string, amount: number, extra?:number): Promise<WalletDocument> {
+        try {
+            // Kiểm tra ví người dùng
+            let wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) });
+            if (!wallet) {
+                // Tạo ví mới nếu chưa có
+                wallet = new this.walletModel({
+                    userId: new mongoose.Types.ObjectId(userId),
+                    point: amount,
+                });
+            } else {
+                // Cập nhật điểm vào ví hiện có
+                wallet.point += amount;
+            }
+            // Lưu ví lại vào cơ sở dữ liệu
+            await wallet.save();
+            await this.revenueService.createRevenue(userId, 'out', amount, 'sale');
+            if (extra) {
+                await this.revenueService.createRevenue(userId, 'out', extra, 'promotion');
+            }
             return wallet;
         } catch (error) {
             throw new BadRequestException(`Error adding points: ${error.message}`);
@@ -50,6 +77,8 @@ export class WalletService implements OnModuleInit {
             wallet.point -= amount;
             // Lưu lại vào cơ sở dữ liệu
             await wallet.save();
+            await this.revenueService.createRevenue(userId, 'in', amount, 'product');
+
             return wallet;
         } catch (error) {
             throw new BadRequestException(`Error deducting points: ${error.message}`);
@@ -107,4 +136,5 @@ export class WalletService implements OnModuleInit {
             throw new BadRequestException(`Error initializing wallets for all users: ${error.message}`);
         }
     }
+    
 }

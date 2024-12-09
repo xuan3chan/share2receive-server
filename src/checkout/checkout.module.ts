@@ -22,6 +22,7 @@ import {
 } from '@app/libs/common/schema';
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { WalletModule } from 'src/wallet/wallet.module';
+import { RevenueModule } from 'src/revenue/revenue.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { WalletModule } from 'src/wallet/wallet.module';
       {name:Packet.name,schema:PacketSchema},
     ]),
     TransactionModule,
+    RevenueModule,
   ],
   controllers: [CheckoutController],
   providers: [CheckoutService],

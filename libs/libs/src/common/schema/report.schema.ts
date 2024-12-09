@@ -35,6 +35,9 @@ export class ReportHistory extends Document {
 
   @Prop({ type: mongoose.Schema.Types.String,enums:['block_user','block_product','warning']})
   action:string
+
+  @Prop({ type: mongoose.Schema.Types.String, required: true })
+  decisionBy:string
   
 }
 export type ReportHistoryDocument = HydratedDocument<ReportHistory>;

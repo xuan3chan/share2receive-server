@@ -355,6 +355,9 @@ export class ReportService {
       message: 'Report checked',
     };
   }
+  async getHistoryReportService() {
+    return await this.reportHistoryModel.find().sort({ createdAt: -1 });
+  }
   private async createHistoryService(
     userId: string,
     action: string,

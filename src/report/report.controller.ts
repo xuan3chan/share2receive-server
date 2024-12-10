@@ -140,4 +140,11 @@ export class ReportController {
     ){
         return await this.reportService.checkReportService(reportId,isChecked);
     }
+    @Get('get-history-report')
+    @UseGuards(PermissionGuard)
+    @Action('read')
+    @Subject('report')
+    async getHistoryReportController(){
+      return await this.reportService.getHistoryReportService();
+    }
 }

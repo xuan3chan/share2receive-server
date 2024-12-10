@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Revenue, RevenueDocument } from '@app/libs/common/schema';
@@ -83,7 +83,7 @@ export class RevenueService {
             };
         } catch (error) {
             console.error('Error fetching revenues:', error);
-            throw new Error('Error fetching revenues');
+            throw new BadRequestException('Error fetching revenues');
         }
     }
     

@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, HttpCode, Query, Req, UnauthorizedException } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import * as jwt from 'jsonwebtoken';
@@ -37,5 +37,13 @@ export class StatisticsController {
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
     return this.statisticsService.getStaticSallerService(userId, start, end, viewBy);
+  }
+
+  @Get('get-static-eco-of-user')
+  async getStaticEcoController(
+    @Req() request: Request,
+  ): Promise<any> {
+    const userId = this.getUserIdFromToken(request);
+    return this.statisticsService.getStaticEcoService(userId);
   }
 }

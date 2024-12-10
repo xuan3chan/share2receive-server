@@ -238,7 +238,11 @@
     "namePermission": "deletePacket",
     "action": "delete",
     "subject": "packet"
+  },
+  {
+    "id":44,
+    "namePermission": "readRevenue",
+    "action": "read"
   }
-
 
 ]

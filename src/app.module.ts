@@ -32,6 +32,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { PacketModule } from './packet/packet.module';
 import { DropboxModule } from './dropbox/dropbox.module';
 import { RevenueModule } from './revenue/revenue.module';
+import { StatisticsModule } from './statistics/statistics.module';
 @Module({
   imports: [
     SearchModule,
@@ -78,6 +79,7 @@ import { RevenueModule } from './revenue/revenue.module';
     PacketModule,
     DropboxModule,
     RevenueModule,
+    StatisticsModule,
   ],
 })
 export class AppModule {

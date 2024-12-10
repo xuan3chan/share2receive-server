@@ -11,7 +11,38 @@ export class DropboxService {
     const accessToken = process.env.DROPBOX_ACCESS_TOKEN;
     this.dropbox = new Dropbox({ accessToken, fetch });
   }
-
+  async exchangeAuthCodeForTokens(authCode: string): Promise<any> {
+    const clientId = process.env.DROPBOX_CLIENT_ID;
+    const clientSecret = process.env.DROPBOX_CLIENT_SECRET;
+    const redirectUri = process.env.DROPBOX_REDIRECT_URI;
+  
+    const response = await fetch('https://api.dropbox.com/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        code: authCode,
+        grant_type: 'authorization_code',
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+      }),
+    });
+  
+    const data = await response.json();
+  
+    if (data.access_token && data.refresh_token) {
+      console.log('Access Token:', data.access_token);
+      console.log('Refresh Token:', data.refresh_token);
+  
+      return data;
+    } else {
+      console.error('Error exchanging code for tokens:', data);
+      throw new Error('Failed to exchange authorization code for tokens');
+    }
+  }
+  
   // Tải lên file vào Dropbox
   async uploadFile(file: Express.Multer.File): Promise<any> {
     try {

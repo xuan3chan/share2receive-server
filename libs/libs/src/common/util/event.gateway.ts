@@ -141,7 +141,12 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       this.roomMembers.delete(roomId);
     }
   }
-
+  @SubscribeMessage('getActiveUserCount')
+  handleGetActiveUserCount(@ConnectedSocket() client: Socket) {
+    const userCount = this.authenticatedUsers.size;
+    client.emit('activeUserCount', { count: userCount });
+  }
+  
   @SubscribeMessage('sendMessage')
   async handleMessage(
     @MessageBody() message: { receiverId: string; content?: string; file?: string; fileName?: string; fileType?: string },

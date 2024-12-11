@@ -64,13 +64,30 @@ export class StatisticsController {
   @Get('get-time-register')
   @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
   @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
-  @ApiQuery({ name: 'viewBy', required: false,enum:['day','month','year'] })
+  @ApiQuery({ name: 'viewBy', required: false,enum:['day','month','year'] }) 
   async getTimeRegisterController(
     @Query('startDate') startDate: Date,
     @Query('endDate') endDate: Date,
     @Query('viewBy') viewBy: string
   ): Promise<any> {
     return this.statisticsService.getStaticTimeRegisterService(
+      startDate,
+      endDate,
+      viewBy
+    );
+  }
+
+  @ApiTags('manager-statistics')
+  @Get('get-static-order')
+  @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
+  @ApiQuery({ name: 'viewBy', required: false,enum:['day','month','year'] })
+  async getStaticOrderController(
+    @Query('startDate') startDate: Date,
+    @Query('endDate') endDate: Date,
+    @Query('viewBy') viewBy: string
+  ): Promise<any> {
+    return this.statisticsService.getStaticOrderManagerService(
       startDate,
       endDate,
       viewBy

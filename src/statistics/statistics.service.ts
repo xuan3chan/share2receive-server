@@ -573,7 +573,197 @@ export class StatisticsService {
       count: item.count,
     }));
   }
+ 
+  async getStaticOrderManagerService(startDate?: Date, endDate?: Date, viewBy: string = 'month'): Promise<any> {
+    const matchConditions: any = {
+      status: 'completed', // Chỉ tính các đơn hàng có trạng thái là completed
+    };
   
+    // Xử lý ngày bắt đầu và kết thúc nếu không được truyền
+    const now = new Date();
+    if (!startDate || !endDate) {
+      switch (viewBy) {
+        case 'month':
+          startDate = startDate || new Date(now.getFullYear(), now.getMonth() - 5, 1); // 5 tháng trước
+          endDate = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0); // Kết thúc tháng hiện tại
+          break;
+        case 'year':
+          startDate = startDate || new Date(now.getFullYear() - 5, 0, 1); // 5 năm trước
+          endDate = endDate || new Date(now.getFullYear(), 11, 31); // Kết thúc năm hiện tại
+          break;
+        case 'day':
+        default:
+          startDate = startDate || new Date(now.setDate(now.getDate() - 5)); // 5 ngày trước
+          endDate = endDate || new Date(); // Ngày hiện tại
+          break;
+      }
+    }
+  
+    matchConditions.createdAt = { $gte: startDate, $lte: endDate };
+  
+    // Định dạng ngày dựa trên viewBy
+    let dateFormat: string;
+    switch (viewBy) {
+      case 'month':
+        dateFormat = '%Y-%m';
+        break;
+      case 'year':
+        dateFormat = '%Y';
+        break;
+      case 'day':
+      default:
+        dateFormat = '%Y-%m-%d';
+        break;
+    }
+  
+    const result = await this.subOrderModel.aggregate([
+      {
+        $match: matchConditions,
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: { format: dateFormat, date: '$createdAt' },
+            },
+          },
+          paidUUIDs: {
+            $push: {
+              $cond: [
+                {
+                  $and: [
+                    { $eq: ['$status', 'completed'] },
+                    { $eq: ['$requestRefund', null] },
+                  ],
+                },
+                '$subOrderUUID',
+                null,
+              ],
+            },
+          },
+          refundedUUIDs: {
+            $push: {
+              $cond: [
+                { $eq: ['$requestRefund.status', 'approved'] },
+                '$subOrderUUID',
+                null,
+              ],
+            },
+          },
+          totalSubTotal: { $sum: { $ifNull: ['$subTotal', 0] } },
+          totalShippingFee: { $sum: { $ifNull: ['$shippingFee', 0] } },
+          totalRefund: {
+            $sum: {
+              $cond: [
+                { $eq: ['$requestRefund.status', 'approved'] },
+                { $add: [{ $ifNull: ['$subTotal', 0] }, { $ifNull: ['$shippingFee', 0] }] },
+                0,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          paidUUIDs: {
+            $filter: {
+              input: '$paidUUIDs',
+              as: 'item',
+              cond: { $ne: ['$$item', null] },
+            },
+          },
+          refundedUUIDs: {
+            $filter: {
+              input: '$refundedUUIDs',
+              as: 'item',
+              cond: { $ne: ['$$item', null] },
+            },
+          },
+          totalSubTotal: 1,
+          totalShippingFee: 1,
+          totalRefund: 1,
+          totalPaid: {
+            $subtract: [
+              { $add: ['$totalSubTotal', '$totalShippingFee'] },
+              '$totalRefund',
+            ],
+          },
+        },
+      },
+      {
+        $sort: { '_id.date': 1 },
+      },
+    ]);
+  
+    // Xử lý dữ liệu không có trong MongoDB
+    const fullDateRange = [];
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      if (viewBy === 'day') {
+        fullDateRange.push(current.toISOString().slice(0, 10));
+        current.setDate(current.getDate() + 1);
+      } else if (viewBy === 'month') {
+        fullDateRange.push(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`);
+        current.setMonth(current.getMonth() + 1);
+      } else if (viewBy === 'year') {
+        fullDateRange.push(`${current.getFullYear()}`);
+        current.setFullYear(current.getFullYear() + 1);
+      }
+    }
+  
+    const dailyDetails = fullDateRange.map((date) => {
+      const match = result.find((item) => item._id.date === date);
+      if (match) {
+        return {
+          date,
+          paidUUIDs: match.paidUUIDs,
+          refundedUUIDs: match.refundedUUIDs,
+          summary: {
+            totalSubTotal: match.totalSubTotal,
+            totalShippingFee: match.totalShippingFee,
+            totalRefund: match.totalRefund,
+            totalPaid: match.totalPaid,
+          },
+        };
+      } else {
+        return {
+          date,
+          paidUUIDs: [],
+          refundedUUIDs: [],
+          summary: {
+            totalSubTotal: 0,
+            totalShippingFee: 0,
+            totalRefund: 0,
+            totalPaid: 0,
+          },
+        };
+      }
+    });
+  
+    const allSummary = dailyDetails.reduce(
+      (summary, item) => {
+        summary.totalSubTotal += item.summary.totalSubTotal;
+        summary.totalShippingFee += item.summary.totalShippingFee;
+        summary.totalRefund += item.summary.totalRefund;
+        summary.totalPaid += item.summary.totalPaid;
+        return summary;
+      },
+      { totalSubTotal: 0, totalShippingFee: 0, totalRefund: 0, totalPaid: 0 },
+    );
+  
+    return {
+      dailyDetails,
+      allSummary,
+    };
+  }
+  
+
+
+
+
+
+
   
 
   

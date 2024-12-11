@@ -9,6 +9,8 @@ import {
   ProductDocument,
   SubOrder,
   SubOrderDocument,
+  User,
+  UserDocument,
 } from '@app/libs/common/schema';
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,14 +20,14 @@ export class StatisticsService {
   constructor(
     @InjectModel(SubOrder.name)
     private readonly subOrderModel: Model<SubOrderDocument>,
-    @InjectModel(OrderItem.name)
-    private readonly orderItemModel: Model<OrderItemDocument>,
     @InjectModel(Order.name)
     private readonly orderModel: Model<SubOrderDocument>,
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
     @InjectModel(Cart.name)
     private readonly cartModel: Model<CartDocument>,
+    @InjectModel(User.name) 
+    private readonly userModel: Model<UserDocument>,
   ) {}
   async getStaticSallerService(
     userId: string,
@@ -446,25 +448,20 @@ export class StatisticsService {
   async getStaticTimeAddCartService(userId: string): Promise<{ data: any[], totalAdd: number }> {
     // Lấy tất cả các sản phẩm trong giỏ hàng
     const cart = await this.cartModel.find().lean();
-    console.log("Cart data:", cart);
   
     // Lấy danh sách productId từ cart
     const productIds = cart.map((item) => item.productId);
-    console.log("Product IDs:", productIds);
   
     // Tìm sản phẩm trong productModel dựa trên productId
     const products = await this.productModel.find({ _id: { $in: productIds } }).lean();
-    console.log("Products data:", products);
   
     // Lọc ra những sản phẩm có userId trùng khớp
     const userProducts = products.filter((item) => item.userId.toString() === userId);
-    console.log("User products:", userProducts);
   
     // Lọc giỏ hàng dựa trên sản phẩm của userId
     const addCart = cart.filter((item) =>
       userProducts.some((product) => product._id.toString() === item.productId.toString())
     );
-    console.log("Add cart items:", addCart);
   
     // Phân loại và đếm số lần thêm từng sản phẩm
     const productCount = addCart.reduce((acc, item) => {
@@ -483,15 +480,102 @@ export class StatisticsService {
       imgUrls: product.imgUrls || [], // Thêm ảnh sản phẩm nếu có
       timesAdded: productCount[product._id.toString()] || 0,
     }));
-  
-    console.log("Classified Products:", result);
-  
+    
     // Tính tổng số lần thêm sản phẩm
     const totalAdd = result.reduce((sum, product) => sum + product.timesAdded, 0);
   
     return { data: result, totalAdd };
   }
   
+  async getStaticTimeRegisterService(
+   
+    startDate?: Date, // Ngày bắt đầu (tuỳ chọn)
+    endDate?: Date, // Ngày kết thúc (tuỳ chọn)
+    type: string = 'day' // Loại thời gian (day, month, year)
+  ): Promise<any> {
+    const now = new Date();
+    let start: Date = new Date();
+    let end: Date = new Date();
+    let periods: string[] = []; // Các khoảng thời gian cần trả về
+  
+    // Tính toán start và end nếu không truyền
+    if (startDate && endDate) {
+      start = new Date(startDate);
+      end = new Date(endDate);
+    } else {
+      if (type === 'day') {
+        // 5 ngày trước đó
+        start = new Date(now);
+        start.setDate(now.getDate() - 5);
+        end = now;
+        for (let i = 0; i < 5; i++) {
+          const date = new Date();
+          date.setDate(now.getDate() - i);
+          periods.push(date.toISOString().split('T')[0]); // Định dạng YYYY-MM-DD
+        }
+      } else if (type === 'month') {
+        // 5 tháng trước đó
+        start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        end = now;
+        for (let i = 0; i < 5; i++) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          periods.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`); // Định dạng YYYY-MM
+        }
+      } else if (type === 'year') {
+        // 5 năm trước đó
+        start = new Date(now.getFullYear() - 5, 0, 1);
+        end = now;
+        for (let i = 0; i < 5; i++) {
+          periods.push(String(now.getFullYear() - i)); // Định dạng YYYY
+        }
+      }
+    }
+  
+    // Aggregation pipeline
+    const groupBy =
+      type === 'day'
+        ? { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }
+        : type === 'month'
+        ? { $dateToString: { format: '%Y-%m', date: '$createdAt' } }
+        : { $dateToString: { format: '%Y', date: '$createdAt' } };
+  
+    const result = await this.userModel.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: start,
+            $lte: end,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: groupBy,
+          count: { $sum: 1 }, // Đếm số lượng người dùng
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sắp xếp theo thời gian
+      },
+    ]);
+  
+    // Chuyển đổi kết quả thành danh sách đầy đủ với các khoảng thời gian
+    if (!startDate || !endDate) {
+      const dataMap = new Map(result.map((item) => [item._id, item.count]));
+      return periods.map((period) => ({
+        time: period,
+        count: dataMap.get(period) || 'Không có dữ liệu', // Điền "Không có dữ liệu" nếu không có
+      }));
+    }
+  
+    return result.map((item) => ({
+      time: item._id,
+      count: item.count,
+    }));
+  }
+  
+  
+
   
   
 }

@@ -49,6 +49,8 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
         members.delete(socket.data._id);
         if (members.size === 0) this.roomMembers.delete(roomId);
       }
+      // Phát số lượng người dùng hiện tại
+      this.emitActiveUserCount();
     }
   }
 
@@ -78,6 +80,8 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
           this.authenticatedUsers.add(userData._id);
           socket.join(userData._id);
           console.log('Authenticated user connected:', userData._id);
+           // Phát số lượng người dùng hiện tại
+          this.emitActiveUserCount();
         }
       } catch (err) {
         console.error('Error verifying token:', err);
@@ -229,4 +233,10 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       return null;
     }
   }
+  private emitActiveUserCount() {
+    const userCount = this.authenticatedUsers.size;
+    this.server.emit('activeUserCount', { count: userCount });
+    console.log(`Current active users: ${userCount}`);
+  }
+  
 }

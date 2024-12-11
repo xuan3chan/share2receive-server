@@ -58,6 +58,7 @@ export class RevenueService {
             // Lấy dữ liệu từ MongoDB với phân trang và lọc
             const revenues = await this.revenueModel
                 .find(filter) // Áp dụng bộ lọc
+                .populate('userId', 'email') // Lấy thông tin user
                 .select('-updatedAt -__v') // Loại bỏ các trường không cần thiết')
                 .skip(skip) // Bỏ qua các bản ghi đã xem
                 .limit(limit) // Giới hạn số lượng bản ghi trả về

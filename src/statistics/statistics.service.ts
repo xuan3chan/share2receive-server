@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
+  Cart,
+  CartDocument,
   Order,
   OrderItem,
   OrderItemDocument,
@@ -22,6 +24,8 @@ export class StatisticsService {
     private readonly orderModel: Model<SubOrderDocument>,
     @InjectModel(Product.name)
     private readonly productModel: Model<ProductDocument>,
+    @InjectModel(Cart.name)
+    private readonly cartModel: Model<CartDocument>,
   ) {}
   async getStaticSallerService(
     userId: string,
@@ -355,4 +359,139 @@ export class StatisticsService {
       throw new BadRequestException('Failed to get static eco service');
     }
   }
+  async getStaticAllEcoService(): Promise<any> {
+    try {
+      // Lấy danh sách productId từ tất cả các Order và SubOrder
+      const productIds = await this.orderModel.aggregate([
+        {
+          $lookup: {
+            from: 'suborders', // Liên kết với SubOrder collection
+            localField: '_id',
+            foreignField: 'orderId',
+            as: 'subOrders',
+          },
+        },
+        {
+          $unwind: '$subOrders', // Giải phóng mảng SubOrder
+        },
+        {
+          $lookup: {
+            from: 'orderitems', // Liên kết với OrderItem collection
+            localField: 'subOrders._id',
+            foreignField: 'subOrderId',
+            as: 'orderItems',
+          },
+        },
+        {
+          $unwind: '$orderItems', // Giải phóng mảng OrderItem
+        },
+        {
+          $project: {
+            productId: '$orderItems.productId', // Lấy productId từ OrderItem
+          },
+        },
+        {
+          $unionWith: {
+            coll: 'suborders',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'orderitems', // Liên kết với OrderItem collection
+                  localField: '_id',
+                  foreignField: 'subOrderId',
+                  as: 'orderItems',
+                },
+              },
+              {
+                $unwind: '$orderItems', // Giải phóng mảng OrderItem
+              },
+              {
+                $project: {
+                  productId: '$orderItems.productId', // Lấy productId từ OrderItem
+                },
+              },
+            ],
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            productIds: { $addToSet: '$productId' }, // Loại bỏ trùng lặp productId
+          },
+        },
+      ]);
+  
+      // Lấy danh sách productId
+      const uniqueProductIds = productIds[0]?.productIds || [];
+  
+      // Lấy thông tin sản phẩm từ productModel
+      const products = await this.productModel
+        .find({ _id: { $in: uniqueProductIds } })
+        .lean();
+  
+      // Tính tổng trọng lượng
+      const totalWeight = products.reduce((sum, product) => {
+        return sum + (product.weight || 0); // Nếu không có weight, sử dụng 0
+      }, 0);
+  
+      return {
+        totalWeight,
+      };
+    } catch (error) {
+      console.error('Error in getStaticEcoService:', error);
+      throw new BadRequestException('Failed to get static eco service');
+    }
+  }
+  
+  async getStaticTimeAddCartService(userId: string): Promise<{ data: any[], totalAdd: number }> {
+    // Lấy tất cả các sản phẩm trong giỏ hàng
+    const cart = await this.cartModel.find().lean();
+    console.log("Cart data:", cart);
+  
+    // Lấy danh sách productId từ cart
+    const productIds = cart.map((item) => item.productId);
+    console.log("Product IDs:", productIds);
+  
+    // Tìm sản phẩm trong productModel dựa trên productId
+    const products = await this.productModel.find({ _id: { $in: productIds } }).lean();
+    console.log("Products data:", products);
+  
+    // Lọc ra những sản phẩm có userId trùng khớp
+    const userProducts = products.filter((item) => item.userId.toString() === userId);
+    console.log("User products:", userProducts);
+  
+    // Lọc giỏ hàng dựa trên sản phẩm của userId
+    const addCart = cart.filter((item) =>
+      userProducts.some((product) => product._id.toString() === item.productId.toString())
+    );
+    console.log("Add cart items:", addCart);
+  
+    // Phân loại và đếm số lần thêm từng sản phẩm
+    const productCount = addCart.reduce((acc, item) => {
+      const productId = item.productId.toString();
+      if (!acc[productId]) {
+        acc[productId] = 0;
+      }
+      acc[productId]++;
+      return acc;
+    }, {});
+  
+    // Tạo danh sách sản phẩm với số lần xuất hiện
+    const result = userProducts.map((product) => ({
+      productId: product._id.toString(),
+      productName: product.productName || 'Unknown Product', // Thêm tên sản phẩm nếu có
+      imgUrls: product.imgUrls || [], // Thêm ảnh sản phẩm nếu có
+      timesAdded: productCount[product._id.toString()] || 0,
+    }));
+  
+    console.log("Classified Products:", result);
+  
+    // Tính tổng số lần thêm sản phẩm
+    const totalAdd = result.reduce((sum, product) => sum + product.timesAdded, 0);
+  
+    return { data: result, totalAdd };
+  }
+  
+  
+  
 }

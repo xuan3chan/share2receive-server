@@ -46,4 +46,17 @@ export class StatisticsController {
     const userId = this.getUserIdFromToken(request);
     return this.statisticsService.getStaticEcoService(userId);
   }
+  
+  @Get('get-static-eco-all')
+  async getStaticEcoAllController(): Promise<any> {
+    return this.statisticsService.getStaticAllEcoService();
+  }
+
+  @Get('get-time-add-cart')
+  async getTimeAddCartController(
+    @Req() request: Request,
+  ): Promise<any> {
+    const userId = this.getUserIdFromToken(request);
+    return this.statisticsService.getStaticTimeAddCartService(userId);
+  }
 }

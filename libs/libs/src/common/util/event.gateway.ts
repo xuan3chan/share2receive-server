@@ -55,7 +55,6 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   }
 
   async handleConnection(socket: Socket): Promise<void> {
-    this.emitActiveUserCount();
     const cookies = socket.handshake.headers.cookie;
     let isAuthenticated = false;
     let accessToken = null;
@@ -82,7 +81,8 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
           socket.join(userData._id);
           console.log('Authenticated user connected:', userData._id);
            // Phát số lượng người dùng hiện tại
-          
+           this.emitActiveUserCount();
+
         }
       } catch (err) {
         console.error('Error verifying token:', err);
@@ -90,8 +90,8 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     }
 
     if (!isAuthenticated) {
+      this.emitActiveUserCount();
       console.log('Unauthenticated user connected:', socket.id);
-      socket.disconnect();
     }
   }
 

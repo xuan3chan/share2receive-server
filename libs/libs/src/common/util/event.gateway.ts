@@ -28,7 +28,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   @WebSocketServer() server: Server;
   private clients: Map<string, { socket: Socket; isAuthenticated: boolean }> = new Map();
   private authenticatedUsers: Set<string> = new Set(); // Track authenticated users
-  private connectedClients: Set<string> = new Set(); // Track all connected users
+  private connectedClients: Set<string> = new Set(); // Track all connected users (authenticated + guests)
   private roomMembers: Map<string, Set<string>> = new Map(); // Track users in each room
 
   constructor(
@@ -42,26 +42,31 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   handleDisconnect(socket: Socket) {
     console.log('Socket disconnected:', socket.id);
 
-    // Remove from all connected users
+    // Remove from connected clients
     this.connectedClients.delete(socket.id);
 
     if (socket.data._id) {
+      // Remove authenticated user
       this.authenticatedUsers.delete(socket.data._id);
       this.clients.delete(socket.data._id);
 
-      // Remove user from all rooms they were a part of
+      // Remove user from all rooms they were part of
       for (const [roomId, members] of this.roomMembers.entries()) {
         members.delete(socket.data._id);
         if (members.size === 0) this.roomMembers.delete(roomId);
       }
+    } else {
+      // Remove guest user
+      this.clients.delete(socket.id);
     }
 
-    // Emit the updated total user count
+    // Emit updated counts
     this.emitTotalUserCount();
+    this.emitActiveUserCount();
   }
 
   async handleConnection(socket: Socket): Promise<void> {
-    this.connectedClients.add(socket.id); // Track all connected users
+    this.connectedClients.add(socket.id); // Add to connected clients
     let isAuthenticated = false;
     let accessToken = null;
 
@@ -88,7 +93,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
           socket.join(userData._id);
           console.log('Authenticated user connected:', userData._id);
 
-          // Emit the active user count
+          // Emit active user count
           this.emitActiveUserCount();
         }
       } catch (err) {
@@ -101,7 +106,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       this.clients.set(socket.id, { socket, isAuthenticated: false });
     }
 
-    // Emit the updated total user count
+    // Emit total user count
     this.emitTotalUserCount();
   }
 
@@ -131,6 +136,16 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   handleGetTotalUserCount(@ConnectedSocket() client: Socket) {
     const totalUsers = this.connectedClients.size;
     client.emit('totalUserCount', { count: totalUsers });
+  }
+
+  @SubscribeMessage('getGuests')
+  handleGetGuests(@ConnectedSocket() client: Socket) {
+    const guests = Array.from(this.clients.values())
+      .filter(({ isAuthenticated }) => !isAuthenticated)
+      .map(({ socket }) => socket.id);
+
+    client.emit('guestUsers', { guests });
+    console.log(`Unauthenticated users:`, guests);
   }
 
   sendAuthenticatedNotification(userId: string, title: string, message: string) {
@@ -256,4 +271,3 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     }
   }
 }
-

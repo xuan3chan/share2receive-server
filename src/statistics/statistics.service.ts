@@ -574,66 +574,66 @@ export class StatisticsService {
     }));
   }
  
-  async getStaticOrderManagerService(startDate?: Date, endDate?: Date, viewBy: string = 'month'): Promise<any> {
-    const matchConditions: any = {
-      status: 'completed', // Chỉ tính các đơn hàng có trạng thái là completed
-    };
+  async getStaticOrderManagerService(
+    startDate: Date,
+    endDate: Date,
+    viewBy: string = 'day',
+  ): Promise<any> {
+    const matchConditions: any = {};
   
-    // Xử lý ngày bắt đầu và kết thúc nếu không được truyền
-    const now = new Date();
-    if (!startDate || !endDate) {
-      switch (viewBy) {
-        case 'month':
-          startDate = startDate || new Date(now.getFullYear(), now.getMonth() - 5, 1); // 5 tháng trước
-          endDate = endDate || new Date(now.getFullYear(), now.getMonth() + 1, 0); // Kết thúc tháng hiện tại
-          break;
-        case 'year':
-          startDate = startDate || new Date(now.getFullYear() - 5, 0, 1); // 5 năm trước
-          endDate = endDate || new Date(now.getFullYear(), 11, 31); // Kết thúc năm hiện tại
-          break;
-        case 'day':
-        default:
-          startDate = startDate || new Date(now.setDate(now.getDate() - 5)); // 5 ngày trước
-          endDate = endDate || new Date(); // Ngày hiện tại
-          break;
-      }
+    if (startDate && endDate) {
+      matchConditions.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
     }
   
-    matchConditions.createdAt = { $gte: startDate, $lte: endDate };
+    const groupByDate = {
+      day: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+      month: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+      year: { $dateToString: { format: '%Y', date: '$createdAt' } },
+    }[viewBy];
   
-    // Định dạng ngày dựa trên viewBy
-    let dateFormat: string;
-    switch (viewBy) {
-      case 'month':
-        dateFormat = '%Y-%m';
-        break;
-      case 'year':
-        dateFormat = '%Y';
-        break;
-      case 'day':
-      default:
-        dateFormat = '%Y-%m-%d';
-        break;
-    }
-  
-    const result = await this.subOrderModel.aggregate([
+    const pipeline = [
       {
-        $match: matchConditions,
+        $match: {
+          ...matchConditions,
+          status: { $in: ['completed', 'refund', 'canceled'] },
+        },
+      },
+      {
+        $addFields: {
+          totalRefund: {
+            $cond: [
+              { $or: [{ $eq: ['$requestRefund.status', 'approved'] }, { $eq: ['$status', 'canceled'] }] },
+              { $add: ['$subTotal', '$shippingFee'] },
+              0,
+            ],
+          },
+          totalPaid: {
+            $cond: [
+              {
+                $and: [
+                  { $eq: ['$status', 'completed'] },
+                  { $or: [{ $eq: ['$requestRefund', null] }, { $eq: ['$requestRefund.status', null] }] },
+                ],
+              },
+              { $add: ['$subTotal', '$shippingFee'] },
+              0,
+            ],
+          },
+        },
       },
       {
         $group: {
-          _id: {
-            date: {
-              $dateToString: { format: dateFormat, date: '$createdAt' },
-            },
-          },
+          _id: groupByDate,
           paidUUIDs: {
-            $push: {
+            $addToSet: {
               $cond: [
                 {
                   $and: [
                     { $eq: ['$status', 'completed'] },
-                    { $eq: ['$requestRefund', null] },
+                    { $or: [{ $eq: ['$requestRefund', null] }, { $eq: ['$requestRefund.status', null] }] },
                   ],
                 },
                 '$subOrderUUID',
@@ -642,130 +642,147 @@ export class StatisticsService {
             },
           },
           refundedUUIDs: {
-            $push: {
+            $addToSet: {
               $cond: [
-                { $eq: ['$requestRefund.status', 'approved'] },
+                { $or: [{ $eq: ['$requestRefund.status', 'approved'] }, { $eq: ['$status', 'canceled'] }] },
                 '$subOrderUUID',
                 null,
               ],
             },
           },
-          totalSubTotal: { $sum: { $ifNull: ['$subTotal', 0] } },
-          totalShippingFee: { $sum: { $ifNull: ['$shippingFee', 0] } },
-          totalRefund: {
+          totalSubTotal: { $sum: '$subTotal' },
+          totalShippingFee: { $sum: '$shippingFee' },
+          totalRefund: { $sum: '$totalRefund' },
+          totalPaid: { $sum: '$totalPaid' },
+          totalCompletedOrders: {
             $sum: {
               $cond: [
-                { $eq: ['$requestRefund.status', 'approved'] },
-                { $add: [{ $ifNull: ['$subTotal', 0] }, { $ifNull: ['$shippingFee', 0] }] },
+                {
+                  $and: [
+                    { $eq: ['$status', 'completed'] },
+                    { $or: [{ $eq: ['$requestRefund', null] }, { $eq: ['$requestRefund.status', null] }] },
+                  ],
+                },
+                1,
                 0,
               ],
+            },
+          },
+          totalRefundedOrders: {
+            $sum: {
+              $cond: [{ $eq: ['$requestRefund.status', 'approved'] }, 1, 0],
+            },
+          },
+          totalCanceledOrders: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'canceled'] }, 1, 0],
             },
           },
         },
       },
       {
         $project: {
-          _id: 1,
+          _id: 0,
+          date: '$_id',
           paidUUIDs: {
             $filter: {
               input: '$paidUUIDs',
-              as: 'item',
-              cond: { $ne: ['$$item', null] },
+              as: 'uuid',
+              cond: { $ne: ['$$uuid', null] },
             },
           },
           refundedUUIDs: {
             $filter: {
               input: '$refundedUUIDs',
-              as: 'item',
-              cond: { $ne: ['$$item', null] },
+              as: 'uuid',
+              cond: { $ne: ['$$uuid', null] },
             },
           },
-          totalSubTotal: 1,
-          totalShippingFee: 1,
-          totalRefund: 1,
-          totalPaid: {
-            $subtract: [
-              { $add: ['$totalSubTotal', '$totalShippingFee'] },
-              '$totalRefund',
-            ],
+          summary: {
+            totalSubTotal: '$totalSubTotal',
+            totalShippingFee: '$totalShippingFee',
+            totalRefund: '$totalRefund',
+            totalPaid: '$totalPaid',
+            totalCompletedOrders: '$totalCompletedOrders',
+            totalRefundedOrders: '$totalRefundedOrders',
+            totalCanceledOrders: '$totalCanceledOrders',
           },
         },
       },
-      {
-        $sort: { '_id.date': 1 },
-      },
-    ]);
+      { $sort: { date: 1 as 1 | -1 } },
+    ];
   
-    // Xử lý dữ liệu không có trong MongoDB
-    const fullDateRange = [];
-    const current = new Date(startDate);
-    while (current <= endDate) {
+    const dailyDetails = await this.subOrderModel.aggregate(pipeline);
+  
+    // Generate the complete list of dates/months/years based on viewBy
+    const allDates: string[] = [];
+    let currentDate = new Date(startDate);
+    const endDateObj = new Date(endDate);
+  
+    while (currentDate <= endDateObj) {
       if (viewBy === 'day') {
-        fullDateRange.push(current.toISOString().slice(0, 10));
-        current.setDate(current.getDate() + 1);
+        allDates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
       } else if (viewBy === 'month') {
-        fullDateRange.push(`${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`);
-        current.setMonth(current.getMonth() + 1);
+        allDates.push(
+          `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
+        );
+        currentDate.setMonth(currentDate.getMonth() + 1);
       } else if (viewBy === 'year') {
-        fullDateRange.push(`${current.getFullYear()}`);
-        current.setFullYear(current.getFullYear() + 1);
+        allDates.push(`${currentDate.getFullYear()}`);
+        currentDate.setFullYear(currentDate.getFullYear() + 1);
       }
     }
   
-    const dailyDetails = fullDateRange.map((date) => {
-      const match = result.find((item) => item._id.date === date);
-      if (match) {
-        return {
-          date,
-          paidUUIDs: match.paidUUIDs,
-          refundedUUIDs: match.refundedUUIDs,
-          summary: {
-            totalSubTotal: match.totalSubTotal,
-            totalShippingFee: match.totalShippingFee,
-            totalRefund: match.totalRefund,
-            totalPaid: match.totalPaid,
-          },
-        };
-      } else {
-        return {
-          date,
-          paidUUIDs: [],
-          refundedUUIDs: [],
-          summary: {
-            totalSubTotal: 0,
-            totalShippingFee: 0,
-            totalRefund: 0,
-            totalPaid: 0,
-          },
-        };
-      }
-    });
+    // Map the aggregation results to the complete date list
+    const resultsByDate = dailyDetails.reduce((acc, detail) => {
+      acc[detail.date] = detail;
+      return acc;
+    }, {});
   
-    const allSummary = dailyDetails.reduce(
-      (summary, item) => {
-        summary.totalSubTotal += item.summary.totalSubTotal;
-        summary.totalShippingFee += item.summary.totalShippingFee;
-        summary.totalRefund += item.summary.totalRefund;
-        summary.totalPaid += item.summary.totalPaid;
-        return summary;
+    const completeResults = allDates.map(date => ({
+      date,
+      paidUUIDs: resultsByDate[date]?.paidUUIDs || [],
+      refundedUUIDs: resultsByDate[date]?.refundedUUIDs || [],
+      summary: resultsByDate[date]?.summary || {
+        totalSubTotal: 0,
+        totalShippingFee: 0,
+        totalRefund: 0,
+        totalPaid: 0,
+        totalCompletedOrders: 0,
+        totalRefundedOrders: 0,
+        totalCanceledOrders: 0,
       },
-      { totalSubTotal: 0, totalShippingFee: 0, totalRefund: 0, totalPaid: 0 },
+    }));
+  
+    // Calculate allSummary
+    const allSummary = completeResults.reduce(
+      (acc, cur) => {
+        acc.totalSubTotal += cur.summary.totalSubTotal;
+        acc.totalShippingFee += cur.summary.totalShippingFee;
+        acc.totalRefund += cur.summary.totalRefund;
+        acc.totalPaid += cur.summary.totalPaid;
+        acc.totalCompletedOrders += cur.summary.totalCompletedOrders;
+        acc.totalRefundedOrders += cur.summary.totalRefundedOrders;
+        acc.totalCanceledOrders += cur.summary.totalCanceledOrders;
+        return acc;
+      },
+      {
+        totalSubTotal: 0,
+        totalShippingFee: 0,
+        totalRefund: 0,
+        totalPaid: 0,
+        totalCompletedOrders: 0,
+        totalRefundedOrders: 0,
+        totalCanceledOrders: 0,
+      },
     );
   
     return {
-      dailyDetails,
+      dailyDetails: completeResults,
       allSummary,
     };
   }
-  
-
-
-
-
-
-
-  
-
   
   
 }

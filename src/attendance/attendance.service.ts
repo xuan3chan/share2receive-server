@@ -23,8 +23,6 @@ export class AttendanceService {
         // Lấy endDate (Chủ Nhật của tuần hiện tại)
         const endDate = currentDate.clone().endOf('isoWeek'); // Chủ Nhật (cuối tuần)
     
-        console.log('Start Date (Local):', startDate.format());
-        console.log('End Date (Local):', endDate.format());
     
         // Truy vấn điểm danh của người dùng trong tuần hiện tại
         const attendances = await this.attendanceModel.find({
@@ -35,7 +33,6 @@ export class AttendanceService {
             }
         }).exec();
     
-        console.log('Attendances from DB:', attendances);
     
         // Tạo danh sách tất cả các ngày trong tuần từ Thứ Hai đến Chủ Nhật
         const allWeekDays = [];
@@ -43,7 +40,6 @@ export class AttendanceService {
             allWeekDays.push(day.clone());
         }
     
-        console.log('All Week Days:', allWeekDays.map(day => day.format('YYYY-MM-DD')));
     
         // Tạo danh sách điểm danh trong tuần
         const weekAttendances = allWeekDays.map(day => {
@@ -54,7 +50,6 @@ export class AttendanceService {
             };
         });
     
-        console.log('Weekly Attendance:', weekAttendances);
     
         // Định dạng dữ liệu trả về
         const weeklyAttendance = {

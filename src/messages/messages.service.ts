@@ -134,7 +134,6 @@ export class MessagesService {
       })
     );
 
-    console.log("Final messages with partners:", messagesWithPartners); // Debug: Verify final output structure
 
     return messagesWithPartners;
 }

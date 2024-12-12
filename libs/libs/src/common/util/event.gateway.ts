@@ -105,7 +105,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
       console.log('Unauthenticated user connected:', socket.id);
       this.clients.set(socket.id, { socket, isAuthenticated: false });
     }
-
+    
     // Emit total user count
     this.emitTotalUserCount();
   }
@@ -141,12 +141,13 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   @SubscribeMessage('getGuests')
   handleGetGuests(@ConnectedSocket() client: Socket) {
     const guests = Array.from(this.clients.values())
-      .filter(({ isAuthenticated }) => !isAuthenticated)
-      .map(({ socket }) => socket.id);
-
-    client.emit('guestUsers', { guests });
-    console.log(`Unauthenticated users:`, guests);
+      .filter(({ isAuthenticated }) => !isAuthenticated);
+  
+    const guestCount = guests.length; // Đếm số lượng guest users
+    client.emit('guestUsers', { count: guestCount });
+    console.log(`Number of unauthenticated users: ${guestCount}`);
   }
+  
 
   sendAuthenticatedNotification(userId: string, title: string, message: string) {
     this.server.to(userId).emit('authenticatedNotification', { title, message });

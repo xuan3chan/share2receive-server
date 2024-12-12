@@ -3,161 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Socket.IO Notification Test</title>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      line-height: 1.6;
-    }
-    h1 {
-      color: #2c3e50;
-      text-align: center;
-    }
-    h2 {
-      color: #34495e;
-    }
-    .notification-section {
-      margin-bottom: 20px;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      background: #ecf0f1;
-      margin: 5px 0;
-      padding: 10px;
-      border: 1px solid #bdc3c7;
-      border-radius: 4px;
-    }
-    #user-info {
-      margin: 20px 0;
-      padding: 10px;
-      background: #f39c12;
-      color: #fff;
-      border-radius: 4px;
-    }
-  </style>
+  <title>Socket.IO Guest Users</title>
+  <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 </head>
 <body>
-  <h1>Socket.IO Notification Test</h1>
-
-  <div id="user-info">
-    <h2>User Info:</h2>
-    <p id="user-id">User ID: Not connected</p>
-  </div>
-
-  <div class="notification-section">
-    <h2>General Notifications:</h2>
-    <ul id="general-notifications"></ul>
-  </div>
-
-  <div class="notification-section">
-    <h2>Authenticated Notifications:</h2>
-    <ul id="authenticated-notifications"></ul>
-  </div>
-
-  <div class="notification-section">
-    <h2>Message Notifications:</h2>
-    <ul id="message-notifications"></ul>
+  <h1>Guest Users Viewer</h1>
+  <button id="get-guests-btn">Get Guest Users</button>
+  <div id="guest-list">
+    <h2>Guest Users:</h2>
+    <ul id="guests"></ul>
   </div>
 
   <script>
-    // Function to get cookie from the browser
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-    }
+    // Connect to the WebSocket server
+    const socket = io('http://127.0.0.1:3000/', {
+      withCredentials: true
+    });
 
-    // Retrieve accessToken from cookie
-    const accessToken = getCookie('accessToken');
-    console.log('Access Token:', accessToken);
-    if (accessToken) {
-      try {
-        const decodedToken = jwt_decode(accessToken);
-        console.log('Decoded Token:', decodedToken);
-        document.getElementById('user-id').textContent = `User ID: ${decodedToken.sub || decodedToken.userId || 'Unknown'}`;
-      } catch (error) {
-        console.error('Error decoding JWT:', error);
-      }
-    } else {
-      console.log('No access token found in cookies');
-    }
+    // Log connection events
+    socket.on('connect', () => {
+      console.log('Connected to the server with socket ID:', socket.id);
+    });
 
-    let socket;
-    let isSocketConnected = false;
+    socket.on('disconnect', () => {
+      console.log('Disconnected from the server.');
+    });
 
-    function connectSocket() {
-      if (!isSocketConnected) {
-        console.log('Attempting to connect to WebSocket...');
+    // Listen for guest users data
+    socket.on('guestUsers', (data) => {
+      const guestList = document.getElementById('guests');
+      guestList.innerHTML = ''; // Clear current list
+      data.guests.forEach((guestId) => {
+        const listItem = document.createElement('li');
+        listItem.textContent = guestId;
+        guestList.appendChild(listItem);
+      });
+    });
 
-        socket = io('http://127.0.0.1:3000', {
-          withCredentials: true,
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 1000,
-        });
-
-        // Event: Connection established
-        socket.on('connect', () => {
-          console.log('Connected to the WebSocket server');
-          isSocketConnected = true;
-        });
-
-        // Event: General notifications
-        socket.on('generalNotification', (message) => {
-          console.log('General Notification:', message);
-          const notificationList = document.getElementById('general-notifications');
-          const listItem = document.createElement('li');
-          listItem.textContent = `General: ${message}`;
-          notificationList.appendChild(listItem);
-        });
-
-        // Event: Authenticated notifications
-        socket.on('authenticatedNotification', (data) => {
-          console.log('Authenticated Notification:', data);
-          const notificationList = document.getElementById('authenticated-notifications');
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `<strong>Title:</strong> ${data.title}<br><strong>Message:</strong> ${data.message}`;
-          notificationList.appendChild(listItem);
-        });
-
-        // Event: Message notifications
-        socket.on('messageNotification', (data) => {
-          console.log('Message Notification:', data);
-          const notificationList = document.getElementById('message-notifications');
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `<strong>Title:</strong> ${data.title}<br><strong>Receiver:</strong> ${data.receiver}<br><strong>Message:</strong> ${data.message}`;
-          notificationList.appendChild(listItem);
-        });
-
-        // Event: Disconnected
-        socket.on('disconnect', () => {
-          console.log('Disconnected from WebSocket server');
-          isSocketConnected = false;
-          setTimeout(connectSocket, 2000); // Attempt to reconnect after 2 seconds
-        });
-
-        // Event: Debugging all events
-        socket.onAny((event, ...args) => {
-          console.log(`Event received: ${event}`, args);
-        });
-
-        // Event: Error
-        socket.on('error', (error) => {
-          console.error('WebSocket error:', error);
-        });
-      } else {
-        console.log('Socket already connected');
-      }
-    }
-
-    // Connect to WebSocket when DOM is loaded
-    document.addEventListener('DOMContentLoaded', connectSocket);
+    // Request guest users when button is clicked
+    document.getElementById('get-guests-btn').addEventListener('click', () => {
+      socket.emit('getGuests');
+    });
   </script>
 </body>
 </html>

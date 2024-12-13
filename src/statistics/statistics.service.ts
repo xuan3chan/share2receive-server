@@ -142,7 +142,36 @@ export class StatisticsService {
             },
           },
           totalSubTotal: { $sum: '$subTotal' },
-          totalShippingFee: { $sum: '$shippingFee' },
+          totalShippingFee: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ['$status', 'canceled'] },
+                    {
+                      $or: [
+                        { requestRefund: null },
+                        {
+                          $ne: [
+                            {
+                              $getField: {
+                                field: 'status',
+                                input: '$requestRefund',
+                              },
+                            },
+                            'approved',
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+                '$shippingFee',
+                0,
+              ],
+            },
+          },
+          
           totalRefund: {
             $sum: {
               $cond: [

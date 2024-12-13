@@ -356,7 +356,10 @@ export class ReportService {
     };
   }
   async getHistoryReportService() {
-    return await this.reportHistoryModel.find().sort({ createdAt: -1 });
+    return await this.reportHistoryModel.find().populate(
+      'userId',
+      'firstname lastname email isBlock',
+    ).sort({ createdAt: -1 });
   }
   private async createHistoryService(
     userId: string,

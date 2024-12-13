@@ -175,26 +175,32 @@ export class StatisticsService {
             $sum: {
               $cond: [
                 {
-                  $or: [
-                    { requestRefund: null },
+                  $and: [
+                    { $eq: ['$status', 'completed'] }, // Đơn đã hoàn thành
                     {
-                      $ne: [
+                      $or: [
+                        { requestRefund: null }, // Không có yêu cầu hoàn tiền
                         {
-                          $getField: {
-                            field: 'status',
-                            input: '$requestRefund',
-                          },
+                          $ne: [
+                            {
+                              $getField: {
+                                field: 'status',
+                                input: '$requestRefund',
+                              },
+                            },
+                            'approved', // Loại trừ đơn bị hoàn tiền
+                          ],
                         },
-                        'approved',
                       ],
                     },
                   ],
                 },
                 '$shippingFee',
-                0,
+                0, // Không thỏa mãn điều kiện => Không tính phí vận chuyển
               ],
             },
           },
+          
           
           
           totalRefund: {
@@ -287,7 +293,7 @@ export class StatisticsService {
             totalShippingFee: match.totalShippingFee,
             totalRefund: match.totalRefund,
             totalPaid:
-              match.totalSubTotal + match.totalShippingFee - match.totalRefund,
+              match.totalSubTotal + match.totalShippingFee
           },
         };
       } else {

@@ -38,7 +38,7 @@ export class StatisticsService {
     const matchConditions: any = {
       sellerId: new mongoose.Types.ObjectId(userId),
     };
-
+  
     // Tính toán mặc định cho startDate và endDate nếu không được truyền
     const now = new Date();
     if (!startDate || !endDate) {
@@ -60,9 +60,9 @@ export class StatisticsService {
           break;
       }
     }
-
+  
     matchConditions.createdAt = { $gte: startDate, $lte: endDate };
-
+  
     // Xác định format của `$dateToString` dựa trên `viewBy`
     let dateFormat: string;
     let unit: string;
@@ -81,7 +81,7 @@ export class StatisticsService {
         unit = 'day';
         break;
     }
-
+  
     const result = await this.subOrderModel.aggregate([
       {
         $match: matchConditions,
@@ -170,7 +170,6 @@ export class StatisticsService {
               ],
             },
           },
-          
           totalShippingFee: {
             $sum: {
               $cond: [
@@ -200,9 +199,6 @@ export class StatisticsService {
               ],
             },
           },
-          
-          
-          
           totalRefund: {
             $sum: {
               $cond: [
@@ -261,7 +257,7 @@ export class StatisticsService {
         $sort: { '_id.date': 1 },
       },
     ]);
-
+  
     // Tạo danh sách đầy đủ các ngày/tháng/năm trong khoảng thời gian
     const fullDateRange = [];
     const current = new Date(startDate);
@@ -279,7 +275,7 @@ export class StatisticsService {
         current.setFullYear(current.getFullYear() + 1);
       }
     }
-
+  
     // Ghép dữ liệu từ MongoDB với danh sách đầy đủ
     const dailyDetails = fullDateRange.map((date) => {
       const match = result.find((item) => item._id.date === date);
@@ -292,8 +288,7 @@ export class StatisticsService {
             totalSubTotal: match.totalSubTotal,
             totalShippingFee: match.totalShippingFee,
             totalRefund: match.totalRefund,
-            totalPaid:
-              match.totalSubTotal + match.totalShippingFee
+            totalPaid: match.totalSubTotal + match.totalShippingFee, // Chỉ cộng totalSubTotal và totalShippingFee
           },
         };
       } else {
@@ -310,27 +305,26 @@ export class StatisticsService {
         };
       }
     });
-
+  
     // Chuẩn bị tổng hợp dữ liệu
     const allSummary = dailyDetails.reduce(
       (summary, item) => {
         summary.totalSubTotal += item.summary.totalSubTotal;
         summary.totalShippingFee += item.summary.totalShippingFee;
         summary.totalRefund += item.summary.totalRefund;
+        summary.totalPaid += item.summary.totalSubTotal + item.summary.totalShippingFee; // Không trừ totalRefund
         return summary;
       },
       { totalSubTotal: 0, totalShippingFee: 0, totalRefund: 0, totalPaid: 0 },
     );
-    allSummary.totalPaid =
-      allSummary.totalSubTotal +
-      allSummary.totalShippingFee -
-      allSummary.totalRefund;
-
+  
     return {
       dailyDetails,
       allSummary,
     };
   }
+  
+  
 
   async getStaticEcoService(userId: string): Promise<any> {
     try {

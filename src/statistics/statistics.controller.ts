@@ -93,4 +93,20 @@ export class StatisticsController {
       viewBy
     );
   }
+  @ApiTags('manager-statistics')
+  @Get('get-static-revenue')
+  @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
+  @ApiQuery({ name: 'viewBy', required: false,enum:['point','revenue'] })
+  async getStaticRevenueController(
+    @Query('startDate') startDate: Date,
+    @Query('endDate') endDate: Date,
+    @Query('viewBy') viewBy: string
+  ): Promise<any> {
+    return this.statisticsService.getStaticRevenueService(
+      startDate,
+      endDate,
+      viewBy
+    );
+  }
 }

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 import { StatisticsController } from './statistics.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Cart, CartSchema, Order,OrderSchema, Product, ProductSchema, SubOrder, SubOrderSchema, User, UserSchema } from '@app/libs/common/schema';
+import { Cart, CartSchema, Order,OrderSchema, Product, ProductSchema, Revenue, RevenueSchema, SubOrder, SubOrderSchema, User, UserSchema } from '@app/libs/common/schema';
 
 @Module({
   imports: [
@@ -12,6 +12,7 @@ import { Cart, CartSchema, Order,OrderSchema, Product, ProductSchema, SubOrder, 
       {name:Product.name, schema:ProductSchema},
       {name:Cart.name, schema:CartSchema},
       {name:User.name, schema:UserSchema},
+      {name:Revenue.name, schema:RevenueSchema}
     ]),
   ],
   controllers: [StatisticsController],

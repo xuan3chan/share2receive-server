@@ -7,6 +7,8 @@ import {
   OrderItemDocument,
   Product,
   ProductDocument,
+  Revenue,
+  RevenueDocument, 
   SubOrder,
   SubOrderDocument,
   User,
@@ -28,6 +30,8 @@ export class StatisticsService {
     private readonly cartModel: Model<CartDocument>,
     @InjectModel(User.name) 
     private readonly userModel: Model<UserDocument>,
+    @InjectModel(Revenue.name)
+    private readonly revenueModel: Model<RevenueDocument>,
   ) {}
   async getStaticSallerService(
     userId: string,
@@ -837,6 +841,125 @@ export class StatisticsService {
       allSummary,
     };
   }
+  async getStaticRevenueService(
+    startDate?: Date,
+    endDate?: Date,
+    viewBy: string = 'revenue' // Default to 'point'
+  ): Promise<any> {
+    try {
+      // Build filter conditions
+      const filter: any = {};
+      if (startDate && endDate) {
+        filter.createdAt = {
+          $gte: new Date(startDate), // Start date
+          $lte: new Date(endDate), // End date
+        };
+      }
+      console.log('filter:', filter);
+  
+      // Aggregate data grouped by date
+      const dailySummary = await this.revenueModel.aggregate([
+        { $match: filter },
+        {
+          $project: {
+            date: {
+              $dateToString: { format: '%Y/%m/%d', date: '$createdAt' },
+            },
+            description: 1,
+            amount: 1,
+          },
+        },
+        {
+          $group: {
+            _id: '$date',
+            promotionAmount: {
+              $sum: {
+                $cond: [
+                  { $regexMatch: { input: '$description', regex: 'promotion', options: 'i' } },
+                  '$amount',
+                  0,
+                ],
+              },
+            },
+            saleAmount: {
+              $sum: {
+                $cond: [
+                  { $regexMatch: { input: '$description', regex: 'sale', options: 'i' } },
+                  '$amount',
+                  0,
+                ],
+              },
+            },
+            buyAmount: {
+              $sum: {
+                $cond: [
+                  { $regexMatch: { input: '$description', regex: 'buy', options: 'i' } },
+                  '$amount',
+                  0,
+                ],
+              },
+            },
+            productAmount: {
+              $sum: {
+                $cond: [
+                  { $regexMatch: { input: '$description', regex: 'product', options: 'i' } },
+                  '$amount',
+                  0,
+                ],
+              },
+            },
+          },
+        },
+        {
+          $sort: { _id: 1 }, // Sort by date
+        },
+      ]);
+    
+      // Calculate total summary
+      const totalSummary = dailySummary.reduce(
+        (acc, cur) => {
+          acc.totalPromotion += cur.promotionAmount || 0;
+          acc.totalSale += cur.saleAmount || 0;
+          acc.totalBuy += cur.buyAmount || 0;
+          acc.totalProduct += cur.productAmount || 0;
+          return acc;
+        },
+        {
+          totalPromotion: 0,
+          totalSale: 0,
+          totalBuy: 0,
+          totalProduct: 0,
+        }
+      );
+    
+      // Adjust amounts based on viewBy
+      const multiplier = viewBy === 'revenue' ? 1000 : 1;/////
+  
+      // Format the result
+      const formattedData = dailySummary.map((item) => ({
+        date: item._id,
+        promotionAmount: (item.promotionAmount || 0) * multiplier,
+        saleAmount: (item.saleAmount || 0) * multiplier,
+        buyAmount: (item.buyAmount || 0) * multiplier,
+        productAmount: (item.productAmount || 0) * multiplier,
+      }));
+  
+      return {
+        data: formattedData,
+        summarize: {
+          totalPromotion: totalSummary.totalPromotion * multiplier,
+          totalSale: totalSummary.totalSale * multiplier,
+          totalBuy: totalSummary.totalBuy * multiplier,
+          totalProduct: totalSummary.totalProduct * multiplier,
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching revenues:', error);
+      throw new BadRequestException('Error fetching revenues');
+    }
+  }
+  
+  
   
   
 }

@@ -141,16 +141,15 @@ export class StatisticsService {
               ],
             },
           },
-          totalSubTotal: { $sum: '$subTotal' },
-          totalShippingFee: {
+          totalSubTotal: {
             $sum: {
               $cond: [
                 {
                   $and: [
-                    { $ne: ['$status', 'canceled'] },
+                    { $eq: ['$status', 'completed'] }, // Đơn đã hoàn thành
                     {
                       $or: [
-                        { requestRefund: null },
+                        { requestRefund: null }, // Không có yêu cầu hoàn tiền
                         {
                           $ne: [
                             {
@@ -159,9 +158,34 @@ export class StatisticsService {
                                 input: '$requestRefund',
                               },
                             },
-                            'approved',
+                            'approved', // Loại trừ các đơn hoàn tiền đã được duyệt
                           ],
                         },
+                      ],
+                    },
+                  ],
+                },
+                '$subTotal',
+                0, // Nếu không thỏa mãn điều kiện, subTotal là 0
+              ],
+            },
+          },
+          
+          totalShippingFee: {
+            $sum: {
+              $cond: [
+                {
+                  $or: [
+                    { requestRefund: null },
+                    {
+                      $ne: [
+                        {
+                          $getField: {
+                            field: 'status',
+                            input: '$requestRefund',
+                          },
+                        },
+                        'approved',
                       ],
                     },
                   ],
@@ -171,6 +195,7 @@ export class StatisticsService {
               ],
             },
           },
+          
           
           totalRefund: {
             $sum: {

@@ -844,7 +844,8 @@ export class StatisticsService {
   async getStaticRevenueService(
     startDate?: Date,
     endDate?: Date,
-    viewBy: string = 'revenue' // Default to 'point'
+    viewBy: string = 'revenue', // Default to 'revenue'
+    dateBy: string = 'day' // Default to 'day'
   ): Promise<any> {
     try {
       // Build filter conditions
@@ -857,13 +858,21 @@ export class StatisticsService {
       }
       console.log('filter:', filter);
   
+      // Determine date format based on dateBy
+      let dateFormat = '%Y/%m/%d'; // Default: day
+      if (dateBy === 'month') {
+        dateFormat = '%Y/%m'; // Group by month
+      } else if (dateBy === 'year') {
+        dateFormat = '%Y'; // Group by year
+      }
+  
       // Aggregate data grouped by date
       const dailySummary = await this.revenueModel.aggregate([
         { $match: filter },
         {
           $project: {
             date: {
-              $dateToString: { format: '%Y/%m/%d', date: '$createdAt' },
+              $dateToString: { format: dateFormat, date: '$createdAt' },
             },
             description: 1,
             amount: 1,
@@ -914,7 +923,7 @@ export class StatisticsService {
           $sort: { _id: 1 }, // Sort by date
         },
       ]);
-    
+  
       // Calculate total summary
       const totalSummary = dailySummary.reduce(
         (acc, cur) => {
@@ -931,9 +940,9 @@ export class StatisticsService {
           totalProduct: 0,
         }
       );
-    
+  
       // Adjust amounts based on viewBy
-      const multiplier = viewBy === 'revenue' ? 1000 : 1;/////
+      const multiplier = viewBy === 'revenue' ? 1000 : 1;
   
       // Format the result
       const formattedData = dailySummary.map((item) => ({
@@ -958,6 +967,7 @@ export class StatisticsService {
       throw new BadRequestException('Error fetching revenues');
     }
   }
+  
   
   
   

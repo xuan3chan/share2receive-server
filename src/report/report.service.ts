@@ -329,9 +329,10 @@ export class ReportService {
     }
     if (userIdToCheck) {
       const userReports = await this.reportModel.countDocuments({
-        targetUserId: userIdToCheck.toString(),
-        isCheckded: true,
+        targetUserId: userIdToCheck,
+        isChecked: true,
       });
+
       if (userReports >= 5) {
         await this.blockFromReportService(reportId);
         console.log('5 diem');
@@ -358,7 +359,7 @@ export class ReportService {
   async getHistoryReportService() {
     return await this.reportHistoryModel.find().populate(
       'userId',
-      'firstname lastname email isBlock',
+      'firstname lastname email',
     ).sort({ createdAt: -1 });
   }
   private async createHistoryService(

@@ -308,9 +308,9 @@ export class ReportService {
     if (!report) {
       throw new BadRequestException('Report not found');
     }
-    // if (report.isCheckded) {
-    //   throw new BadRequestException('Report is already checked')
-    // }
+    if (report.isChecked) {
+      throw new BadRequestException('Report is already checked')
+    }
     report.isChecked = isChecked;
     await report.save();
 

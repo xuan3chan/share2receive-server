@@ -42,11 +42,18 @@ export class ReportService {
         }
         targetUserId = product.userId?.toString(); // Capture the product owner's user ID
       }
-  
+      // kiem tra co report hay chua nếu rồi thì báo lỗi
+      const checkReport = await this.reportModel.findOne({
+        userId,
+        targetId: createReportDto.targetId,
+      }).lean();
+      if (checkReport) {
+        throw new BadRequestException('You have already reported this item');
+      }
       if (!targetUserId) {
         throw new BadRequestException('Unable to determine target user for the report');
       }
-  
+    
       const { reportType, targetId, reason, description } = createReportDto;
       const report = new this.reportModel({
         userId,
@@ -58,7 +65,6 @@ export class ReportService {
       });
       return await report.save();
     } catch (error) {
-      console.error('Error creating report:', error);
       throw new BadRequestException(error.message);
     }
   }
@@ -311,6 +317,7 @@ export class ReportService {
     if (report.isChecked) {
       throw new BadRequestException('Report is already checked')
     }
+    
     report.isChecked = isChecked;
     await report.save();
 

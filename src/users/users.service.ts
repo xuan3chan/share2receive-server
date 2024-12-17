@@ -105,12 +105,12 @@ export class UsersService {
     // Build match query
     const matchQuery = regex
       ? {
-          $or: [
-            { firstname: regex },
-            { lastname: regex },
-            { email: regex },
-          ],
-        }
+        $or: [
+        { firstname: { $regex: regex, $options: 'i' } },
+        { lastname: { $regex: regex, $options: 'i' } },
+        { email: { $regex: regex, $options: 'i' } },
+        ],
+      }
       : {};
   
     // Aggregation pipeline

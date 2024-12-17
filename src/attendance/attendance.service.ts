@@ -69,21 +69,27 @@ export class AttendanceService {
     
     // 2. Điểm danh thủ công (POST request để lưu điểm danh cho người dùng)
     async markAttendanceService(userId: string, isAttendance: boolean): Promise<Attendance> {
-        // Lấy ngày hiện tại (ngày hôm nay)
-        const pointPromo = await this.getValueToPromotion();
-        const attendanceDate = moment().startOf('day').toDate(); // Start of the day để đảm bảo không có thời gian
+        // Lấy thời gian đầu ngày và cuối ngày hôm nay
+        const startOfToday = moment().startOf('day').toDate(); // 00:00:00.000 hôm nay
+        const endOfToday = moment().endOf('day').toDate();     // 23:59:59.999 hôm nay
     
-        // Kiểm tra xem người dùng đã có điểm danh cho ngày này chưa
-        const existingAttendance = await this.attendanceModel.findOne({ userId, date: attendanceDate });
-        
+        // Lấy giá trị điểm khuyến mãi
+        const pointPromo = await this.getValueToPromotion();
+    
+        // Kiểm tra xem người dùng đã có điểm danh trong khoảng thời gian này chưa
+        const existingAttendance = await this.attendanceModel.findOne({
+            userId,
+            date: { $gte: startOfToday, $lte: endOfToday } // Lọc trong phạm vi ngày
+        });
+    
         if (existingAttendance) {
             throw new BadRequestException('Attendance already marked for today');
         } else {
             // Nếu chưa có, tạo mới bản ghi điểm danh
-            this.WalletService.addPointForOutService(userId, pointPromo);
+            await this.WalletService.addPointForOutService(userId, pointPromo);
             const newAttendance = new this.attendanceModel({
                 userId,
-                date: attendanceDate,
+                date: new Date(), // Lưu thời gian hiện tại (theo UTC)
                 isAttendance,
             });
             return newAttendance.save();

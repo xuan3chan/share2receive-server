@@ -1,10 +1,15 @@
-import { Controller, Get, HttpCode, Query, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, HttpCode, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
+import { PermissionGuard } from '@app/libs/common/gaurd';
+import { Action, Subject } from '@app/libs/common/decorator';
 @ApiTags('statistics')
+@UseGuards(PermissionGuard)
+@Subject('statistics')
+@Action('read')
 @Controller('statistics')
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}

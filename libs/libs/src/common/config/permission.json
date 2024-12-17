@@ -243,6 +243,10 @@
     "id":44,
     "namePermission": "readRevenue",
     "action": "read"
+  },
+  {
+    "id":45,
+    "namePermission": "statistics",
+    "action": "read"
   }
-
 ]

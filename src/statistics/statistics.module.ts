@@ -3,9 +3,12 @@ import { StatisticsService } from './statistics.service';
 import { StatisticsController } from './statistics.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Cart, CartSchema, Configs, ConfigsSchema, Order,OrderSchema, Product, ProductSchema, Revenue, RevenueSchema, SubOrder, SubOrderSchema, User, UserSchema } from '@app/libs/common/schema';
+import { AdminModule } from 'src/admin/admin.module';
+import { AbilityFactory } from '@app/libs/common/abilities/abilities.factory';
 
 @Module({
   imports: [
+    AdminModule,
     MongooseModule.forFeature([
       { name: SubOrder.name, schema: SubOrderSchema },
       {name: Order.name, schema: OrderSchema},
@@ -17,7 +20,7 @@ import { Cart, CartSchema, Configs, ConfigsSchema, Order,OrderSchema, Product, P
     ]),
   ],
   controllers: [StatisticsController],
-  providers: [StatisticsService],
+  providers: [StatisticsService,AbilityFactory],
 })
 export class StatisticsModule {}
   

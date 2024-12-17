@@ -10,7 +10,6 @@ import {
 } from '@app/libs/common/schema';
 import mongoose, { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { ApiTags } from '@nestjs/swagger';
 import {
   CreateOrderByProductDto,
   RequestRefundDto,
@@ -19,7 +18,6 @@ import { TransactionService } from 'src/transaction/transaction.service';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
 import { MailerService } from 'src/mailer/mailer.service';
 import { IShipping } from '@app/libs/common/interface';
-import { RatingService } from 'src/rating/rating.service';
 @Injectable()
 export class OrdersService {
   constructor(
@@ -36,6 +34,7 @@ export class OrdersService {
   ) {}
 
   async createOrderService(userId: string): Promise<any> {
+    
     const shippingServices: Record<string, IShipping> = {
       GHN: {
         name: 'GHN',
@@ -331,6 +330,10 @@ export class OrdersService {
       .populate('userId', 'address phone');
     if (!product) {
       throw new BadRequestException('Sản phẩm không tồn tại');
+    }
+    // nếu sản phẩm của người bán thì không thể mua
+    if (product.userId.toString() === userId) {
+      throw new BadRequestException('Không thể mua sản phẩm của chính mình');
     }
     const orderItem = await this.orderItemModel.create({
       subOrderId: null,

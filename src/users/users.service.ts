@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { UpdateUserProfileDto, UserStyleDto } from '@app/libs/common/dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User } from '@app/libs/common/schema';
+import { Model, PipelineStage } from 'mongoose';
+import { User, Wallet, WalletDocument } from '@app/libs/common/schema';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { remove as removeAccents } from 'remove-accents';
 import { EncryptionService } from '../encryption/encryption.service';
@@ -21,6 +21,7 @@ export class UsersService {
   constructor(
     private cloudinaryService: CloudinaryService,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     @Inject(forwardRef(() => EncryptionService))
     private encryptionService: EncryptionService,
     private mailerService: MailerService,
@@ -82,42 +83,74 @@ export class UsersService {
     searchKey?: string,
     sortField: string = 'lastname',
     sortOrder: 'asc' | 'desc' = 'asc',
-  ): Promise<{ total: number; users: User[] }> {
-    let query = {};
-
-    // Search functionality
-    if (searchKey) {
-      const preprocessString = (str: string) =>
-        str
-          ? removeAccents(str)
-              .replace(/[^a-zA-Z0-9\s]/gi, '')
-              .trim()
-              .toLowerCase()
-          : '';
-      const preprocessedSearchKey = preprocessString(searchKey);
-
-      const regex = new RegExp(preprocessedSearchKey, 'i');
-      query = {
-        $or: [{ firstname: regex }, { lastname: regex }, { email: regex }],
-      };
-    }
-
-    // Count total users
-    const total = await this.userModel.countDocuments(query).exec();
-    const skip = (page - 1) * limit; // Calculate the number of users to skip
-
-    // Find and paginate users with sorting
-    const users = await this.userModel
-      .find(query)
-      .select('firstname lastname email avatar isBlock createdAt') // Select necessary fields
-      .skip(skip)
-      .limit(limit)
-      .sort({ [sortField]: sortOrder }) // Apply sorting
-      .lean() // Use lean for performance
-      .exec();
-
+  ): Promise<{ total: number; users: any[] }> {
+    const skip = (page - 1) * limit;
+  
+    // Preprocess search key for regex
+    const preprocessString = (str: string) =>
+      str
+        ? str
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9\s]/g, '')
+            .trim()
+            .toLowerCase()
+        : '';
+  
+    const preprocessedSearchKey = searchKey ? preprocessString(searchKey) : null;
+    const regex = preprocessedSearchKey
+      ? new RegExp(preprocessedSearchKey, 'i')
+      : null;
+  
+    // Build match query
+    const matchQuery = regex
+      ? {
+          $or: [
+            { firstname: regex },
+            { lastname: regex },
+            { email: regex },
+          ],
+        }
+      : {};
+  
+    // Aggregation pipeline
+    const pipeline: PipelineStage[] = [
+      { $match: matchQuery }, // Match search criteria
+      {
+        $lookup: {
+          from: 'wallets', // Wallet collection name
+          localField: '_id', // User's ID
+          foreignField: 'userId', // Wallet's user reference
+          as: 'wallet',
+        },
+      },
+      { $unwind: { path: '$wallet', preserveNullAndEmptyArrays: true } }, // Flatten wallet array
+      {
+        $project: {
+          firstname: 1,
+          lastname: 1,
+          email: 1,
+          avatar: 1,
+          isBlock: 1,
+          createdAt: 1,
+          averageRating: 1,
+          numberOfRating: 1,
+          wallet: { $ifNull: ['$wallet.point', 0] }, // Extract wallet.point directly
+        },
+      },
+      { $sort: { [sortField]: sortOrder === 'asc' ? 1 : -1 } }, // Sorting
+      { $skip: skip }, // Pagination: Skip
+      { $limit: limit }, // Pagination: Limit
+    ];
+  
+    // Execute the aggregation query
+    const users = await this.userModel.aggregate(pipeline).exec();
+    const total = await this.userModel.countDocuments(matchQuery).exec();
+  
     return { total, users };
   }
+  
+  
 
   async updateRefreshTokenService(
     account: string,

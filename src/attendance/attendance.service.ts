@@ -19,14 +19,13 @@ export class AttendanceService {
         return config.valueToPromotion;
     }
     async getWeeklyAttendanceService(userId: string): Promise<any> {
-        // Lấy ngày hiện tại
-        const currentDate = moment();
+        // Lấy ngày hiện tại tại Việt Nam (GMT+7)
+        const currentDate = moment().utcOffset(7);
     
         // Lấy startDate (Thứ Hai của tuần hiện tại)
         const startDate = currentDate.clone().startOf('isoWeek'); // Thứ Hai (đầu tuần)
         // Lấy endDate (Chủ Nhật của tuần hiện tại)
         const endDate = currentDate.clone().endOf('isoWeek'); // Chủ Nhật (cuối tuần)
-    
     
         // Truy vấn điểm danh của người dùng trong tuần hiện tại
         const attendances = await this.attendanceModel.find({
@@ -37,13 +36,11 @@ export class AttendanceService {
             }
         }).exec();
     
-    
         // Tạo danh sách tất cả các ngày trong tuần từ Thứ Hai đến Chủ Nhật
         const allWeekDays = [];
         for (let day = startDate.clone(); day.isSameOrBefore(endDate, 'day'); day.add(1, 'day')) {
             allWeekDays.push(day.clone());
         }
-    
     
         // Tạo danh sách điểm danh trong tuần
         const weekAttendances = allWeekDays.map(day => {
@@ -54,7 +51,6 @@ export class AttendanceService {
             };
         });
     
-    
         // Định dạng dữ liệu trả về
         const weeklyAttendance = {
             weekStart: startDate.format('YYYY-MM-DD'), // Ngày bắt đầu tuần
@@ -64,14 +60,13 @@ export class AttendanceService {
     
         return { data: weeklyAttendance };
     }
-    
 
     
     // 2. Điểm danh thủ công (POST request để lưu điểm danh cho người dùng)
     async markAttendanceService(userId: string, isAttendance: boolean): Promise<Attendance> {
-        // Lấy thời gian đầu ngày và cuối ngày hôm nay
-        const startOfToday = moment().startOf('day').toDate(); // 00:00:00.000 hôm nay
-        const endOfToday = moment().endOf('day').toDate();     // 23:59:59.999 hôm nay
+        // Lấy thời gian đầu ngày và cuối ngày hôm nay tại Việt Nam (GMT+7)
+        const startOfToday = moment().utcOffset(7).startOf('day').toDate(); // 00:00:00.000 hôm nay
+        const endOfToday = moment().utcOffset(7).endOf('day').toDate();     // 23:59:59.999 hôm nay
     
         // Lấy giá trị điểm khuyến mãi
         const pointPromo = await this.getValueToPromotion();
@@ -81,7 +76,7 @@ export class AttendanceService {
             userId,
             date: { $gte: startOfToday, $lte: endOfToday } // Lọc trong phạm vi ngày
         });
-    
+        console.log('existingAttendance', existingAttendance);
         if (existingAttendance) {
             throw new BadRequestException('Attendance already marked for today');
         } else {

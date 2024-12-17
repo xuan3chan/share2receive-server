@@ -62,7 +62,7 @@ export class ProductService {
         throw new BadRequestException('Không đủ số dư điểm để đăng sản phẩm, vui lòng nạp thêm!');
       }
       if (product.type !== 'donate') {
-        await this.walletService.deductPointService(userId, setPoint);
+        await this.walletService.deductPointService(userId, setPoint,'cross');
       }
       const [checkExist, checkCategory, checkBrand] = await Promise.all([
         this.productModel.findOne({ productName: product.productName }),

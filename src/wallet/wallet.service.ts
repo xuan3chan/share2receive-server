@@ -61,7 +61,7 @@ export class WalletService implements OnModuleInit {
             throw new BadRequestException(`Error adding points: ${error.message}`);
         }
     }
-    async deductPointService(userId: string, amount: number): Promise<WalletDocument> {
+    async deductPointService(userId: string, amount: number,type?:string): Promise<WalletDocument> {
         try {
             // Kiểm tra
             const wallet = await this.walletModel.findOne({ userId: new mongoose.Types.ObjectId(userId) });
@@ -77,8 +77,12 @@ export class WalletService implements OnModuleInit {
             wallet.point -= amount;
             // Lưu lại vào cơ sở dữ liệu
             await wallet.save();
+            if(type === 'checkout'){
+            await this.revenueService.createRevenue(userId, 'in', amount, 'buy');
+            }else if(type === 'cross') {
             await this.revenueService.createRevenue(userId, 'in', amount, 'product');
 
+            }
             return wallet;
         } catch (error) {
             throw new BadRequestException(`Error deducting points: ${error.message}`);

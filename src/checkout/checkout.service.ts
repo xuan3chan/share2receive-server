@@ -120,7 +120,7 @@ export class CheckoutService {
       throw new BadRequestException('Số dư ví không đủ để thanh toán!');
     }
 
-    await this.walletService.deductPointService(userId, myOrder.totalAmount / perPoint);
+    await this.walletService.deductPointService(userId, myOrder.totalAmount / perPoint,'checkout');
 
     // Cập nhật trạng thái thanh toán
     await this.orderModel.findByIdAndUpdate(orderID, {

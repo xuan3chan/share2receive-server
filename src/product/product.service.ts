@@ -505,6 +505,7 @@ export class ProductService {
           .populate('brandId', 'name totalProduct')
           .populate('userId', 'firstname lastname avatar')
           .select('-createdAt -updatedAt -__v -approved -isDeleted -isBlock')
+          .sort({ createdAt: -1 }) // Sort by createdAt in descending order
           .skip((page - 1) * limit)
           .limit(limit)
           .lean({ virtuals: true })

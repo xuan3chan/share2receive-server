@@ -306,6 +306,7 @@ export class TransactionService {
       .select('transId amount orderInfo orderType payType createdAt')
       .skip((page - 1) * limit)
       .limit(limit)
+      .sort({ createdAt: -1 }) // Sắp xếp theo ngày mới nhất lên trước
       .lean();
 
     const totalTransactions = await this.transactionModel.countDocuments({ userId });

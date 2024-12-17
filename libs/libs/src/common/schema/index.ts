@@ -18,3 +18,4 @@ export * from './evidence.schema';
 export * from './attendance.schema';
 export * from './packet.schema';
 export * from './revenue.schema';
+export * from './config.schema';

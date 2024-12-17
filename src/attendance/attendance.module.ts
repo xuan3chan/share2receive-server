@@ -2,7 +2,14 @@ import { Module } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { AttendanceController } from './attendance.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Attendance, AttendanceSchema, User, UserSchema } from '@app/libs/common/schema';
+import {
+  Attendance,
+  AttendanceSchema,
+  Configs,
+  ConfigsSchema,
+  User,
+  UserSchema,
+} from '@app/libs/common/schema';
 import { WalletModule } from 'src/wallet/wallet.module';
 
 @Module({
@@ -13,7 +20,8 @@ import { WalletModule } from 'src/wallet/wallet.module';
         name: Attendance.name,
         schema: AttendanceSchema,
       },
-      {name:User.name,schema:UserSchema}
+      { name: User.name, schema: UserSchema },
+      { name: Configs.name, schema: ConfigsSchema },
     ]),
   ],
   controllers: [AttendanceController],

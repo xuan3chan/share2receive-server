@@ -7,12 +7,11 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Order, OrderItem, Packet, Product, SubOrder, User, UserDocument, Wallet, WalletDocument } from '@app/libs/common/schema';
+import { Configs, ConfigsDocument, Order, OrderItem, Packet, Product, SubOrder, User, UserDocument, Wallet, WalletDocument } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { IMomoPaymentResponse } from '@app/libs/common/interface';
 import { TransactionService } from 'src/transaction/transaction.service';
 import { WalletService } from 'src/wallet/wallet.service';
-import { RevenueService } from 'src/revenue/revenue.service';
 
 @Injectable()
 export class CheckoutService {
@@ -23,14 +22,18 @@ export class CheckoutService {
     @InjectModel(OrderItem.name) private orderItemModel: Model<OrderItem>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Packet.name) private packetModel: Model<Packet>,
+    @InjectModel(Configs.name) private ConfigsModel: Model<ConfigsDocument>,
     private transactionService: TransactionService,
     private walletService: WalletService,
-    private revenueService: RevenueService,
   ) {
+  }
+  private async getPerPoint() {
+    const result = await this.ConfigsModel.findOne().select('valueToPoint').lean();
+    return result.valueToPoint;
   }
 
   async checkoutByWalletService(userId: string, orderID: string): Promise<any> {
-    const setPerpoint = 1000;
+    const perPoint = await this.getPerPoint();
     // Lấy thông tin đơn hàng
     const myOrder = await this.orderModel
       .findOne({ _id: orderID, userId })
@@ -113,11 +116,11 @@ export class CheckoutService {
     }
     // Trừ tiền từ ví người dùng
     const userWallet = await this.walletService.getWalletService(userId);
-    if (userWallet.point < myOrder.totalAmount / setPerpoint) {
+    if (userWallet.point < myOrder.totalAmount / perPoint) {
       throw new BadRequestException('Số dư ví không đủ để thanh toán!');
     }
 
-    await this.walletService.deductPointService(userId, myOrder.totalAmount / 1000);
+    await this.walletService.deductPointService(userId, myOrder.totalAmount / perPoint);
 
     // Cập nhật trạng thái thanh toán
     await this.orderModel.findByIdAndUpdate(orderID, {
@@ -389,6 +392,8 @@ export class CheckoutService {
   }
 
   async momoCallbackService(body: IMomoPaymentResponse): Promise<any> {
+    const perPoint = await this.getPerPoint();
+
     console.log('Callback từ MoMo:', body);
     //kiểm tra orderInfo có chữ 'Thanh toán đơn hàng của bạn'
     const orderInfo = body.orderInfo;
@@ -406,7 +411,7 @@ export class CheckoutService {
       if (body.resultCode === 0) {
         console.log('Nạp tiền vào ví thành công:', body.orderId);
         await this.transactionService.saveTransaction(body.extraData, body);
-        await this.walletService.addPointService(body.extraData, body.amount / 1000);///// cân điểm nạp
+        await this.walletService.addPointService(body.extraData, body.amount / perPoint);///// cân điểm nạp
       } else {
         console.error('Nạp tiền vào ví thất bại:', body.message);
         throw new BadRequestException(body.message);
@@ -559,6 +564,7 @@ export class CheckoutService {
   ///////////////////
   async momoPaymentPoint(userId: string, pointsToAdd: number): Promise<any> {
     try {
+      const perPoint = await this.getPerPoint();
       if (pointsToAdd <= 0) {
         throw new BadRequestException('Số điểm phải lớn hơn 0');
       }
@@ -580,7 +586,7 @@ export class CheckoutService {
       const extraData = userId;
       const autoCapture = true;
 
-      const amount = pointsToAdd * 1000; // Giả sử 1 điểm = 1000 VND
+      const amount = pointsToAdd * perPoint; // Giả sử 1 điểm = 1000 VND
 
       // Tạo orderId và requestId cho MoMo
       const orderId = config.partnerCode + new Date().getTime();
@@ -683,6 +689,7 @@ export class CheckoutService {
   }
 
 async checkoutPacketService(userId: string, packetId: string): Promise<any> {
+  const perPoint = await this.getPerPoint();
   const packet = await this.packetModel.findById(packetId).lean();
   if (!packet) {
     throw new BadRequestException('Gói không tồn tại!');
@@ -690,7 +697,7 @@ async checkoutPacketService(userId: string, packetId: string): Promise<any> {
 
   
   const amount = packet.price;
-  const pointsToAdd = amount / 1000 + packet.promotionPoint;
+  const pointsToAdd = amount / perPoint + packet.promotionPoint;
   const config = {
     accessKey: 'F8BBA842ECF85',
     secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',

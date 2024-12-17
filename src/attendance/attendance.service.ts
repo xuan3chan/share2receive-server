@@ -2,18 +2,22 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Attendance, AttendanceDocument } from '@app/libs/common/schema/attendance.schema';
-import { User, UserDocument } from '@app/libs/common/schema/user.schema';
 import * as moment from 'moment';
 import { WalletService } from 'src/wallet/wallet.service';
+import { Configs, ConfigsDocument } from '@app/libs/common/schema';
 
 @Injectable()
 export class AttendanceService {
     constructor(
         @InjectModel(Attendance.name) private readonly attendanceModel: Model<AttendanceDocument>,
-        @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+        @InjectModel(Configs.name) private readonly configModel: Model<ConfigsDocument>,
         private readonly WalletService: WalletService
     ) {}
 
+    private async getValueToPromotion () {
+        const config = await this.configModel.findOne().select('valueToPromotion').lean();
+        return config.valueToPromotion;
+    }
     async getWeeklyAttendanceService(userId: string): Promise<any> {
         // Lấy ngày hiện tại
         const currentDate = moment();
@@ -66,6 +70,7 @@ export class AttendanceService {
     // 2. Điểm danh thủ công (POST request để lưu điểm danh cho người dùng)
     async markAttendanceService(userId: string, isAttendance: boolean): Promise<Attendance> {
         // Lấy ngày hiện tại (ngày hôm nay)
+        const pointPromo = await this.getValueToPromotion();
         const attendanceDate = moment().startOf('day').toDate(); // Start of the day để đảm bảo không có thời gian
     
         // Kiểm tra xem người dùng đã có điểm danh cho ngày này chưa
@@ -75,7 +80,7 @@ export class AttendanceService {
             throw new BadRequestException('Attendance already marked for today');
         } else {
             // Nếu chưa có, tạo mới bản ghi điểm danh
-            this.WalletService.addPointForOutService(userId, 2);
+            this.WalletService.addPointForOutService(userId, pointPromo);
             const newAttendance = new this.attendanceModel({
                 userId,
                 date: attendanceDate,

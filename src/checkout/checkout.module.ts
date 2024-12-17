@@ -5,6 +5,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   Cart,
   CartSchema,
+  Configs,
+  ConfigsSchema,
   Order,
   OrderItem,
   OrderItemSchema,
@@ -23,6 +25,7 @@ import {
 import { TransactionModule } from 'src/transaction/transaction.module';
 import { WalletModule } from 'src/wallet/wallet.module';
 import { RevenueModule } from 'src/revenue/revenue.module';
+import { ConfigsModule } from 'src/configs/configs.module';
 
 @Module({
   imports: [
@@ -33,15 +36,15 @@ import { RevenueModule } from 'src/revenue/revenue.module';
         schema: CartSchema,
       },
       { name: Product.name, schema: ProductSchema },
-      {name:Order.name,schema:OrderSchema},
-      {name:SubOrder.name,schema:SubOrderSchema},
-      {name:OrderItem.name,schema:OrderItemSchema},
-      {name:User.name,schema:UserSchema},
-      {name:Wallet.name,schema:WalletSchema},
-      {name:Packet.name,schema:PacketSchema},
+      { name: Order.name, schema: OrderSchema },
+      { name: SubOrder.name, schema: SubOrderSchema },
+      { name: OrderItem.name, schema: OrderItemSchema },
+      { name: User.name, schema: UserSchema },
+      { name: Wallet.name, schema: WalletSchema },
+      { name: Packet.name, schema: PacketSchema },
+      { name: Configs.name, schema: ConfigsSchema },
     ]),
     TransactionModule,
-    RevenueModule,
   ],
   controllers: [CheckoutController],
   providers: [CheckoutService],

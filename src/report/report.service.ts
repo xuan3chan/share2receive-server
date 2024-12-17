@@ -1,11 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Product, Report, ReportHistory, SubOrder, User } from '@app/libs/common/schema';
+import { Configs, ConfigsDocument, Product, Report, ReportHistory, SubOrder, User } from '@app/libs/common/schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateReportDto } from '@app/libs/common/dto';
 import { PopulatedReport } from '@app/libs/common/interface';
 import { EventGateway } from '@app/libs/common/util/event.gateway';
-import { NotificationService } from 'src/notification/notification.service';
 import { MailerService } from 'src/mailer/mailer.service';
 
 @Injectable()
@@ -15,11 +14,29 @@ export class ReportService {
     @InjectModel('SubOrder') private readonly subOrderModel: Model<SubOrder>,
     @InjectModel('Product') private readonly productModel: Model<Product>,
     @InjectModel('User') private readonly userModel: Model<User>,
+    @InjectModel(Configs.name) private readonly configModel: Model<ConfigsDocument>,
     @InjectModel(ReportHistory.name) private readonly reportHistoryModel: Model<ReportHistory>,
     private readonly eventGateway: EventGateway,
     private readonly mailerService: MailerService,
   ) {}
-
+  private async getConfigField(field: string) {
+    const config = await this.configModel.findOne().select(field).lean();
+    return config?.[field];
+  }
+  
+  // Hàm gọi đến các trường cụ thể
+  private async getReportWarning() {
+    return this.getConfigField('reportWarning');
+  }
+  
+  private async getReportBlockerProduct() {
+    return this.getConfigField('reprotBlockerProduct');
+  }
+  
+  private async getReportBlockUser() {
+    return this.getConfigField('reportBlockUser');
+  }
+  
   async createReportService(
     userId: string,
     createReportDto: CreateReportDto,
@@ -308,61 +325,74 @@ export class ReportService {
     };
   }
 
-  async checkReportService(reportId: string,isChecked:boolean) {
-    console.log('reportId',isChecked);
+  async checkReportService(reportId: string, isChecked: boolean) {
+    // Lấy các điểm quy định từ cấu hình
+
+  
+    console.log('reportId:', reportId, 'isChecked:', isChecked);
+  
+    // Tìm báo cáo
     const report = await this.reportModel.findById(reportId);
     if (!report) {
       throw new BadRequestException('Report not found');
     }
     if (report.isChecked) {
-      throw new BadRequestException('Report is already checked')
+      throw new BadRequestException('Report is already checked');
     }
-    
+  
     report.isChecked = isChecked;
     await report.save();
-
-    let userIdToCheck: string | null = null;
-
-    if (report.reportType === 'product') {
-      const product = await this.productModel.findById(report.targetId).select('userId');
-      if (product?.userId) {
-        userIdToCheck = product.userId.toString();
-      }
-    } else if (report.reportType === 'order') {
-      const subOrder = await this.subOrderModel.findById(report.targetId).select('sellerId');
-      if (subOrder?.sellerId) {
-        userIdToCheck = subOrder.sellerId.toString();
-      }
-    }
+  
+    // Xác định người dùng bị báo cáo
+    const userIdToCheck = await this.getTargetUserId(report);
     if (userIdToCheck) {
       const userReports = await this.reportModel.countDocuments({
         targetUserId: userIdToCheck,
         isChecked: true,
       });
-
-      if (userReports >= 5) {
-        await this.blockFromReportService(reportId);
-        console.log('5 diem');
-      }else if (userReports >= 4) {
-        if (report.reportType === 'product') {
-          await this.blockProductService(reportId);
-        console.log('4 diem');
-
-        }
-        await this.warningUserService(reportId);
-        console.log('4 diem');
-
-      }
-       else if (userReports >= 3) {
-        await this.warningUserService(reportId);
-        console.log('3 diem');
-      }
+  
+      // Xử lý dựa trên số lượng báo cáo
+      await this.handleUserReports(userReports, report);
     }
-
+  
     return {
       message: 'Report checked',
     };
   }
+  
+  private async getTargetUserId(report: any): Promise<string | null> {
+    if (report.reportType === 'product') {
+      const product = await this.productModel.findById(report.targetId).select('userId');
+      return product?.userId?.toString() || null;
+    } else if (report.reportType === 'order') {
+      const subOrder = await this.subOrderModel.findById(report.targetId).select('sellerId');
+      return subOrder?.sellerId?.toString() || null;
+    }
+    return null;
+  }
+  
+  private async handleUserReports(userReports: number, report: any) {
+    const [warningPoint, blockerProductPoint, blockUserPoint] = await Promise.all([
+      this.getReportWarning(),
+      this.getReportBlockerProduct(),
+      this.getReportBlockUser(),
+    ]);
+    if (userReports >= blockUserPoint) {
+      await this.blockFromReportService(report._id);
+      console.log('5 điểm: Chặn người dùng.');
+    } else if (userReports >= blockerProductPoint) {
+      if (report.reportType === 'product') {
+        await this.blockProductService(report._id);
+        console.log('4 điểm: Chặn sản phẩm.');
+      }
+      await this.warningUserService(report._id);
+      console.log('4 điểm: Cảnh báo người dùng.');
+    } else if (userReports >= warningPoint) {
+      await this.warningUserService(report._id);
+      console.log('3 điểm: Cảnh báo người dùng.');
+    }
+  }
+  
   async getHistoryReportService() {
     return await this.reportHistoryModel.find().populate(
       'userId',

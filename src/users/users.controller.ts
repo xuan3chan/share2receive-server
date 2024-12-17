@@ -83,7 +83,10 @@ export class UsersController {
     @Query('sortField') sortField: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ data: any }> {
-    const data = await this.usersService.listUserService(page, limit,searchKey,sortField,sortOrder);
+    // ép kiểu 
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const data = await this.usersService.listUserService(pageNumber, limitNumber,searchKey,sortField,sortOrder);
     return { data };
   }
 

@@ -1,15 +1,20 @@
-import { Controller, Get, HttpCode, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  Query,
+  Req,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
 import { ApiQuery, ApiTags } from '@nestjs/swagger';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
-import { PermissionGuard } from '@app/libs/common/gaurd';
+import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 @ApiTags('statistics')
-@UseGuards(PermissionGuard)
-@Subject('statistics')
-@Action('read')
 @Controller('statistics')
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}
@@ -29,9 +34,10 @@ export class StatisticsController {
     }
   }
   @Get('get-static-saller')
-  @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
-  @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
-  @ApiQuery({ name: 'viewBy', required: false,enum:['day','month','year'] })
+  @UseGuards(MemberGuard)
+  @ApiQuery({ name: 'startDate', required: false, example: '2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2024-12-01' })
+  @ApiQuery({ name: 'viewBy', required: false, enum: ['day', 'month', 'year'] })
   async getStaticSallerController(
     @Req() request: Request,
     @Query('startDate') startDate: string,
@@ -41,80 +47,92 @@ export class StatisticsController {
     const userId = this.getUserIdFromToken(request);
     const start = startDate ? new Date(startDate) : undefined;
     const end = endDate ? new Date(endDate) : undefined;
-    return this.statisticsService.getStaticSallerService(userId, start, end, viewBy);
+    return this.statisticsService.getStaticSallerService(
+      userId,
+      start,
+      end,
+      viewBy,
+    );
   }
 
   @Get('get-static-eco-of-user')
-  async getStaticEcoController(
-    @Req() request: Request,
-  ): Promise<any> {
+  @UseGuards(MemberGuard)
+  async getStaticEcoController(@Req() request: Request): Promise<any> {
     const userId = this.getUserIdFromToken(request);
     return this.statisticsService.getStaticEcoService(userId);
   }
-  
+
   @Get('get-static-eco-all')
   async getStaticEcoAllController(): Promise<any> {
     return this.statisticsService.getStaticAllEcoService();
   }
 
   @Get('get-time-add-cart')
-  async getTimeAddCartController(
-    @Req() request: Request,
-  ): Promise<any> {
+  @UseGuards(MemberGuard)
+  async getTimeAddCartController(@Req() request: Request): Promise<any> {
     const userId = this.getUserIdFromToken(request);
     return this.statisticsService.getStaticTimeAddCartService(userId);
   }
-  
+
   @ApiTags('manager-statistics')
   @Get('get-time-register')
-  @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
-  @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
-  @ApiQuery({ name: 'viewBy', required: false,enum:['day','month','year'] }) 
+  @UseGuards(PermissionGuard)
+  @Subject('statistics')
+  @Action('read')
+  @ApiQuery({ name: 'startDate', required: false, example: '2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2024-12-01' })
+  @ApiQuery({ name: 'viewBy', required: false, enum: ['day', 'month', 'year'] })
   async getTimeRegisterController(
     @Query('startDate') startDate: Date,
     @Query('endDate') endDate: Date,
-    @Query('viewBy') viewBy: string
+    @Query('viewBy') viewBy: string,
   ): Promise<any> {
     return this.statisticsService.getStaticTimeRegisterService(
       startDate,
       endDate,
-      viewBy
+      viewBy,
     );
   }
 
   @ApiTags('manager-statistics')
   @Get('get-static-order')
-  @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
-  @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
-  @ApiQuery({ name: 'viewBy', required: false,enum:['day','month','year'] })
+  @UseGuards(PermissionGuard)
+  @Subject('statistics')
+  @Action('read')
+  @ApiQuery({ name: 'startDate', required: false, example: '2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2024-12-01' })
+  @ApiQuery({ name: 'viewBy', required: false, enum: ['day', 'month', 'year'] })
   async getStaticOrderController(
     @Query('startDate') startDate: Date,
     @Query('endDate') endDate: Date,
-    @Query('viewBy') viewBy: string
+    @Query('viewBy') viewBy: string,
   ): Promise<any> {
     return this.statisticsService.getStaticOrderManagerService(
       startDate,
       endDate,
-      viewBy
+      viewBy,
     );
   }
   @ApiTags('manager-statistics')
   @Get('get-static-revenue')
-  @ApiQuery({ name: 'startDate', required: false,example:'2024-01-01' })
-  @ApiQuery({ name: 'endDate', required: false,example:'2024-12-01' })
-  @ApiQuery({ name: 'viewBy', required: false,enum:['point','revenue'] })
-  @ApiQuery({ name: 'dateBy', required: false,enum:['day','month','year'] })
+  @UseGuards(PermissionGuard)
+  @Subject('statistics')
+  @Action('read')
+  @ApiQuery({ name: 'startDate', required: false, example: '2024-01-01' })
+  @ApiQuery({ name: 'endDate', required: false, example: '2024-12-01' })
+  @ApiQuery({ name: 'viewBy', required: false, enum: ['point', 'revenue'] })
+  @ApiQuery({ name: 'dateBy', required: false, enum: ['day', 'month', 'year'] })
   async getStaticRevenueController(
     @Query('startDate') startDate: Date,
     @Query('endDate') endDate: Date,
     @Query('viewBy') viewBy: string,
-    @Query('dateBy') dateBy: string
+    @Query('dateBy') dateBy: string,
   ): Promise<any> {
     return this.statisticsService.getStaticRevenueService(
       startDate,
       endDate,
       viewBy,
-      dateBy
+      dateBy,
     );
   }
 }

@@ -2,6 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   Cart,
   CartDocument,
+  Configs,
+  ConfigsDocument,
   Order,
   OrderItem,
   OrderItemDocument,
@@ -32,7 +34,14 @@ export class StatisticsService {
     private readonly userModel: Model<UserDocument>,
     @InjectModel(Revenue.name)
     private readonly revenueModel: Model<RevenueDocument>,
+    @InjectModel(Configs.name) private readonly configModel: Model<ConfigsDocument>,
   ) {}
+
+  private async getPerPointValue(): Promise<number> {
+    const config = await this.configModel.findOne().select('valueToPoint').lean();
+    return config?.valueToPoint || 1000;
+  }
+
   async getStaticSallerService(
     userId: string,
     startDate?: Date,
@@ -848,6 +857,7 @@ export class StatisticsService {
     dateBy: string = 'day' // Default to 'day'
   ): Promise<any> {
     try {
+      const perPoint = await this.getPerPointValue();
       // Build filter conditions
       const filter: any = {};
       if (startDate && endDate) {
@@ -942,7 +952,7 @@ export class StatisticsService {
       );
   
       // Adjust amounts based on viewBy
-      const multiplier = viewBy === 'revenue' ? 1000 : 1;
+      const multiplier = viewBy === 'revenue' ? perPoint : 1;
   
       // Format the result
       const formattedData = dailySummary.map((item) => ({

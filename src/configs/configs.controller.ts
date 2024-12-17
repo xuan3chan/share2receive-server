@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigsService } from './configs.service';
 import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
@@ -20,6 +20,11 @@ export class ConfigsController {
       updateConfigDto,
       
     );
+  }
+  
+  @Get()
+  async getConfigs() {
+    return this.configsService.getConfigs();
   }
 
   @Put('upload/:id')

@@ -63,7 +63,11 @@ export class UpdateConfigDto {
   @Min(0)
   @IsOptional()
   valueToPromotion?: number;
-
+  @ApiProperty({ example: 2.0, description: 'Tỷ lệ chuyển đổi khuyến mãi' })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  valueToCross?: number;
   @ApiProperty({ example: 5, description: 'Cảnh báo khiếu nại' })
   @IsNumber()
   @Min(0)

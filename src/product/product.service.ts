@@ -10,6 +10,7 @@ import {
   BrandDocument,
   Category,
   CategoryDocument,
+  Configs,
   Product,
   ProductDocument,
   User,
@@ -38,15 +39,21 @@ export class ProductService {
     private readonly mailerService: MailerService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     @InjectQueue('send-email') private readonly sendEmailQueue: Queue,
+    @InjectModel(Configs.name) private readonly configModel: Model<any>,
     private readonly searchService: SearchService,
     private readonly walletService: WalletService
   ) {}
+
+  private async getPoint(): Promise<number> {
+    const config = await this.configModel.findOne().select('valueToCross').lean() as { valueToCross?: number };
+    return config?.valueToCross ?? 5;
+  }
   async createProductService(
     userId: string,
     product: CreateProductDto,
   ): Promise<Product> {
     try {
-      const setPoint = 5;
+      const setPoint = await this.getPoint();
       const wallet = await this.walletModel.findOne({ userId });
       if (!wallet) {
         throw new BadRequestException('Không tìm thấy ví');

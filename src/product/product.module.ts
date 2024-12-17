@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Brand, BrandSchema, Category, CategorySchema, Product, ProductSchema, User, UserSchema, Wallet, WalletSchema } from '@app/libs/common/schema';
+import { Brand, BrandSchema, Category, CategorySchema, Configs, ConfigsSchema, Product, ProductSchema, User, UserSchema, Wallet, WalletSchema } from '@app/libs/common/schema';
 import { CloudinaryModule } from 'src/cloudinary/cloudinary.module';
 import { AdminModule } from 'src/admin/admin.module';
 import { AbilityFactory } from '@app/libs/common/abilities';
@@ -22,10 +22,10 @@ import { WalletModule } from 'src/wallet/wallet.module';
       {name:Category.name,schema:CategorySchema},
       {name:User.name,schema:UserSchema},
       {name:Wallet.name,schema:WalletSchema},
+      {name:Configs.name, schema: ConfigsSchema},
     ]),
     AdminModule,
     CloudinaryModule,
-
     BullModule.registerQueue({
       name: 'send-email',
     }),

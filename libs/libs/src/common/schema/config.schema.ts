@@ -18,7 +18,9 @@ export class Configs {
   valueToPoint: number; // Tỷ lệ chuyển đổi, nâng cấp (nếu cần lưu số)
   @Prop({ type: mongoose.Schema.Types.Number})
   valueToPromotion: number; // Tỷ lệ chuyển đổi, nâng cấp (nếu cần lưu số)
-
+  @Prop({ type: mongoose.Schema.Types.Number})
+  valueToCross: number; // Tỷ lệ chuyển đổi, nâng cấp (nếu cần lưu số)
+  
   @Prop({ type: mongoose.Schema.Types.Number})
   reportWarning:number;
   @Prop({ type: mongoose.Schema.Types.Number})

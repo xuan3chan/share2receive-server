@@ -16,12 +16,13 @@ import { EncryptionService } from '../encryption/encryption.service';
 import { MailerService } from 'src/mailer/mailer.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { WalletService } from 'src/wallet/wallet.service';
 @Injectable()
 export class UsersService {
   constructor(
     private cloudinaryService: CloudinaryService,
+    private walletService: WalletService,
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(Wallet.name) private walletModel: Model<WalletDocument>,
     @Inject(forwardRef(() => EncryptionService))
     private encryptionService: EncryptionService,
     private mailerService: MailerService,
@@ -221,6 +222,7 @@ const matchQuery = regex
       refreshToken,
     });
     const savedUser = await newUser.save();
+    this.walletService.createWalletService(savedUser._id.toString());
     return savedUser;
   }
 

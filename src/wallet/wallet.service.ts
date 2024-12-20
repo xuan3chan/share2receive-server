@@ -108,13 +108,27 @@ export class WalletService implements OnModuleInit {
             if (!wallet) {
                 wallet = new this.walletModel({
                     userId: new mongoose.Types.ObjectId(userId),
-                    point: 50,
+                    point: 5,
                 });
                 await wallet.save();
             }
             return wallet;
         } catch (error) {
             throw new BadRequestException(`Error checking wallet: ${error.message}`);
+        }
+    }
+    async createWalletService(userId: string): Promise<WalletDocument> {
+        try {
+            // Tạo ví mới
+            const wallet = new this.walletModel({
+                userId: new mongoose.Types.ObjectId(userId),
+                point: 5,
+            });
+            // Lưu ví vào cơ sở dữ liệu
+            await wallet.save();
+            return wallet;
+        } catch (error) {
+            throw new BadRequestException(`Error creating wallet: ${error.message}`);
         }
     }
 

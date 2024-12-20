@@ -9,10 +9,12 @@ import { AbilityFactory } from '@app/libs/common/abilities';
 import { EncryptionModule } from 'src/encryption/encryption.module';
 import { MailerModule } from 'src/mailer/mailer.module';
 import { AdminModule } from 'src/admin/admin.module';
+import { WalletModule } from 'src/wallet/wallet.module';
 
 @Module({
   imports: [
     forwardRef(() => EncryptionModule),
+    WalletModule,
     AdminModule,
     CloudinaryModule,
     MailerModule,

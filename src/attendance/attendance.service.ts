@@ -42,7 +42,9 @@ export class AttendanceService {
 
     // Định dạng danh sách điểm danh
     const weekAttendances = weekDays.map((day) => {
-      const attendance = attendances.find((a) => moment(a.date).isSame(day, 'day'));
+      const attendance = attendances.find((a) =>
+        moment(a.date).tz('Asia/Ho_Chi_Minh').isSame(day, 'day')
+      );
       return {
         date: day.format('YYYY-MM-DD'),
         isAttendance: attendance ? attendance.isAttendance : false,
@@ -84,7 +86,7 @@ export class AttendanceService {
 
     const newAttendance = new this.attendanceModel({
       userId,
-      date: moment().toDate(), // Thời gian hiện tại (UTC)
+      date: moment.tz('Asia/Ho_Chi_Minh').toDate(), // Lưu thời gian theo giờ Việt Nam
       isAttendance,
     });
 

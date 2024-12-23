@@ -47,24 +47,45 @@ export class AuthController {
   async googleAuth() {
   }
 
-  @Get('callback/google')
-  @UseGuards(AuthGuard('google'))
-  @UseFilters(OAuthExceptionFilter)
-  async googleAuthRedirect(
-    @Req() req : Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    try {
-      const googleUserProfile = req.user;
-      const result = await this.authService.googleLogin(googleUserProfile);
-      setCookie(response, 'refreshToken', result.refreshToken);
-      setCookie(response, 'accessToken', result.accessToken);
-      const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      return googleUserProfile;
-    } catch (err) {
-      throw new ForbiddenException('Google login failed: ' + err.message);
+@Get('callback/google')
+@UseGuards(AuthGuard('google'))
+@UseFilters(OAuthExceptionFilter)
+async googleAuthRedirect(
+  @Req() req: Request,
+  @Res({ passthrough: true }) response: Response,
+) {
+  try {
+    // Extract user data from req.user (ensure it does not contain circular references)
+    const { email, firstName, lastName, avatar } = req.user || {};
+    if (!email) {
+      throw new ForbiddenException('Google profile data not found');
     }
+
+    const googleUserProfile = { email, firstName, lastName, avatar };
+
+    // Process login
+    const result = await this.authService.googleLogin(googleUserProfile);
+
+    // Set cookies for tokens
+    setCookie(response, 'refreshToken', result.refreshToken, { httpOnly: true });
+    setCookie(response, 'accessToken', result.accessToken, { httpOnly: true });
+
+    // Send back user data without circular references
+    return {
+      success: true,
+      message: 'Google login successful',
+      user: result.user,
+      tokens: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+      },
+    };
+  } catch (err) {
+    console.error('Google login error:', err.message);
+    throw new ForbiddenException('Google login failed: ' + err.message);
   }
+}
+
 
   @Post('process-google')
   @ApiBody({ type: Object })

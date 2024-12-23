@@ -29,10 +29,10 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
 } from '@app/libs/common/dto';
-import { Response,Request } from 'express';
+import { Response, Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthExceptionFilter } from '@app/libs/common/filter/oauth-exception.filter';
-import { setCookie,clearCookie } from '@app/libs/common/util/';
+import { setCookie, clearCookie } from '@app/libs/common/util/';
 
 @ApiTags('authentication')
 @ApiBearerAuth()
@@ -40,82 +40,94 @@ import { setCookie,clearCookie } from '@app/libs/common/util/';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 1. Google OAuth Authentication
   @Get('google')
   @UseGuards(AuthGuard('google'))
   async googleAuth() {
+    // Redirects to Google login
   }
 
   @Get('callback/google')
   @UseGuards(AuthGuard('google'))
   @UseFilters(OAuthExceptionFilter)
   async googleAuthRedirect(
-    @Req() req : Request,
+    @Req() req: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-      setCookie(response, 'refreshToken', result.refreshToken);
-      setCookie(response, 'accessToken', result.accessToken);
-      const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      setCookie(response, 'userData', userDecode);
+
+      // Set cookies for Google login
+      setCookie(response, 'refreshToken', result.refreshToken, {
+        domain: 'share2receive-client.vercel.app',
+      });
+      setCookie(response, 'accessToken', result.accessToken, {
+        domain: 'share2receive-client.vercel.app',
+      });
+
       return response.redirect(process.env.FRONTEND_URL);
     } catch (err) {
       throw new ForbiddenException('Google login failed: ' + err.message);
     }
   }
 
-
+  // 2. User Registration
+  @Post('register')
   @ApiConsumes('application/json')
   @HttpCode(HttpStatus.CREATED)
-  @ApiCreatedResponse({ description: 'register successfully' })
+  @ApiCreatedResponse({ description: 'User registered successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
-  @Post('register')
-  async registerController(@Body() register: RegisterDto,@Res({ passthrough: true }) response: Response,) {
-    
+  async registerController(
+    @Body() register: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const result = await this.authService.registerService(
       register.email,
       register.password,
       register.firstname,
       register.lastname,
     );
-    setCookie(response, 'refreshToken', result.refreshToken)
+
+    // Set cookies for registration
+    setCookie(response, 'refreshToken', result.refreshToken);
     setCookie(response, 'accessToken', result.accessToken);
-    const userDecode = encodeURIComponent(JSON.stringify(result.user));
-    setCookie(response, 'userData', userDecode);
+
     return { message: 'successfully', data: result };
   }
 
-  @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ description: 'login successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
+  // 3. User Login
   @Post('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ description: 'User logged in successfully' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   async loginController(
     @Body() user: LoginDto,
     @Res({ passthrough: true }) response: Response,
+    @Req() request: Request,
   ) {
     const loginResult = await this.authService.loginService(
       user.account,
       user.password,
     );
-    if(loginResult.user.role != 'user'){
-    setCookie(response, 'refreshToken', loginResult.refreshToken,{
-      domain: 'https://share2receive-admin.vercel.app/'
-    });
-    setCookie(response, 'accessToken', loginResult.accessToken,{
-      domain: 'https://share2receive-admin.vercel.app/'
-    });
-  }
-  setCookie(response, 'refreshToken', loginResult.refreshToken);
-  setCookie(response, 'accessToken', loginResult.accessToken);
+
+    // Set cookies based on role or origin
+    const domain =
+      loginResult.user.role === 'user'
+        ? 'share2receive-client.vercel.app'
+        : 'share2receive-admin.vercel.app';
+
+    setCookie(response, 'refreshToken', loginResult.refreshToken, { domain });
+    setCookie(response, 'accessToken', loginResult.accessToken, { domain });
 
     return { message: 'successfully', data: loginResult };
   }
 
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOkResponse({ description: 'refresh token successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
+  // 4. Refresh Tokens
   @Patch('refresh-token')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOkResponse({ description: 'Tokens refreshed successfully' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   async refreshTokenController(
     @Body() refreshToken: RefreshTokenDto,
     @Res({ passthrough: true }) response: Response,
@@ -123,46 +135,53 @@ export class AuthController {
     const result = await this.authService.refreshTokenService(
       refreshToken.refreshToken,
     );
-    
-    setCookie(response, 'refreshToken', result.refreshToken,);
+
+    // Set refreshed tokens
+    setCookie(response, 'refreshToken', result.refreshToken);
     setCookie(response, 'accessToken', result.accessToken);
 
     return { message: 'successfully', data: result };
   }
 
-  @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ description: 'logout successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
+  // 5. Logout
   @Patch('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ description: 'User logged out successfully' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   async logoutController(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
-    const refreshToken = await request.cookies.refreshToken;
-    await this.authService.logoutService(
-      refreshToken,
-    );
+    const refreshToken = request.cookies.refreshToken;
+    await this.authService.logoutService(refreshToken);
+
     if (refreshToken) {
-      clearCookie(response, 'refreshToken');
-      clearCookie(response, 'accessToken');
-      clearCookie(response, 'userData');
+      clearCookie(response, 'refreshToken', {
+        domain: 'share2receive-client.vercel.app',
+      });
+      clearCookie(response, 'accessToken', {
+        domain: 'share2receive-client.vercel.app',
+      });
       return { message: 'Logout successfully' };
     }
+
     return { message: 'Logout failed' };
   }
 
-  @HttpCode(HttpStatus.ACCEPTED)
-  @ApiOkResponse({ description: 'sent code successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
+  // 6. Forgot Password
   @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOkResponse({ description: 'Forgot password email sent' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   async forgotPasswordController(@Body() forgotPassword: ForgotPasswordDto) {
     return await this.authService.forgotPasswordService(forgotPassword.email);
   }
 
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOkResponse({ description: 'reset password successfully' })
-  @ApiBadRequestResponse({ description: 'Bad Request' })
+  // 7. Reset Password
   @Put('reset-password')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOkResponse({ description: 'Password reset successfully' })
+  @ApiBadRequestResponse({ description: 'Bad Request' })
   async resetPasswordController(
     @Body() resetPassword: ResetPasswordDto,
   ): Promise<{ statusCode: number; message: string }> {

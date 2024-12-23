@@ -48,30 +48,29 @@ export class AuthController {
   }
 
   @Get('callback/google')
-  @UseGuards(AuthGuard('google'))
-  @UseFilters(OAuthExceptionFilter)
-  async googleAuthRedirect(
-    @Req() req: Request,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    try {
-      const googleUserProfile = req.user;
-      const result = await this.authService.googleLogin(googleUserProfile);
+@UseGuards(AuthGuard('google'))
+@UseFilters(OAuthExceptionFilter)
+async googleAuthRedirect(
+  @Req() req: Request,
+  @Res() res: Response,
+) {
+  try {
+    const googleUserProfile = req.user;
+    const result = await this.authService.googleLogin(googleUserProfile);
 
-      // Return response directly
-      return {
-        success: true,
-        message: 'Google login successful',
-        user: result.user,
-        tokens: {
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-        },
-      };
-    } catch (err) {
-      throw new ForbiddenException('Google login failed: ' + err.message);
-    }
+    // Redirect to frontend with tokens as query params
+    const redirectUrl = `http://localhost:3000/auth-success?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+
+    return res.redirect(redirectUrl);
+  } catch (err) {
+    const errorRedirectUrl = `http://localhost:3000/auth-failure?message=${encodeURIComponent(
+      err.message,
+    )}`;
+
+    return res.redirect(errorRedirectUrl);
   }
+}
+
   
 
 

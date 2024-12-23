@@ -12,6 +12,7 @@ import {
   UseFilters,
   ForbiddenException,
   Put,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -67,10 +68,19 @@ export class AuthController {
 
   @Post('process-google')
   @ApiBody({ type: Object })
-  async processGoogle(@Body('profile') profile: any) {
-    return await this.authService.googleLogin(profile);
+  async processGoogle(@Body('profile') profile: Record<string, any>) {
+    if (!profile || typeof profile !== 'object') {
+      throw new BadRequestException('Profile data is required and must be an object');
+    }
+  
+    try {
+      return await this.authService.googleLogin(profile);
+    } catch (error) {
+      console.error('Error in processGoogle endpoint:', error.message);
+      throw error;
+    }
   }
-
+  
 
   @ApiConsumes('application/json')
   @HttpCode(HttpStatus.CREATED)

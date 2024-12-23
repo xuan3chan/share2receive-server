@@ -112,43 +112,48 @@ export class AuthService {
   }
 
   async googleLogin(
-    profile: any,
+    profile: Record<string, any>,
   ): Promise<{ accessToken: string; refreshToken: string; user: any }> {
     const { email, firstName, lastName, avatar } = profile;
-
+  
+    if (!email || !firstName || !lastName || !avatar) {
+      throw new BadRequestException('Invalid Google profile data provided');
+    }
+  
     try {
       // Check if user already exists in the database
       let user = await this.usersService.findOneEmailOrUsernameService(email);
-
+  
       // If user doesn't exist, create a new user
       if (!user) {
-        const createRefreshToken = randomBytes(32).toString('hex');
-        const password = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const refreshToken = randomBytes(32).toString('hex');
+        const temporaryPassword = Math.random().toString(36).slice(-8);
+        const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+  
         user = await this.usersService.createUserService(
           email,
-          hashedPassword, // Google users don't have a password initially
+          hashedPassword, // Google users don't initially have a password
           firstName,
           lastName,
-          createRefreshToken,
+          refreshToken,
           avatar,
           'google',
         );
       }
-      if (user.isBlock == true) {
-        throw new UnauthorizedException('Account is blocked');
+  
+      // Check if the user account is blocked
+      if (user.isBlock) {
+        throw new UnauthorizedException('This account is blocked');
       }
-
-      // Generate new refresh token
-      const createRefreshToken = randomBytes(32).toString('hex');
+  
+      // Generate a new refresh token
+      const newRefreshToken = randomBytes(32).toString('hex');
       const payload = await this.createJwtPayload(user, true);
-
-      // Update refresh token in the database
-      await this.usersService.updateRefreshTokenService(
-        user.email,
-        createRefreshToken,
-      );
-
+  
+      // Update the refresh token in the database
+      await this.usersService.updateRefreshTokenService(user.email, newRefreshToken);
+  
+      // Prepare the user data to be returned
       const returnedUser = {
         email: user.email,
         role: user.role,
@@ -163,15 +168,15 @@ export class AuthService {
         phone: user.phone,
         userStyle: user.userStyle,
       };
-
+  
       return {
         accessToken: this.jwtService.sign(payload),
-        refreshToken: createRefreshToken,
+        refreshToken: newRefreshToken,
         user: returnedUser,
       };
     } catch (error) {
-      console.log(error);
-      throw new BadRequestException(error.message);
+      console.error('Error during Google login:', error.message);
+      throw new BadRequestException('Failed to process Google login');
     }
   }
 

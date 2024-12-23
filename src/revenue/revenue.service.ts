@@ -80,7 +80,63 @@ export class RevenueService {
         }
     }
     
-    
+    async getDiamonOfUser(
+        userId: string, // ID của người dùng
+        page: number = 1,
+        limit: number = 10,
+        filterBy?: string,
+        filterValue?: string
+      ): Promise<any> {
+        try {
+          // Ensure page and limit are valid
+          page = Math.max(1, page);
+          limit = Math.max(1, limit);
+      
+          // Validate filterBy to avoid unwanted fields
+          const allowedFilters = ['description', 'date']; // Các trường được phép lọc
+          if (filterBy && !allowedFilters.includes(filterBy)) {
+            throw new BadRequestException('Invalid filter field');
+          }
+      
+          // Build filter object
+          const filter: any = { userId }; // Luôn lọc theo userId
+          if (filterBy && filterValue) {
+            filter[filterBy] = filterValue; // Thêm điều kiện lọc
+          }
+      
+          // Count total matching records
+          const totalRevenue = await this.revenueModel.countDocuments(filter);
+      
+          // Pagination calculation
+          const skip = (page - 1) * limit;
+      
+          // Fetch paginated data for the user
+          const revenues = await this.revenueModel
+            .find(filter)
+            .populate('userId', 'email') // Populate user email
+            .select('-updatedAt -__v') // Loại bỏ các trường không cần thiết
+            .skip(skip) // Bỏ qua các bản ghi đã xem
+            .limit(limit) // Giới hạn số lượng bản ghi trả về
+            .exec();
+      
+          // Calculate total pages
+          const totalPages = Math.ceil(totalRevenue / limit);
+      
+          // Return response
+          return {
+            data: revenues, // Danh sách doanh thu
+            pagination: {
+              currentPage: page,
+              totalPages,
+              totalRevenue,
+            },
+          };
+        } catch (error) {
+          console.error('Error fetching revenues:', error);
+          throw new BadRequestException('Error fetching revenues');
+        }
+      }
+      
     
     
     

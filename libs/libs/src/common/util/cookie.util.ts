@@ -12,22 +12,23 @@ export function setCookie(
     path?: string;
     domain?: string;
   } = {
-    httpOnly: false,
-    secure: process.env.NODE_ENV === 'production', // Chỉ bật HTTPS trong production
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production', // HTTPS trong production
     maxAge: 60 * 60 * 1000, // Default 1 hour
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' yêu cầu HTTPS
     path: '/',
   },
 ) {
   response.cookie(name, value, {
-    httpOnly: options.httpOnly ?? false,
+    httpOnly: options.httpOnly ?? true,
     secure: options.secure ?? (process.env.NODE_ENV === 'production'),
     maxAge: options.maxAge ?? 60 * 60 * 1000,
     sameSite: options.sameSite ?? (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
     path: options.path ?? '/',
-    domain: options.domain, // Thêm nếu cần
+    domain: options.domain,
   });
 }
+
 
 
 export function clearCookie(

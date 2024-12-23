@@ -27,7 +27,6 @@ export function setCookie(
     maxAge: options.maxAge ?? 60 * 60 * 1000,
     sameSite: options.sameSite ?? (isProduction ? 'none' : 'lax'),
     path: options.path ?? '/',
-    domain: options.domain ?? 'share2receive-client.vercel.app', // Adjust domain
   });
 }
 
@@ -45,6 +44,5 @@ export function clearCookie(
     path: options.path ?? '/',
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax',
-    domain: options.domain ?? 'share2receive-client.vercel.app', // Adjust domain
   });
 }

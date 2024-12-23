@@ -16,7 +16,7 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromCookies(request);
+    const token = this.extractTokenFromHeader(request);
     if (!token) {
       
       throw new UnauthorizedException('token not found');
@@ -33,8 +33,9 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromCookies(request: Request): string | undefined {
-    return request.cookies?.accessToken; // Assume the JWT is stored in a cookie named 'jwt'
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
   
 }

@@ -34,7 +34,7 @@ export class PermissionGuard implements CanActivate {
     const subject = this.reflector.get<string>('Subject', context.getHandler());
     const action = this.reflector.get<string>('Action', context.getHandler());
     const request = context.switchToHttp().getRequest<Request>();
-    const token = this.extractTokenFromCookies(request);
+    const token = this.extractTokenFromHeader(request);
 
     if (!token) {
       throw new UnauthorizedException(TOKEN_NOT_FOUND_MESSAGE);
@@ -73,7 +73,8 @@ export class PermissionGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromCookies(request: Request): string | undefined {
-    return request.cookies?.accessToken; // Assuming the token is stored in a cookie named 'jwt'
+  private extractTokenFromHeader(request: Request): string | undefined {
+    const [type, token] = request.headers.authorization?.split(' ') ?? [];
+    return type === 'Bearer' ? token : undefined;
   }
 }

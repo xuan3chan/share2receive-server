@@ -1,44 +1,46 @@
 import { Response } from 'express';
 
-const isProduction = process.env.NODE_ENV === 'production';
-
-const defaultCookieOptions: {
-  httpOnly: boolean;
-  secure: boolean;
-  sameSite: boolean | 'none' | 'lax' | 'strict';
-  path: string;
-} = {
-  httpOnly: true,
-  secure: isProduction, // Cookies are secure in production
-  sameSite: isProduction ? 'none' : 'lax', // Allow cross-origin in production
-  path: '/',
-};
-
 export function setCookie(
   response: Response,
   name: string,
   value: string,
-  options: Partial<typeof defaultCookieOptions> & { domain?: string } = {},
+  options: {
+    httpOnly?: boolean;
+    secure?: boolean;
+    maxAge?: number;
+    sameSite?: 'strict' | 'lax' | 'none';
+    path?: string;
+    domain?: string;
+  } = {
+    httpOnly: false,
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 60 * 60 * 1000, // Default 1 hour
+    sameSite: 'none',
+    path: '/',
+  },
 ) {
-  const finalOptions = {
-    ...defaultCookieOptions,
-    ...options,
-    domain: options.domain ?? 'share2receive-client.vercel.app', // Default domain
-  };
-  response.cookie(name, value, finalOptions);
-  console.log(`Cookie ${name} set with options:`, finalOptions);
+  response.cookie(name, value, {
+    httpOnly: options.httpOnly ?? false,
+    secure: true,
+    maxAge: options.maxAge ?? 60 * 60 * 1000,
+    sameSite: options.sameSite ?? 'none',
+    path: options.path ?? '/',
+  });
 }
 
 export function clearCookie(
   response: Response,
   name: string,
-  options: Partial<typeof defaultCookieOptions> & { domain?: string } = {},
+  options: {
+    path?: string;
+    domain?: string;
+  } = {
+    path: '/', // Mặc định xóa cookie từ root
+  },
 ) {
-  const finalOptions = {
-    ...defaultCookieOptions,
-    ...options,
-    domain: options.domain ?? 'share2receive-client.vercel.app', // Default domain
-  };
-  response.clearCookie(name, finalOptions);
-  console.log(`Cookie ${name} cleared with options:`, finalOptions);
+  response.clearCookie(name, {
+    path: options.path ?? '/', // Đảm bảo path giống với khi cookie được tạo
+    secure: true, // Nếu cookie được tạo với secure=true, cần đảm bảo secure trong xóa cookie
+    sameSite: 'none', // Giống khi tạo cookie
+  });
 }

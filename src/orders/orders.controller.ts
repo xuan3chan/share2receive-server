@@ -22,7 +22,7 @@ import {
   UpdateInfoOrderDto,
   UpdateShippingDto,
 } from '@app/libs/common/dto/order.dto';
-import { ApiBody, ApiConsumes, ApiProperty, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 

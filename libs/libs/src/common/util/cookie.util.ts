@@ -11,21 +11,17 @@ export function setCookie(
     sameSite?: 'strict' | 'lax' | 'none';
     path?: string;
     domain?: string;
-  } = {
-    httpOnly: false,
-    secure: false, // Set to true in production with HTTPS
-    maxAge: 60 * 60 * 1000, // Default 1 hour
-    sameSite: 'none',
-    path: '/',
-  },
+  } = {},
 ) {
-  response.cookie(name, value, {
-    httpOnly: options.httpOnly ?? false,
-    secure: true,
-    maxAge: options.maxAge ?? 60 * 60 * 1000,
-    sameSite: options.sameSite ?? 'none',
-    path: options.path ?? '/',
-  });
+  const defaults = {
+    httpOnly: true, // Bảo mật mặc định
+    secure: process.env.NODE_ENV === 'production', // Dựa trên môi trường
+    maxAge: 60 * 60 * 1000, // 1 giờ
+    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'strict' | 'lax' | 'none', // 'none' cho production
+    path: '/',
+  };
+
+  response.cookie(name, value, { ...defaults, ...options });
 }
 
 export function clearCookie(
@@ -34,13 +30,13 @@ export function clearCookie(
   options: {
     path?: string;
     domain?: string;
-  } = {
-    path: '/', // Mặc định xóa cookie từ root
-  },
+  } = {},
 ) {
-  response.clearCookie(name, {
-    path: options.path ?? '/', // Đảm bảo path giống với khi cookie được tạo
-    secure: true, // Nếu cookie được tạo với secure=true, cần đảm bảo secure trong xóa cookie
-    sameSite: 'none', // Giống khi tạo cookie
-  });
+  const defaults = {
+    path: '/',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: (process.env.NODE_ENV === 'production' ? 'none' : 'lax') as 'strict' | 'lax' | 'none',
+  };
+
+  response.clearCookie(name, { ...defaults, ...options });
 }

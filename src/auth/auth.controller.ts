@@ -20,6 +20,7 @@ import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
@@ -58,11 +59,16 @@ export class AuthController {
       setCookie(response, 'refreshToken', result.refreshToken);
       setCookie(response, 'accessToken', result.accessToken);
       const userDecode = encodeURIComponent(JSON.stringify(result.user));
-      setCookie(response, 'userData', userDecode);
-      return response.redirect(process.env.FRONTEND_URL);
+      return googleUserProfile;
     } catch (err) {
       throw new ForbiddenException('Google login failed: ' + err.message);
     }
+  }
+
+  @Post('process-google')
+  @ApiBody({ type: Object })
+  async processGoogle(@Body('profile') profile: any) {
+    return await this.authService.googleLogin(profile);
   }
 
 

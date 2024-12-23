@@ -17,7 +17,7 @@ export function setCookie(
     maxAge: 60 * 60 * 1000, // 1 giờ
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-origin cần 'none'
     path: '/', // Áp dụng toàn bộ domain
-    domain: process.env.NODE_ENV === 'production' ? '.share2receive.io.vn' : undefined, // Subdomain trong production
+    domain: '.share2receive.io.vn', // Bao gồm cả subdomain
   },
 ) {
   response.cookie(name, value, {
@@ -38,7 +38,7 @@ export function clearCookie(
     domain?: string;
   } = {
     path: '/', // Mặc định xóa cookie từ root
-    domain: process.env.NODE_ENV === 'production' ? '.share2receive.io.vn' : undefined, // Subdomain trong production
+    domain: '.share2receive.io.vn', // Bao gồm cả subdomain
   },
 ) {
   response.clearCookie(name, {

@@ -59,11 +59,11 @@ async googleAuthRedirect(
     const result = await this.authService.googleLogin(googleUserProfile);
 
     // Redirect to frontend with tokens as query params
-    const redirectUrl = `http://localhost:3000/auth-success?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+    const redirectUrl = `http://localhost:3000/?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
 
     return res.redirect(redirectUrl);
   } catch (err) {
-    const errorRedirectUrl = `http://localhost:3000/auth-failure?message=${encodeURIComponent(
+    const errorRedirectUrl = `http://localhost:3000/?message=${encodeURIComponent(
       err.message,
     )}`;
 

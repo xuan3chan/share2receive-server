@@ -12,21 +12,19 @@ export function setCookie(
     path?: string;
     domain?: string;
   } = {
-    httpOnly: true, // Bảo mật hơn bằng cách mặc định chỉ cho phép HTTP
-    secure: process.env.NODE_ENV === 'production', // Sử dụng HTTPS trong production
-    maxAge: 60 * 60 * 1000, // 1 giờ
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Cross-origin cần 'none'
-    path: '/', // Áp dụng toàn bộ domain
-    domain: '.share2receive.io.vn', // Bao gồm cả subdomain
+    httpOnly: false,
+    secure: false, // Set to true in production with HTTPS
+    maxAge: 60 * 60 * 1000, // Default 1 hour
+    sameSite: 'none',
+    path: '/',
   },
 ) {
   response.cookie(name, value, {
-    httpOnly: options.httpOnly ?? true,
-    secure: options.secure ?? (process.env.NODE_ENV === 'production'),
+    httpOnly: options.httpOnly ?? false,
+    secure: true,
     maxAge: options.maxAge ?? 60 * 60 * 1000,
-    sameSite: options.sameSite ?? (process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+    sameSite: options.sameSite ?? 'none',
     path: options.path ?? '/',
-    domain: options.domain,
   });
 }
 
@@ -38,13 +36,11 @@ export function clearCookie(
     domain?: string;
   } = {
     path: '/', // Mặc định xóa cookie từ root
-    domain: '.share2receive.io.vn', // Bao gồm cả subdomain
   },
 ) {
   response.clearCookie(name, {
     path: options.path ?? '/', // Đảm bảo path giống với khi cookie được tạo
-    secure: process.env.NODE_ENV === 'production', // Chỉ xóa nếu HTTPS được bật
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Giống khi tạo cookie
-    domain: options.domain,
+    secure: true, // Nếu cookie được tạo với secure=true, cần đảm bảo secure trong xóa cookie
+    sameSite: 'none', // Giống khi tạo cookie
   });
 }

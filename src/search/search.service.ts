@@ -85,36 +85,64 @@ export class SearchService implements OnModuleInit {
                 synonym_filter: {
                   type: 'synonym',
                   synonyms: [
+                    // T-shirts and related
                     'áo thun, tshirt, tee, áo phông, áo ngắn tay, áo ba lỗ, tank top',
-                    'áo khoác, jacket, áo chống gió, áo blazer, áo vest, áo cardigan, áo gió, windbreaker',
-                    'giày thể thao, sneakers, giày, giày chạy bộ, giày tập gym, giày sneaker, giày sneaker nữ, giày tập thể thao',
-                    'túi xách, handbag, túi, balo, túi đeo chéo, túi đựng đồ, backpack, túi tote',
-                    'quần jeans, quần bò, denim, quần denim, quần bò cạp cao, quần boyfriend jeans',
-                    'áo sơ mi, sơ mi, shirt, áo công sở, áo sơ mi cổ tàu, áo sơ mi ngắn tay',
-                    'giày cao gót, giày nữ, giày gót nhọn, high heels, giày pump, sandal gót cao',
+                    
+                    // Outerwear
+                    'áo khoác, jacket, áo chống gió, áo blazer, áo vest, áo cardigan, áo gió, windbreaker, trench coat, áo măng tô, coat',
+                    'áo khoác bomber, bomber jacket, áo bomber, áo khoác ngắn, áo khoác nam nữ',
+                    'áo hoodie, hoodie, áo nỉ có mũ, áo chui đầu, áo hoodie oversize, hoodie form rộng',
+                    
+                    // Shirts and blouses
+                    'áo sơ mi, sơ mi, shirt, blouse, áo công sở, áo sơ mi cổ tàu, áo sơ mi ngắn tay',
+                    
+                    // Sweaters and pullovers
+                    'áo len, sweater, áo chui đầu, áo ấm, áo len cổ lọ, áo len mỏng, áo len dệt kim',
+                    
+                    // Pants and shorts
+                    'quần jeans, quần bò, denim, quần denim, quần boyfriend jeans, quần skinny, quần jeans nữ',
                     'quần short, quần ngắn, quần đùi, shorts, quần short jean, quần short thể thao',
+                    'quần tây, trousers, dress pants, quần âu, quần dài',
+                    'quần legging, legging, quần bó, quần tập gym, quần yoga, quần ôm sát',
+                    'quần baggy, baggy pants, quần lửng, quần rộng',
+                    'quần jogger, jogger pants, quần thể thao, quần jogger thể thao',
+                    
+                    // Dresses and skirts
                     'đầm, váy, dress, váy dạ hội, váy cưới, váy maxi, váy công sở, váy ngắn',
+                    'váy midi, midi skirt, váy dài qua gối, váy công sở, váy bút chì',
+                    
+                    // Traditional and formal wear
+                    'áo dài, áo truyền thống, áo cưới, áo dài cách tân, áo dài Việt Nam',
+                    
+                    // Footwear
+                    'giày cao gót, giày nữ, giày gót nhọn, high heels, giày pump, sandal gót cao',
+                    'giày thể thao, sneakers, giày, giày chạy bộ, giày tập gym, giày sneaker, giày sneaker nữ, giày tập thể thao',
+                    'giày lười, loafers, slip-on, giày không dây, giày mọi',
+                    'bốt, boots, giày cổ cao, giày da, giày mùa đông, giày cổ lửng',
+                    'sandal, dép quai hậu, dép xỏ ngón, dép, sandals, giày sandal, dép kẹp',
+                    
+                    // Accessories
                     'mũ, nón, hat, cap, mũ lưỡi trai, mũ bảo hiểm, mũ rộng vành, mũ bucket',
                     'khăn choàng, scarf, muffler, khăn quàng cổ, khăn len, khăn mỏng, khăn mùa đông',
                     'dây nịt, dây lưng, thắt lưng, belt, dây thắt eo, dây lưng nữ, thắt lưng da',
                     'kính râm, kính mắt, sunglasses, glasses, kính thời trang, kính cận, kính mắt mèo',
-                    'áo hoodie, hoodie, áo nỉ có mũ, áo chui đầu, áo hoodie oversize, hoodie form rộng',
-                    'áo len, sweater, áo chui đầu, áo ấm, áo len cổ lọ, áo len mỏng, áo len dệt kim',
-                    'quần legging, legging, quần bó, quần tập gym, quần yoga, quần ôm sát',
-                    'áo crop top, crop top, áo lửng, áo ngắn, áo hở eo, áo dáng ngắn',
-                    'đồ bơi, swimsuit, đồ tắm, bikini, quần bơi, đồ bơi liền mảnh',
+                    'găng tay, gloves, bao tay, găng len, găng tay da, găng tay lụa',
+                    
+                    // Nightwear and sportswear
                     'đồ ngủ, pajamas, pyjamas, đồ mặc nhà, đồ ngủ cotton, bộ đồ ngủ',
                     'đồ thể thao, sportwear, activewear, quần áo gym, đồ tập thể dục, đồ thể thao nữ',
+                    
+                    // Swimwear
+                    'đồ bơi, swimsuit, đồ tắm, bikini, quần bơi, đồ bơi liền mảnh',
+                    
+                    // Socks and stockings
                     'tất, vớ, socks, tất ngắn, tất dài, vớ thể thao, vớ lưới',
-                    'găng tay, gloves, bao tay, găng len, găng tay da, găng tay lụa',
-                    'áo dài, áo truyền thống, áo cưới, áo dài cách tân, áo dài Việt Nam',
-                    'bốt, boots, giày cổ cao, giày da, giày mùa đông, giày cổ lửng',
-                    'sandal, dép quai hậu, dép xỏ ngón, dép, sandals, giày sandal, dép kẹp',
-                    'váy midi, midi skirt, váy dài qua gối, váy công sở, váy bút chì',
-                    'áo khoác dạ, coat, áo măng tô, áo trench coat, áo dài tay',
-                    'áo khoác bomber, bomber jacket, áo bomber, áo khoác ngắn, áo khoác nam nữ',
+                    
+                    // Formal and casual accessories
+                    'túi xách, handbag, túi, balo, túi đeo chéo, túi đựng đồ, backpack, túi tote',
                     'túi clutch, clutch, túi cầm tay, ví cầm tay, túi dự tiệc',
-                  ],
+                  ]
+                  
                 },
               },
             },

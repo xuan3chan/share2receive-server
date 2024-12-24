@@ -261,8 +261,8 @@ export class SearchService implements OnModuleInit {
                   multi_match: {
                     query: searchKey,
                     fields: [
-                      'productName^4', // Ưu tiên cao cho tên sản phẩm
-                      'categoryId.name^2',
+                      'productName^5', // Ưu tiên cao cho tên sản phẩm
+                      'categoryId.name^1',
                       'brandId.name^1',
                       'tags',
                       'description',

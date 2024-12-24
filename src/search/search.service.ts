@@ -239,7 +239,15 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              must: [
+              should: [
+                {
+                  match: {
+                    productName: {
+                      query: searchKey,
+                      fuzziness: 'AUTO',
+                    },
+                  },
+                },
                 {
                   multi_match: {
                     query: searchKey,
@@ -250,26 +258,15 @@ export class SearchService implements OnModuleInit {
                       'tags',
                       'description',
                     ],
-                    fuzziness: 'AUTO', // Tìm kiếm mờ
-                    analyzer: 'synonym_analyzer', // Tích hợp tìm kiếm từ đồng nghĩa
+                    fuzziness: 'AUTO',
                   },
                 },
               ],
               filter: [
-                { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
-                { term: { isDeleted: false } }, // Sản phẩm không bị xóa
-                { term: { isBlocked: false } }, // Sản phẩm không bị chặn
-                { term: { status: 'active' } }, // Sản phẩm đang hoạt động
-                {
-                  nested: {
-                    path: 'sizeVariants',
-                    query: {
-                      range: {
-                        'sizeVariants.amount': { gt: 0 }, // Chỉ sản phẩm còn hàng
-                      },
-                    },
-                  },
-                },
+                { term: { approveStatus: 'approved' } },
+                { term: { isDeleted: false } },
+                { term: { isBlocked: false } },
+                { term: { status: 'active' } },
               ],
             },
           },

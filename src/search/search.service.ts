@@ -43,7 +43,7 @@ export class SearchService implements OnModuleInit {
       },
       status: product.status,
       isDeleted: product.isDeleted,
-      isBlocked: product.isBlocked,
+      isBlock: product.isBlock,
       type: product.type,
       price: product.price,
       priceNew: product.priceNew,
@@ -263,14 +263,13 @@ export class SearchService implements OnModuleInit {
         .map((hit) => hit._source)
         .filter(
           (product) =>
-            product.approveStatus === 'approved' &&
-            product.isDeleted == 'false' &&
-            product.isBlocked == 'false' &&
-            product.status === 'active' &&
-            product.sizeVariants &&
-            product.sizeVariants.some((variant) => variant.amount > 0),
+        product.approveStatus === 'approved' &&
+        product.isDeleted === false &&
+        product.isBlock === false &&
+        product.status === 'active' &&
+        product.sizeVariants &&
+        product.sizeVariants.some((variant) => variant.amount > 0),
         );
-  
       return products;
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);

@@ -253,8 +253,8 @@ export class SearchService implements OnModuleInit {
                   multi_match: {
                     query: searchKey,
                     fields: [
-                      'productName^3',  // Ưu tiên tên sản phẩm
-                      'categoryId.name^2',
+                      'productName^4',  // Ưu tiên tên sản phẩm
+                      'categoryId.name^1',
                       'brandId.name',
                       'tags',
                       'description',
@@ -266,12 +266,12 @@ export class SearchService implements OnModuleInit {
                   match_phrase_prefix: {
                     productName: {
                       query: searchKey,
-                      boost: 2, // Tăng điểm nếu khớp cụm từ đầu
+                      boost: 3, // Tăng điểm nếu khớp cụm từ đầu
                     },
                   },
                 },
               ],
-              minimum_should_match: 1, // Ít nhất một điều kiện trong `should` phải khớp
+              minimum_should_match: 2, // Ít nhất một điều kiện trong `should` phải khớp
               filter: [
                 { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
                 { term: { isDeleted: false } },          // Sản phẩm không bị xóa

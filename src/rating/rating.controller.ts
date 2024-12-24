@@ -21,6 +21,7 @@ import {
 } from '@app/libs/common/dto';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConsumes,
   ApiCreatedResponse,
   ApiOperation,
@@ -30,6 +31,7 @@ import {
 import { MemberGuard } from '@app/libs/common/gaurd';
 
 @ApiTags('Rating')
+@ApiBearerAuth()
 @Controller('rating')
 export class RatingController {
   constructor(private readonly ratingService: RatingService) {}

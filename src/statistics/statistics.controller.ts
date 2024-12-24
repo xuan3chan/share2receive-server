@@ -8,13 +8,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { StatisticsService } from './statistics.service';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 @ApiTags('statistics')
+@ApiBearerAuth()
 @Controller('statistics')
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}

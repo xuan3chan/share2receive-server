@@ -1,10 +1,11 @@
 import { Body, Controller, Get, Param, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigsService } from './configs.service';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { UpdateConfigDto } from '@app/libs/common/dto';
 
 @ApiTags('configs')
+@ApiBearerAuth()
 @Controller('configs')
 export class ConfigsController {
   constructor(private readonly configsService: ConfigsService) {}

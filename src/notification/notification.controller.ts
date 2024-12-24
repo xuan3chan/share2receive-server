@@ -3,9 +3,10 @@ import { NotificationService } from './notification.service';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Notification')
+@ApiBearerAuth()
 @Controller('notification')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}

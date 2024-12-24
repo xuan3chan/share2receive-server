@@ -1,12 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { PacketService } from './packet.service';
-import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CreatePacketDto, UpdatePacketDto } from '@app/libs/common/dto';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Packet')
+@ApiBearerAuth()
 @Controller('packet')
 export class PacketController {
   constructor(private readonly packetService: PacketService) {}

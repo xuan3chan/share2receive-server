@@ -18,7 +18,7 @@ import { Response } from 'express';
 import * as fs from 'fs';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EvidenceService } from './evidence.service';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
@@ -26,6 +26,7 @@ import { join } from 'path';
 import { PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 @ApiTags('Evidence')
+@ApiBearerAuth()
 @Controller('evidence')
 export class EvidenceController {
   constructor(private readonly evidenceService: EvidenceService) {}

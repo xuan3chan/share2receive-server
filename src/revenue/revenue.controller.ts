@@ -1,12 +1,13 @@
 import { Controller, Get, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { RevenueService } from './revenue.service';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 @ApiTags('revenue')
+@ApiBearerAuth()
 @Controller('revenue')
 export class RevenueController {
   constructor(private readonly revenueService: RevenueService) {}

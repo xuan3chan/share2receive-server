@@ -4,10 +4,11 @@ import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Action, Subject } from '@app/libs/common/decorator';
 
 @ApiTags('Transaction')
+@ApiBearerAuth()
 @Controller('transaction')
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}

@@ -4,10 +4,11 @@ import { Controller, Get, Param, Patch, Query, Req, UnauthorizedException, UseGu
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MemberGuard } from '@app/libs/common/gaurd';
 
 @ApiTags('Messages')
+@ApiBearerAuth()
 @Controller('messages')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}

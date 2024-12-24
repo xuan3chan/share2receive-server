@@ -1,11 +1,12 @@
 import { Body, Controller, Get, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
-import { ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { MemberGuard } from '@app/libs/common/gaurd';
 @ApiTags('Attendance')
+@ApiBearerAuth()
 @Controller('attendance')
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}

@@ -19,6 +19,7 @@ import {
   CreateExchangeDto,
 } from '@app/libs/common/dto';
 import {
+  ApiBearerAuth,
   ApiConsumes,
   ApiOperation,
   ApiQuery,
@@ -30,6 +31,7 @@ import { ShippingStatusE } from '@app/libs/common/enum/shipping-status.enum';
 import { Action, Subject } from '@app/libs/common/decorator';
 
 @ApiTags('Exchange')
+@ApiBearerAuth()
 @Controller('Exchange')
 export class ExchangeController {
   constructor(private readonly exchangeService: ExchangeService) {}

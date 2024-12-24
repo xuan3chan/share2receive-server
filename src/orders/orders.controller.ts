@@ -22,11 +22,12 @@ import {
   UpdateInfoOrderDto,
   UpdateShippingDto,
 } from '@app/libs/common/dto/order.dto';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { Action, Subject } from '@app/libs/common/decorator';
 
 @ApiTags('Orders')
+@ApiBearerAuth()
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}

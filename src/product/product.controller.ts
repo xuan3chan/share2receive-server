@@ -26,6 +26,7 @@ import {
   UpdateProductDto,
 } from '@app/libs/common/dto';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -37,7 +38,7 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { Action, Subject } from '@app/libs/common/decorator';
 import { MemberGuard, PermissionGuard } from '@app/libs/common/gaurd';
 import { TypeCategoryE } from '@app/libs/common/enum';
-
+@ApiBearerAuth()
 @Controller('product')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}

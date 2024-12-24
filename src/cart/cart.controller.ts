@@ -11,13 +11,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateCartDto, UpdateCartDto } from '@app/libs/common/dto/cart.dto';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { MemberGuard } from '@app/libs/common/gaurd';
 @ApiTags('Cart')
+@ApiBearerAuth()
 @Controller('cart')
 export class CartController {
   constructor(private readonly cartService: CartService) {}

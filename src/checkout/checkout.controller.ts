@@ -13,10 +13,11 @@ import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { MemberGuard } from '@app/libs/common/gaurd';
-import { ApiBadRequestResponse, ApiBody, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiTags } from '@nestjs/swagger';
 import { IMomoPaymentResponse } from '@app/libs/common/interface';
 
 @ApiTags('Checkout')
+@ApiBearerAuth()
 @Controller('checkout')
 export class CheckoutController {
   constructor(private readonly checkoutService: CheckoutService) {}

@@ -1,11 +1,12 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
 import { WalletService } from './wallet.service';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import * as jwt from 'jsonwebtoken';
 import { JwtPayload } from 'jsonwebtoken';
 import { Request } from 'express';
 
 @ApiTags('wallet')
+@ApiBearerAuth()
 @Controller('wallet')
 export class WalletController {
   constructor(private readonly walletService: WalletService) {}

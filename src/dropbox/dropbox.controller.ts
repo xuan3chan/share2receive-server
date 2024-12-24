@@ -3,9 +3,10 @@ import { Response } from 'express';
 import { DropboxService } from './dropbox.service';
 import { Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Dropbox')
+@ApiBearerAuth()
 @Controller('dropbox')
 export class DropboxController {
   constructor(private readonly dropboxService: DropboxService) {}

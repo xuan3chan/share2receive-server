@@ -19,6 +19,7 @@ import { JwtPayload } from 'jsonwebtoken';
 
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiCreatedResponse,
@@ -31,6 +32,7 @@ import { CreateReportDto } from '@app/libs/common/dto';
 import { Action, Subject } from '@app/libs/common/decorator';
 
 @ApiTags('Report')
+@ApiBearerAuth()
 @Controller('report')
 export class ReportController {
   constructor(private readonly reportService: ReportService) {}

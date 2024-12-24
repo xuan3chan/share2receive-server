@@ -239,17 +239,7 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              should: [
-                // Ưu tiên sản phẩm có tên khớp chính xác trước
-                {
-                  match_phrase: {
-                    productName: {
-                      query: searchKey,
-                      boost: 5, // Tăng trọng số để ưu tiên
-                    },
-                  },
-                },
-                // Sử dụng đồng nghĩa và tìm kiếm mở rộng
+              must: [
                 {
                   multi_match: {
                     query: searchKey,
@@ -260,30 +250,33 @@ export class SearchService implements OnModuleInit {
                       'tags',
                       'description',
                     ],
-                    fuzziness: 'AUTO',
-                    analyzer: 'synonym_analyzer',
+                    fuzziness: 'AUTO', // Tìm kiếm mờ
+                    analyzer: 'synonym_analyzer', // Tích hợp tìm kiếm từ đồng nghĩa
                   },
                 },
               ],
-              // Tăng cường độ chính xác: loại bỏ các kết quả không phù hợp
               filter: [
-                { term: { approveStatus: 'approved' } },
-                { term: { isDeleted: false } },
-                { term: { isBlocked: false } },
-                { term: { status: 'active' } },
+                { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
+                { term: { isDeleted: false } }, // Sản phẩm không bị xóa
+                { term: { isBlocked: false } }, // Sản phẩm không bị chặn
+                { term: { status: 'active' } }, // Sản phẩm đang hoạt động
+                {
+                  nested: {
+                    path: 'sizeVariants',
+                    query: {
+                      range: {
+                        'sizeVariants.amount': { gt: 0 }, // Chỉ sản phẩm còn hàng
+                      },
+                    },
+                  },
+                },
               ],
             },
           },
         },
       });
   
-      const products = body.hits.hits
-        .map((hit) => hit._source)
-        .filter(
-          (product) =>
-            product.sizeVariants &&
-            product.sizeVariants.some((variant) => variant.amount > 0),
-        );
+      const products = body.hits.hits.map((hit) => hit._source);
   
       return products;
     } catch (error) {

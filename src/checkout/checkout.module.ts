@@ -26,6 +26,7 @@ import { TransactionModule } from 'src/transaction/transaction.module';
 import { WalletModule } from 'src/wallet/wallet.module';
 import { RevenueModule } from 'src/revenue/revenue.module';
 import { ConfigsModule } from 'src/configs/configs.module';
+// import { QueueService } from '@app/libs/common/util/queue.service';
 
 @Module({
   imports: [

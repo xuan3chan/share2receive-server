@@ -248,21 +248,39 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              must: [
+              should: [
+                {
+                  match: {
+                    productName: {
+                      query: searchKey,
+                      boost: 5, // Ưu tiên khớp chính xác với productName
+                    },
+                  },
+                },
                 {
                   multi_match: {
                     query: searchKey,
                     fields: [
-                      'productName^4',  // Ưu tiên tên sản phẩm
-                      'categoryId.name^1',
-                      'brandId.name',
+                      'productName^4', // Ưu tiên cao cho tên sản phẩm
+                      'categoryId.name^2',
+                      'brandId.name^1',
                       'tags',
                       'description',
                     ],
                     fuzziness: 'AUTO', // Hỗ trợ tìm kiếm gần đúng
+                    boost: 3, // Điểm thấp hơn so với khớp chính xác
+                  },
+                },
+                {
+                  match_phrase_prefix: {
+                    productName: {
+                      query: searchKey,
+                      boost: 2, // Ưu tiên cụm từ bắt đầu
+                    },
                   },
                 },
               ],
+              minimum_should_match: 1, // Ít nhất một điều kiện trong `should` phải khớp
               filter: [
                 { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
                 { term: { isDeleted: false } },          // Sản phẩm không bị xóa
@@ -281,6 +299,9 @@ export class SearchService implements OnModuleInit {
               ],
             },
           },
+          sort: [
+            { _score: 'desc' }, // Sắp xếp theo điểm số
+          ],
         },
       });
   
@@ -291,6 +312,7 @@ export class SearchService implements OnModuleInit {
       throw new NotFoundException('Failed to search products');
     }
   }
+  
   
   
   

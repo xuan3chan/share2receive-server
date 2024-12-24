@@ -241,14 +241,6 @@ export class SearchService implements OnModuleInit {
             bool: {
               should: [
                 {
-                  match: {
-                    productName: {
-                      query: searchKey,
-                      fuzziness: 'AUTO',
-                    },
-                  },
-                },
-                {
                   multi_match: {
                     query: searchKey,
                     fields: [
@@ -262,18 +254,22 @@ export class SearchService implements OnModuleInit {
                   },
                 },
               ],
-              filter: [
-                { term: { approveStatus: 'approved' } },
-                { term: { isDeleted: false } },
-                { term: { isBlocked: false } },
-                { term: { status: 'active' } },
-              ],
             },
           },
         },
       });
   
-      const products = body.hits.hits.map((hit: { _source: any }) => hit._source);
+      const products = body.hits.hits
+        .map((hit) => hit._source)
+        .filter(
+          (product) =>
+            product.approveStatus === 'approved' &&
+            !product.isDeleted &&
+            !product.isBlocked &&
+            product.status === 'active' &&
+            product.sizeVariants &&
+            product.sizeVariants.some((variant) => variant.amount > 0),
+        );
   
       return products;
     } catch (error) {
@@ -281,5 +277,4 @@ export class SearchService implements OnModuleInit {
       throw new NotFoundException('Failed to search products');
     }
   }
-  
 }

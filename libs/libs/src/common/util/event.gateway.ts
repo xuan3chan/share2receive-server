@@ -70,10 +70,9 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
     let isAuthenticated = false;
     let accessToken = null;
 
-    const cookies = socket.handshake.headers.cookie;
-    if (cookies) {
-      const parsedCookies = cookie.parse(cookies);
-      accessToken = parsedCookies['accessToken'];
+    const authHeader = socket.handshake.headers.authorization;
+    if (authHeader && typeof authHeader === 'string') {
+      accessToken = authHeader.split(' ')[1];
     }
 
     if (accessToken) {

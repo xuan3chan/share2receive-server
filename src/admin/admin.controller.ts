@@ -42,14 +42,24 @@ import { JwtPayload } from 'jsonwebtoken';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  private getUserIdFromToken(request: Request): string {
-    const token = (request.cookies.accessToken as string) || '';
-    if (!token) {
-      throw new UnauthorizedException('token not found');
-    }
-    const decodedToken = jwt.decode(token) as JwtPayload;
-    return decodedToken._id;
-  }
+   private getUserIdFromToken(request: Request): string {
+       try {
+         const token = (request.headers as any).authorization.split(' ')[1]; // Bearer <token>
+         const decodedToken = jwt.verify(
+           token,
+           process.env.JWT_SECRET,
+         ) as JwtPayload;
+         return decodedToken._id;
+       } catch (error) {
+         if (error instanceof jwt.TokenExpiredError) {
+           throw new UnauthorizedException('Token has expired');
+         } else if (error instanceof jwt.JsonWebTokenError) {
+           throw new UnauthorizedException('Invalid token');
+         } else {
+           throw new UnauthorizedException('Token not found');
+         }
+       }
+     }
 
   @Subject('admin')
   @Action('create')

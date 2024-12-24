@@ -31,10 +31,10 @@ import {
   ForgotPasswordDto,
   ResetPasswordDto,
 } from '@app/libs/common/dto';
-import { Response,Request } from 'express';
+import { Response, Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { OAuthExceptionFilter } from '@app/libs/common/filter/oauth-exception.filter';
-import { setCookie,clearCookie } from '@app/libs/common/util/';
+import { setCookie, clearCookie } from '@app/libs/common/util/';
 
 @ApiTags('authentication')
 @ApiBearerAuth()
@@ -44,43 +44,38 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth() {
-  }
+  async googleAuth() {}
 
   @Get('callback/google')
-@UseGuards(AuthGuard('google'))
-@UseFilters(OAuthExceptionFilter)
-async googleAuthRedirect(
-  @Req() req: Request,
-  @Res() res: Response,
-) {
-  try {
-    const googleUserProfile = req.user;
-    const result = await this.authService.googleLogin(googleUserProfile);
+  @UseGuards(AuthGuard('google'))
+  @UseFilters(OAuthExceptionFilter)
+  async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
+    try {
+      const googleUserProfile = req.user;
+      const result = await this.authService.googleLogin(googleUserProfile);
 
-    // Redirect to frontend with tokens as query params
-    const redirectUrl = `http://localhost:3000/?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+      // Redirect to frontend with tokens as query params
+      const redirectUrl = `http://localhost:3000/?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
 
-    return res.redirect(redirectUrl);
-  } catch (err) {
-    const errorRedirectUrl = `http://localhost:3000/?message=${encodeURIComponent(
-      err.message,
-    )}`;
+      return res.redirect(redirectUrl);
+    } catch (err) {
+      const errorRedirectUrl = `http://localhost:3000/?message=${encodeURIComponent(
+        err.message,
+      )}`;
 
-    return res.redirect(errorRedirectUrl);
+      return res.redirect(errorRedirectUrl);
+    }
   }
-}
-
-  
-
 
   @Post('process-google')
   @ApiBody({ type: Object })
   async processGoogle(@Body('profile') profile: Record<string, any>) {
     if (!profile || typeof profile !== 'object') {
-      throw new BadRequestException('Profile data is required and must be an object');
+      throw new BadRequestException(
+        'Profile data is required and must be an object',
+      );
     }
-  
+
     try {
       return await this.authService.googleLogin(profile);
     } catch (error) {
@@ -88,22 +83,23 @@ async googleAuthRedirect(
       throw error;
     }
   }
-  
 
   @ApiConsumes('application/json')
   @HttpCode(HttpStatus.CREATED)
   @ApiCreatedResponse({ description: 'register successfully' })
   @ApiBadRequestResponse({ description: 'Bad Request' })
   @Post('register')
-  async registerController(@Body() register: RegisterDto,@Res({ passthrough: true }) response: Response,) {
-    
+  async registerController(
+    @Body() register: RegisterDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const result = await this.authService.registerService(
       register.email,
       register.password,
       register.firstname,
       register.lastname,
     );
-    setCookie(response, 'refreshToken', result.refreshToken)
+    setCookie(response, 'refreshToken', result.refreshToken);
     setCookie(response, 'accessToken', result.accessToken);
     const userDecode = encodeURIComponent(JSON.stringify(result.user));
     setCookie(response, 'userData', userDecode);
@@ -122,16 +118,16 @@ async googleAuthRedirect(
       user.account,
       user.password,
     );
-    if(loginResult.user.role != 'user'){
-    setCookie(response, 'refreshToken', loginResult.refreshToken,{
-      domain: 'https://share2receive-admin.vercel.app/'
-    });
-    setCookie(response, 'accessToken', loginResult.accessToken,{
-      domain: 'https://share2receive-admin.vercel.app/'
-    });
-  }
-  setCookie(response, 'refreshToken', loginResult.refreshToken);
-  setCookie(response, 'accessToken', loginResult.accessToken);
+    if (loginResult.user.role != 'user') {
+      setCookie(response, 'refreshToken', loginResult.refreshToken, {
+        domain: 'https://share2receive-admin.vercel.app/',
+      });
+      setCookie(response, 'accessToken', loginResult.accessToken, {
+        domain: 'https://share2receive-admin.vercel.app/',
+      });
+    }
+    setCookie(response, 'refreshToken', loginResult.refreshToken);
+    setCookie(response, 'accessToken', loginResult.accessToken);
 
     return { message: 'successfully', data: loginResult };
   }
@@ -147,8 +143,8 @@ async googleAuthRedirect(
     const result = await this.authService.refreshTokenService(
       refreshToken.refreshToken,
     );
-    
-    setCookie(response, 'refreshToken', result.refreshToken,);
+
+    setCookie(response, 'refreshToken', result.refreshToken);
     setCookie(response, 'accessToken', result.accessToken);
 
     return { message: 'successfully', data: result };
@@ -163,9 +159,7 @@ async googleAuthRedirect(
     @Res({ passthrough: true }) response: Response,
   ): Promise<{ message: string }> {
     const refreshToken = await request.cookies.refreshToken;
-    await this.authService.logoutService(
-      refreshToken,
-    );
+    await this.authService.logoutService(refreshToken);
     if (refreshToken) {
       clearCookie(response, 'refreshToken');
       clearCookie(response, 'accessToken');

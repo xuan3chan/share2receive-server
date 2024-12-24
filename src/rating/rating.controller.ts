@@ -35,17 +35,23 @@ export class RatingController {
   constructor(private readonly ratingService: RatingService) {}
 
   private getUserIdFromToken(request: Request): string {
-    const token = (request.cookies.accessToken as string) || '';
-    if (!token) {
-      throw new UnauthorizedException('Token not found');
+      try {
+        const token = (request.headers as any).authorization.split(' ')[1]; // Bearer <token>
+        const decodedToken = jwt.verify(
+          token,
+          process.env.JWT_SECRET,
+        ) as JwtPayload;
+        return decodedToken._id;
+      } catch (error) {
+        if (error instanceof jwt.TokenExpiredError) {
+          throw new UnauthorizedException('Token has expired');
+        } else if (error instanceof jwt.JsonWebTokenError) {
+          throw new UnauthorizedException('Invalid token');
+        } else {
+          throw new UnauthorizedException('Token not found');
+        }
+      }
     }
-    try {
-      const decodedToken = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
-      return decodedToken._id;
-    } catch (error) {
-      throw new UnauthorizedException('Invalid or expired token');
-    }
-  }
 
   @Post()
   @UseGuards(MemberGuard)

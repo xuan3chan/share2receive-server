@@ -13,6 +13,7 @@ import {
   Param,
   Query,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import {
@@ -50,10 +51,23 @@ export class UsersController {
   ) {}
 
   private getUserIdFromToken(request: Request): string {
-    const token = (request.headers as any).authorization.split(' ')[1]; // Bearer <token>
-    const decodedToken = jwt.decode(token) as JwtPayload;
-    return decodedToken._id;
-  }
+      try {
+        const token = (request.headers as any).authorization.split(' ')[1]; // Bearer <token>
+        const decodedToken = jwt.verify(
+          token,
+          process.env.JWT_SECRET,
+        ) as JwtPayload;
+        return decodedToken._id;
+      } catch (error) {
+        if (error instanceof jwt.TokenExpiredError) {
+          throw new UnauthorizedException('Token has expired');
+        } else if (error instanceof jwt.JsonWebTokenError) {
+          throw new UnauthorizedException('Invalid token');
+        } else {
+          throw new UnauthorizedException('Token not found');
+        }
+      }
+    }
 
   @Action('read')
   @Subject('user')

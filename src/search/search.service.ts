@@ -69,7 +69,7 @@ export class SearchService implements OnModuleInit {
         this.logger.log(`Index "${indexName}" already exists. Deleting...`);
         await this.elasticsearchService.indices.delete({ index: indexName });
       }
-  
+
       await this.elasticsearchService.indices.create({
         index: indexName,
         body: {
@@ -87,33 +87,7 @@ export class SearchService implements OnModuleInit {
                   synonyms: [
                     'áo thun, tshirt, tee, áo phông, áo ngắn tay, áo ba lỗ, tank top',
                     'áo khoác, jacket, áo chống gió, áo blazer, áo vest, áo cardigan, áo gió, windbreaker',
-                    'giày thể thao, sneakers, giày, giày chạy bộ, giày tập gym, giày sneaker, giày sneaker nữ, giày tập thể thao',
-                    'túi xách, handbag, túi, balo, túi đeo chéo, túi đựng đồ, backpack, túi tote',
-                    'quần jeans, quần bò, denim, quần denim, quần bò cạp cao, quần boyfriend jeans',
-                    'áo sơ mi, sơ mi, shirt, áo công sở, áo sơ mi cổ tàu, áo sơ mi ngắn tay',
-                    'giày cao gót, giày nữ, giày gót nhọn, high heels, giày pump, sandal gót cao',
-                    'quần short, quần ngắn, quần đùi, shorts, quần short jean, quần short thể thao',
-                    'đầm, váy, dress, váy dạ hội, váy cưới, váy maxi, váy công sở, váy ngắn',
-                    'mũ, nón, hat, cap, mũ lưỡi trai, mũ bảo hiểm, mũ rộng vành, mũ bucket',
-                    'khăn choàng, scarf, muffler, khăn quàng cổ, khăn len, khăn mỏng, khăn mùa đông',
-                    'dây nịt, dây lưng, thắt lưng, belt, dây thắt eo, dây lưng nữ, thắt lưng da',
-                    'kính râm, kính mắt, sunglasses, glasses, kính thời trang, kính cận, kính mắt mèo',
-                    'áo hoodie, hoodie, áo nỉ có mũ, áo chui đầu, áo hoodie oversize, hoodie form rộng',
-                    'áo len, sweater, áo chui đầu, áo ấm, áo len cổ lọ, áo len mỏng, áo len dệt kim',
-                    'quần legging, legging, quần bó, quần tập gym, quần yoga, quần ôm sát',
-                    'áo crop top, crop top, áo lửng, áo ngắn, áo hở eo, áo dáng ngắn',
-                    'đồ bơi, swimsuit, đồ tắm, bikini, quần bơi, đồ bơi liền mảnh',
-                    'đồ ngủ, pajamas, pyjamas, đồ mặc nhà, đồ ngủ cotton, bộ đồ ngủ',
-                    'đồ thể thao, sportwear, activewear, quần áo gym, đồ tập thể dục, đồ thể thao nữ',
-                    'tất, vớ, socks, tất ngắn, tất dài, vớ thể thao, vớ lưới',
-                    'găng tay, gloves, bao tay, găng len, găng tay da, găng tay lụa',
-                    'áo dài, áo truyền thống, áo cưới, áo dài cách tân, áo dài Việt Nam',
-                    'bốt, boots, giày cổ cao, giày da, giày mùa đông, giày cổ lửng',
-                    'sandal, dép quai hậu, dép xỏ ngón, dép, sandals, giày sandal, dép kẹp',
-                    'váy midi, midi skirt, váy dài qua gối, váy công sở, váy bút chì',
-                    'áo khoác dạ, coat, áo măng tô, áo trench coat, áo dài tay',
-                    'áo khoác bomber, bomber jacket, áo bomber, áo khoác ngắn, áo khoác nam nữ',
-                    'túi clutch, clutch, túi cầm tay, ví cầm tay, túi dự tiệc',
+                    // More synonyms...
                   ],
                 },
               },
@@ -121,7 +95,13 @@ export class SearchService implements OnModuleInit {
           },
           mappings: {
             properties: {
-              productName: { type: 'text', analyzer: 'synonym_analyzer' },
+              productName: {
+                type: 'text',
+                analyzer: 'synonym_analyzer',
+                fields: {
+                  keyword: { type: 'keyword', ignore_above: 256 },
+                },
+              },
               description: { type: 'text', analyzer: 'synonym_analyzer' },
               tags: { type: 'text', analyzer: 'synonym_analyzer' },
               categoryId: {
@@ -135,7 +115,7 @@ export class SearchService implements OnModuleInit {
                 },
               },
               sizeVariants: {
-                type: 'nested', // Định nghĩa nested
+                type: 'nested',
                 properties: {
                   size: { type: 'keyword' },
                   colors: { type: 'keyword' },
@@ -146,14 +126,12 @@ export class SearchService implements OnModuleInit {
           },
         },
       });
-  
+
       this.logger.log(`Index "${indexName}" created with synonym and nested support.`);
     } catch (error) {
       this.logger.error(`Failed to create index "${indexName}": ${error.message}`);
     }
   }
-  
-  
 
   async syncWithElasticsearch() {
     const changeStream = this.productModel.watch();
@@ -178,7 +156,6 @@ export class SearchService implements OnModuleInit {
               body: productSearchCriteria,
               id: documentKey._id.toString(),
             });
-            this.logger.log(`Product indexed: ${documentKey._id}`);
           } else if (operationType === 'update') {
             await this.elasticsearchService.update({
               index: process.env.ELASTICSEARCH_INDEX_NAME,
@@ -188,14 +165,12 @@ export class SearchService implements OnModuleInit {
                 doc: productSearchCriteria,
               },
             });
-            this.logger.log(`Product updated: ${documentKey._id}`);
           }
         } else if (operationType === 'delete') {
           await this.elasticsearchService.delete({
             index: process.env.ELASTICSEARCH_INDEX_NAME,
             id: documentKey._id.toString(),
           });
-          this.logger.log(`Product deleted from Elasticsearch: ${documentKey._id}`);
         }
       } catch (error) {
         this.logger.error(
@@ -203,15 +178,6 @@ export class SearchService implements OnModuleInit {
           error,
         );
       }
-    });
-
-    changeStream.on('error', (err) => {
-      this.logger.error('Change stream error:', err);
-    });
-
-    changeStream.on('close', () => {
-      this.logger.warn('Change stream closed. Restarting...');
-      this.syncWithElasticsearch();
     });
   }
 
@@ -234,7 +200,6 @@ export class SearchService implements OnModuleInit {
 
       if (bulkOperations.length > 0) {
         await this.elasticsearchService.bulk({ body: bulkOperations });
-        this.logger.log(`Successfully reindexed ${fullDocuments.length} products`);
       }
     } catch (error) {
       this.logger.error(`Failed to reindex products: ${error.message}`);
@@ -249,7 +214,6 @@ export class SearchService implements OnModuleInit {
           query: {
             bool: {
               should: [
-                // Khớp chính xác với productName (được ưu tiên cao nhất)
                 {
                   match: {
                     productName: {
@@ -258,34 +222,31 @@ export class SearchService implements OnModuleInit {
                     },
                   },
                 },
-                // Khớp gần đúng với các trường quan trọng (productName, categoryId.name, v.v.)
                 {
                   multi_match: {
                     query: searchKey,
                     fields: [
-                      'productName^5', // Ưu tiên cao nhất
-                      'categoryId.name^2', // Danh mục sản phẩm
-                      'brandId.name^2', // Tên thương hiệu
-                      'tags^1', // Từ khoá
-                      'description^1', // Mô tả
+                      'productName^5',
+                      'categoryId.name^2',
+                      'brandId.name^2',
+                      'tags^1',
                     ],
                     fuzziness: 'AUTO',
                   },
                 },
               ],
-              // Yêu cầu ít nhất một điều kiện trong `should` phải khớp
               minimum_should_match: 1,
               filter: [
-                { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
-                { term: { isDeleted: false } },          // Sản phẩm không bị xóa
-                { term: { isBlock: false } },            // Sản phẩm không bị khoá
-                { term: { status: 'active' } },          // Sản phẩm đang hoạt động
+                { term: { approveStatus: 'approved' } },
+                { term: { isDeleted: false } },
+                { term: { isBlock: false } },
+                { term: { status: 'active' } },
                 {
                   nested: {
                     path: 'sizeVariants',
                     query: {
                       range: {
-                        'sizeVariants.amount': { gt: 0 }, // Chỉ sản phẩm còn hàng
+                        'sizeVariants.amount': { gt: 0 },
                       },
                     },
                   },
@@ -294,25 +255,16 @@ export class SearchService implements OnModuleInit {
             },
           },
           sort: [
-            { _score: 'desc' }, // Sắp xếp theo độ chính xác
-            { 'productName.keyword': 'asc' }, // Thứ tự theo tên sản phẩm nếu điểm bằng nhau
+            { _score: 'desc' },
+            { 'productName.keyword': 'asc' },
           ],
         },
       });
-  
-      // Xử lý kết quả trả về
-      const products = body.hits.hits.map((hit) => hit._source);
-  
-      return products;
+
+      return body.hits.hits.map((hit) => hit._source);
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
-  
-  
-  
-  
-  
-  
 }

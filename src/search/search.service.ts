@@ -57,8 +57,93 @@ export class SearchService implements OnModuleInit {
   }
 
   async onModuleInit() {
+    await this.createIndexWithSynonyms(); // Khởi tạo index với cấu hình đồng nghĩa
     await this.syncWithElasticsearch();
     await this.reindexAllProducts();
+  }
+
+  async createIndexWithSynonyms() {
+    const indexName = 'products';
+    try {
+      const indexExists = await this.elasticsearchService.indices.exists({ index: indexName });
+      if (indexExists) {
+        this.logger.log(`Index "${indexName}" already exists. Skipping creation.`);
+        return;
+      }
+
+      await this.elasticsearchService.indices.create({
+        index: indexName,
+        body: {
+          settings: {
+            analysis: {
+              analyzer: {
+                synonym_analyzer: {
+                  tokenizer: 'standard',
+                  filter: ['lowercase', 'synonym_filter'],
+                },
+              },
+              filter: {
+                synonym_filter: {
+                  type: 'synonym',
+                  synonyms: [
+                    'áo thun, tshirt, tee, áo phông, áo ngắn tay, áo ba lỗ, tank top',
+                    'áo khoác, jacket, áo chống gió, áo blazer, áo vest, áo cardigan, áo gió, windbreaker',
+                    'giày thể thao, sneakers, giày, giày chạy bộ, giày tập gym, giày sneaker, giày sneaker nữ, giày tập thể thao',
+                    'túi xách, handbag, túi, balo, túi đeo chéo, túi đựng đồ, backpack, túi tote',
+                    'quần jeans, quần bò, denim, quần denim, quần bò cạp cao, quần boyfriend jeans',
+                    'áo sơ mi, sơ mi, shirt, áo công sở, áo sơ mi cổ tàu, áo sơ mi ngắn tay',
+                    'giày cao gót, giày nữ, giày gót nhọn, high heels, giày pump, sandal gót cao',
+                    'quần short, quần ngắn, quần đùi, shorts, quần short jean, quần short thể thao',
+                    'đầm, váy, dress, váy dạ hội, váy cưới, váy maxi, váy công sở, váy ngắn',
+                    'mũ, nón, hat, cap, mũ lưỡi trai, mũ bảo hiểm, mũ rộng vành, mũ bucket',
+                    'khăn choàng, scarf, muffler, khăn quàng cổ, khăn len, khăn mỏng, khăn mùa đông',
+                    'dây nịt, dây lưng, thắt lưng, belt, dây thắt eo, dây lưng nữ, thắt lưng da',
+                    'kính râm, kính mắt, sunglasses, glasses, kính thời trang, kính cận, kính mắt mèo',
+                    'áo hoodie, hoodie, áo nỉ có mũ, áo chui đầu, áo hoodie oversize, hoodie form rộng',
+                    'áo len, sweater, áo chui đầu, áo ấm, áo len cổ lọ, áo len mỏng, áo len dệt kim',
+                    'quần legging, legging, quần bó, quần tập gym, quần yoga, quần ôm sát',
+                    'áo crop top, crop top, áo lửng, áo ngắn, áo hở eo, áo dáng ngắn',
+                    'đồ bơi, swimsuit, đồ tắm, bikini, quần bơi, đồ bơi liền mảnh',
+                    'đồ ngủ, pajamas, pyjamas, đồ mặc nhà, đồ ngủ cotton, bộ đồ ngủ',
+                    'đồ thể thao, sportwear, activewear, quần áo gym, đồ tập thể dục, đồ thể thao nữ',
+                    'tất, vớ, socks, tất ngắn, tất dài, vớ thể thao, vớ lưới',
+                    'găng tay, gloves, bao tay, găng len, găng tay da, găng tay lụa',
+                    'áo dài, áo truyền thống, áo cưới, áo dài cách tân, áo dài Việt Nam',
+                    'bốt, boots, giày cổ cao, giày da, giày mùa đông, giày cổ lửng',
+                    'sandal, dép quai hậu, dép xỏ ngón, dép, sandals, giày sandal, dép kẹp',
+                    'váy midi, midi skirt, váy dài qua gối, váy công sở, váy bút chì',
+                    'áo khoác dạ, coat, áo măng tô, áo trench coat, áo dài tay',
+                    'áo khoác bomber, bomber jacket, áo bomber, áo khoác ngắn, áo khoác nam nữ',
+                    'túi clutch, clutch, túi cầm tay, ví cầm tay, túi dự tiệc'
+                  ]                  
+                },
+              },
+            },
+          },
+          mappings: {
+            properties: {
+              productName: { type: 'text', analyzer: 'synonym_analyzer' },
+              description: { type: 'text', analyzer: 'synonym_analyzer' },
+              tags: { type: 'text', analyzer: 'synonym_analyzer' },
+              categoryId: {
+                properties: {
+                  name: { type: 'text', analyzer: 'synonym_analyzer' },
+                },
+              },
+              brandId: {
+                properties: {
+                  name: { type: 'text', analyzer: 'synonym_analyzer' },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      this.logger.log(`Index "${indexName}" created with synonym support.`);
+    } catch (error) {
+      this.logger.error(`Failed to create index "${indexName}": ${error.message}`);
+    }
   }
 
   async syncWithElasticsearch() {
@@ -86,11 +171,10 @@ export class SearchService implements OnModuleInit {
             });
             this.logger.log(`Product indexed: ${documentKey._id}`);
           } else if (operationType === 'update') {
-            // Handle version conflict with retry_on_conflict
             await this.elasticsearchService.update({
               index: 'products',
               id: documentKey._id.toString(),
-              retry_on_conflict: 3, // Retry if version conflict occurs
+              retry_on_conflict: 3,
               body: {
                 doc: productSearchCriteria,
               },
@@ -105,19 +189,10 @@ export class SearchService implements OnModuleInit {
           this.logger.log(`Product deleted from Elasticsearch: ${documentKey._id}`);
         }
       } catch (error) {
-        if (
-          error.status === 409 &&
-          error.body?.error?.type === 'version_conflict_engine_exception'
-        ) {
-          this.logger.warn(
-            `Version conflict detected for document: ${documentKey._id}. Skipping this operation.`,
-          );
-        } else {
-          this.logger.error(
-            `Error syncing document ${documentKey._id} with Elasticsearch`,
-            error,
-          );
-        }
+        this.logger.error(
+          `Error syncing document ${documentKey._id} with Elasticsearch`,
+          error,
+        );
       }
     });
 
@@ -165,6 +240,16 @@ export class SearchService implements OnModuleInit {
           query: {
             bool: {
               should: [
+                // Ưu tiên sản phẩm có tên khớp chính xác trước
+                {
+                  match_phrase: {
+                    productName: {
+                      query: searchKey,
+                      boost: 5, // Tăng trọng số để ưu tiên
+                    },
+                  },
+                },
+                // Sử dụng đồng nghĩa và tìm kiếm mở rộng
                 {
                   multi_match: {
                     query: searchKey,
@@ -176,8 +261,16 @@ export class SearchService implements OnModuleInit {
                       'description',
                     ],
                     fuzziness: 'AUTO',
+                    analyzer: 'synonym_analyzer',
                   },
                 },
+              ],
+              // Tăng cường độ chính xác: loại bỏ các kết quả không phù hợp
+              filter: [
+                { term: { approveStatus: 'approved' } },
+                { term: { isDeleted: false } },
+                { term: { isBlocked: false } },
+                { term: { status: 'active' } },
               ],
             },
           },
@@ -188,10 +281,6 @@ export class SearchService implements OnModuleInit {
         .map((hit) => hit._source)
         .filter(
           (product) =>
-            product.approveStatus === 'approved' &&
-            !product.isDeleted &&
-            !product.isBlocked &&
-            product.status === 'active' &&
             product.sizeVariants &&
             product.sizeVariants.some((variant) => variant.amount > 0),
         );

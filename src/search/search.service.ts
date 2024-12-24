@@ -264,8 +264,8 @@ export class SearchService implements OnModuleInit {
         .filter(
           (product) =>
             product.approveStatus === 'approved' &&
-            !product.isDeleted &&
-            !product.isBlocked &&
+            product.isDeleted == 'false' &&
+            product.isBlocked == 'false' &&
             product.status === 'active' &&
             product.sizeVariants &&
             product.sizeVariants.some((variant) => variant.amount > 0),

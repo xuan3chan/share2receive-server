@@ -3,7 +3,7 @@ import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ProductDocument } from '@app/libs/common/schema';
-import { ProductSearchCriteria } from '@app/libs/common/interface';
+// Removed unused import
 
 @Injectable()
 export class SearchService implements OnModuleInit {
@@ -276,7 +276,7 @@ export class SearchService implements OnModuleInit {
         },
       });
   
-      const products = body.hits.hits.map((hit) => hit._source);
+      const products = body.hits.hits.map((hit: { _source: any }) => hit._source);
   
       return products;
     } catch (error) {

@@ -248,7 +248,7 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              should: [
+              must: [
                 {
                   multi_match: {
                     query: searchKey,
@@ -262,16 +262,7 @@ export class SearchService implements OnModuleInit {
                     fuzziness: 'AUTO', // Hỗ trợ tìm kiếm gần đúng
                   },
                 },
-                {
-                  match_phrase_prefix: {
-                    productName: {
-                      query: searchKey,
-                      boost: 3, // Tăng điểm nếu khớp cụm từ đầu
-                    },
-                  },
-                },
               ],
-              minimum_should_match: 2, // Ít nhất một điều kiện trong `should` phải khớp
               filter: [
                 { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
                 { term: { isDeleted: false } },          // Sản phẩm không bị xóa

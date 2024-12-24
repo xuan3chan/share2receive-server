@@ -248,50 +248,57 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              should: [
-                {
-                  match: {
-                    productName: {
-                      query: searchKey,
-                      boost: 5, // Ưu tiên khớp chính xác với productName
-                    },
-                  },
-                },
+              must: [
                 {
                   multi_match: {
                     query: searchKey,
                     fields: [
                       'productName^5', // Ưu tiên cao cho tên sản phẩm
-                      'categoryId.name^1',
-                      'brandId.name^1',
+                      'categoryId.name^2',
+                      'brandId.name^2',
                       'tags',
                       'description',
                     ],
-                    fuzziness: 'AUTO', // Hỗ trợ tìm kiếm gần đúng
-                    boost: 3, // Điểm thấp hơn so với khớp chính xác
+                    fuzziness: 'AUTO', // Tìm kiếm mờ
                   },
                 },
+              ],
+              should: [
                 {
                   match_phrase_prefix: {
                     productName: {
                       query: searchKey,
-                      boost: 2, // Ưu tiên cụm từ bắt đầu
+                      boost: 3, // Ưu tiên cụm từ đầu
+                    },
+                  },
+                },
+                {
+                  match: {
+                    productName: {
+                      query: searchKey,
+                      boost: 5, // Ưu tiên khớp chính xác
                     },
                   },
                 },
               ],
-              minimum_should_match: 1, // Ít nhất một điều kiện trong `should` phải khớp
+              minimum_should_match: 1, // Ít nhất một điều kiện `should` phải khớp
               filter: [
-                { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
-                { term: { isDeleted: false } },          // Sản phẩm không bị xóa
-                { term: { isBlock: false } },            // Sản phẩm không bị khóa
-                { term: { status: 'active' } },          // Sản phẩm đang hoạt động
+                { term: { approveStatus: 'approved' } }, // Chỉ sản phẩm đã phê duyệt
+                { term: { isDeleted: false } },          // Không bị xóa
+                { term: { isBlock: false } },            // Không bị khóa
+                { term: { status: 'active' } },          // Đang hoạt động
                 {
                   nested: {
                     path: 'sizeVariants',
                     query: {
-                      range: {
-                        'sizeVariants.amount': { gt: 0 }, // Sản phẩm còn hàng
+                      bool: {
+                        must: [
+                          {
+                            range: {
+                              'sizeVariants.amount': { gt: 0 }, // Còn hàng
+                            },
+                          },
+                        ],
                       },
                     },
                   },
@@ -300,18 +307,20 @@ export class SearchService implements OnModuleInit {
             },
           },
           sort: [
-            { _score: 'desc' }, // Sắp xếp theo điểm số
+            { _score: 'desc' }, // Sắp xếp kết quả theo độ chính xác
           ],
         },
       });
   
       const products = body.hits.hits.map((hit) => hit._source);
+  
       return products;
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
+  
   
   
   

@@ -3,7 +3,6 @@ import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ProductDocument } from '@app/libs/common/schema';
-// Removed unused import
 
 @Injectable()
 export class SearchService implements OnModuleInit {
@@ -57,20 +56,20 @@ export class SearchService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    await this.createIndexWithSynonyms(); // Khởi tạo index với cấu hình đồng nghĩa
+    await this.createIndexWithSynonyms();
     await this.syncWithElasticsearch();
     await this.reindexAllProducts();
   }
 
   async createIndexWithSynonyms() {
-    const indexName = process.env.ELASTICSEARCH_INDEX_NAME 
+    const indexName = process.env.ELASTICSEARCH_INDEX_NAME;
     try {
       const indexExists = await this.elasticsearchService.indices.exists({ index: indexName });
       if (indexExists) {
-        this.logger.log(`Index "${indexName}" already exists. Skipping creation.`);
-        return;
+        this.logger.log(`Index "${indexName}" already exists. Deleting...`);
+        await this.elasticsearchService.indices.delete({ index: indexName });
       }
-
+  
       await this.elasticsearchService.indices.create({
         index: indexName,
         body: {
@@ -90,32 +89,8 @@ export class SearchService implements OnModuleInit {
                     'áo khoác, jacket, áo chống gió, áo blazer, áo vest, áo cardigan, áo gió, windbreaker',
                     'giày thể thao, sneakers, giày, giày chạy bộ, giày tập gym, giày sneaker, giày sneaker nữ, giày tập thể thao',
                     'túi xách, handbag, túi, balo, túi đeo chéo, túi đựng đồ, backpack, túi tote',
-                    'quần jeans, quần bò, denim, quần denim, quần bò cạp cao, quần boyfriend jeans',
-                    'áo sơ mi, sơ mi, shirt, áo công sở, áo sơ mi cổ tàu, áo sơ mi ngắn tay',
-                    'giày cao gót, giày nữ, giày gót nhọn, high heels, giày pump, sandal gót cao',
-                    'quần short, quần ngắn, quần đùi, shorts, quần short jean, quần short thể thao',
-                    'đầm, váy, dress, váy dạ hội, váy cưới, váy maxi, váy công sở, váy ngắn',
-                    'mũ, nón, hat, cap, mũ lưỡi trai, mũ bảo hiểm, mũ rộng vành, mũ bucket',
-                    'khăn choàng, scarf, muffler, khăn quàng cổ, khăn len, khăn mỏng, khăn mùa đông',
-                    'dây nịt, dây lưng, thắt lưng, belt, dây thắt eo, dây lưng nữ, thắt lưng da',
-                    'kính râm, kính mắt, sunglasses, glasses, kính thời trang, kính cận, kính mắt mèo',
-                    'áo hoodie, hoodie, áo nỉ có mũ, áo chui đầu, áo hoodie oversize, hoodie form rộng',
-                    'áo len, sweater, áo chui đầu, áo ấm, áo len cổ lọ, áo len mỏng, áo len dệt kim',
-                    'quần legging, legging, quần bó, quần tập gym, quần yoga, quần ôm sát',
-                    'áo crop top, crop top, áo lửng, áo ngắn, áo hở eo, áo dáng ngắn',
-                    'đồ bơi, swimsuit, đồ tắm, bikini, quần bơi, đồ bơi liền mảnh',
-                    'đồ ngủ, pajamas, pyjamas, đồ mặc nhà, đồ ngủ cotton, bộ đồ ngủ',
-                    'đồ thể thao, sportwear, activewear, quần áo gym, đồ tập thể dục, đồ thể thao nữ',
-                    'tất, vớ, socks, tất ngắn, tất dài, vớ thể thao, vớ lưới',
-                    'găng tay, gloves, bao tay, găng len, găng tay da, găng tay lụa',
-                    'áo dài, áo truyền thống, áo cưới, áo dài cách tân, áo dài Việt Nam',
-                    'bốt, boots, giày cổ cao, giày da, giày mùa đông, giày cổ lửng',
-                    'sandal, dép quai hậu, dép xỏ ngón, dép, sandals, giày sandal, dép kẹp',
-                    'váy midi, midi skirt, váy dài qua gối, váy công sở, váy bút chì',
-                    'áo khoác dạ, coat, áo măng tô, áo trench coat, áo dài tay',
-                    'áo khoác bomber, bomber jacket, áo bomber, áo khoác ngắn, áo khoác nam nữ',
-                    'túi clutch, clutch, túi cầm tay, ví cầm tay, túi dự tiệc'
-                  ]                  
+                    // Thêm từ đồng nghĩa khác...
+                  ],
                 },
               },
             },
@@ -135,16 +110,26 @@ export class SearchService implements OnModuleInit {
                   name: { type: 'text', analyzer: 'synonym_analyzer' },
                 },
               },
+              sizeVariants: {
+                type: 'nested', // Định nghĩa nested
+                properties: {
+                  size: { type: 'keyword' },
+                  colors: { type: 'keyword' },
+                  amount: { type: 'integer' },
+                },
+              },
             },
           },
         },
       });
-
-      this.logger.log(`Index "${indexName}" created with synonym support.`);
+  
+      this.logger.log(`Index "${indexName}" created with synonym and nested support.`);
     } catch (error) {
       this.logger.error(`Failed to create index "${indexName}": ${error.message}`);
     }
   }
+  
+  
 
   async syncWithElasticsearch() {
     const changeStream = this.productModel.watch();
@@ -244,13 +229,38 @@ export class SearchService implements OnModuleInit {
                   multi_match: {
                     query: searchKey,
                     fields: [
-                      'productName^3',
+                      'productName^3',  // Ưu tiên tên sản phẩm
                       'categoryId.name^2',
                       'brandId.name',
                       'tags',
                       'description',
                     ],
-                    fuzziness: 'AUTO',
+                    fuzziness: 'AUTO', // Hỗ trợ tìm kiếm gần đúng
+                  },
+                },
+                {
+                  match_phrase_prefix: {
+                    productName: {
+                      query: searchKey,
+                      boost: 2, // Tăng điểm nếu khớp cụm từ đầu
+                    },
+                  },
+                },
+              ],
+              minimum_should_match: 1, // Ít nhất một điều kiện trong `should` phải khớp
+              filter: [
+                { term: { approveStatus: 'approved' } }, // Sản phẩm được phê duyệt
+                { term: { isDeleted: false } },          // Sản phẩm không bị xóa
+                { term: { isBlock: false } },            // Sản phẩm không bị khóa
+                { term: { status: 'active' } },          // Sản phẩm đang hoạt động
+                {
+                  nested: {
+                    path: 'sizeVariants',
+                    query: {
+                      range: {
+                        'sizeVariants.amount': { gt: 0 }, // Sản phẩm còn hàng
+                      },
+                    },
                   },
                 },
               ],
@@ -259,21 +269,14 @@ export class SearchService implements OnModuleInit {
         },
       });
   
-      const products = body.hits.hits
-        .map((hit) => hit._source)
-        .filter(
-          (product) =>
-        product.approveStatus === 'approved' &&
-        product.isDeleted === false &&
-        product.isBlock === false &&
-        product.status === 'active' &&
-        product.sizeVariants &&
-        product.sizeVariants.some((variant) => variant.amount > 0),
-        );
+      const products = body.hits.hits.map((hit) => hit._source);
       return products;
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
+  
+  
+  
 }

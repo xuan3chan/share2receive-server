@@ -183,7 +183,7 @@ export class SearchService implements OnModuleInit {
           },
         },
       });
-
+  
       const products = body.hits.hits
         .map((hit) => hit._source)
         .filter(
@@ -191,13 +191,16 @@ export class SearchService implements OnModuleInit {
             product.approveStatus === 'approved' &&
             !product.isDeleted &&
             !product.isBlocked &&
-            product.status === 'active',
+            product.status === 'active' &&
+            product.sizeVariants &&
+            product.sizeVariants.some((variant) => variant.amount > 0),
         );
-
+  
       return products;
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
+  
 }

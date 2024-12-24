@@ -63,7 +63,7 @@ export class SearchService implements OnModuleInit {
   }
 
   async createIndexWithSynonyms() {
-    const indexName = 'products';
+    const indexName = process.env.ELASTICSEARCH_INDEX_NAME 
     try {
       const indexExists = await this.elasticsearchService.indices.exists({ index: indexName });
       if (indexExists) {
@@ -165,14 +165,14 @@ export class SearchService implements OnModuleInit {
 
           if (operationType === 'insert') {
             await this.elasticsearchService.index({
-              index: 'products',
+              index: process.env.ELASTICSEARCH_INDEX_NAME,
               body: productSearchCriteria,
               id: documentKey._id.toString(),
             });
             this.logger.log(`Product indexed: ${documentKey._id}`);
           } else if (operationType === 'update') {
             await this.elasticsearchService.update({
-              index: 'products',
+              index: process.env.ELASTICSEARCH_INDEX_NAME,
               id: documentKey._id.toString(),
               retry_on_conflict: 3,
               body: {
@@ -183,7 +183,7 @@ export class SearchService implements OnModuleInit {
           }
         } else if (operationType === 'delete') {
           await this.elasticsearchService.delete({
-            index: 'products',
+            index: process.env.ELASTICSEARCH_INDEX_NAME,
             id: documentKey._id.toString(),
           });
           this.logger.log(`Product deleted from Elasticsearch: ${documentKey._id}`);
@@ -218,7 +218,7 @@ export class SearchService implements OnModuleInit {
       const bulkOperations = fullDocuments.map((product) => {
         const productSearchCriteria = this.transformProduct(product);
         return [
-          { index: { _index: 'products', _id: product._id.toString() } },
+          { index: { _index: process.env.ELASTICSEARCH_INDEX_NAME, _id: product._id.toString() } },
           productSearchCriteria,
         ];
       }).flat();
@@ -235,7 +235,7 @@ export class SearchService implements OnModuleInit {
   async searchProductsService(searchKey: string) {
     try {
       const { body } = await this.elasticsearchService.search({
-        index: 'products',
+        index: process.env.ELASTICSEARCH_INDEX_NAME,
         body: {
           query: {
             bool: {

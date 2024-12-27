@@ -190,7 +190,7 @@ export class EventGateway implements OnGatewayInit, OnGatewayConnection, OnGatew
   ): Promise<void> {
     const senderId = client.data._id;
     const roomId = [senderId, message.receiverId].sort().join('_');
-
+    console.log(client.data);
     try {
       let file: Express.Multer.File | undefined;
       if (message.file && message.fileName && message.fileType) {

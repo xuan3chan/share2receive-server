@@ -55,11 +55,11 @@ export class AuthController {
       const result = await this.authService.googleLogin(googleUserProfile);
 
       // Redirect to frontend with tokens as query params
-      const redirectUrl = `http://localhost:3000/?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+      const redirectUrl = `https://shop.share2receive.io.vn/?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
 
       return res.redirect(redirectUrl);
     } catch (err) {
-      const errorRedirectUrl = `http://localhost:3000/?message=${encodeURIComponent(
+      const errorRedirectUrl = `https://shop.share2receive.io.vn/?message=${encodeURIComponent(
         err.message,
       )}`;
 

@@ -157,6 +157,7 @@ export class ExchangeService {
       .populate('receiveProduct.receiverProductId', 'productName imgUrls')
       .skip((page - 1) * limit)
       .limit(limit)
+      .sort({ createdAt: -1 })
       .lean();
 
     const structuredExchanges = listExchange.map((exchange) => ({

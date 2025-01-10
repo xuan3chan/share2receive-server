@@ -255,19 +255,25 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              should: [
-                // Ưu tiên khớp chính xác
+              must: [
+                // Ưu tiên khớp chính xác với cụm từ tìm kiếm
                 {
                   match_phrase: {
-                    productName: searchKey,
+                    productName: {
+                      query: searchKey,
+                      boost: 5, // Tăng ưu tiên cho khớp chính xác
+                    },
                   },
                 },
-                // Khớp từ đồng nghĩa hoặc tìm kiếm gần đúng
+              ],
+              should: [
+                // Tìm kiếm mở rộng với fuzziness và từ đồng nghĩa
                 {
                   match: {
                     productName: {
                       query: searchKey,
-                      fuzziness: 'AUTO',
+                      fuzziness: 'AUTO', // Tìm kiếm gần đúng
+                      boost: 1, // Trọng số thấp hơn khớp chính xác
                     },
                   },
                 },
@@ -292,17 +298,25 @@ export class SearchService implements OnModuleInit {
             },
           },
           sort: [
-            { _score: 'desc' }, // Sắp xếp theo độ khớp
-            { 'productName.keyword': 'asc' }, // Thứ tự chữ cái nếu điểm khớp bằng nhau
+            { _score: 'desc' }, // Ưu tiên điểm khớp cao nhất
+            { 'productName.keyword': 'asc' }, // Sau đó sắp xếp theo thứ tự chữ cái
           ],
+          highlight: {
+            fields: {
+              productName: {}, // Đánh dấu từ khóa khớp trong kết quả
+            },
+          },
         },
       });
-  
-      return body.hits.hits.map((hit) => hit._source);
+
+      // Trả về kết quả sản phẩm
+      return body.hits.hits.map((hit) => ({
+        ...hit._source,
+        highlight: hit.highlight?.productName || [],
+      }));
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
-  
 }

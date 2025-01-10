@@ -156,18 +156,6 @@ export class SearchService implements OnModuleInit {
                   keyword: { type: 'keyword', ignore_above: 256 },
                 },
               },
-              description: { type: 'text', analyzer: 'synonym_analyzer' },
-              tags: { type: 'text', analyzer: 'synonym_analyzer' },
-              categoryId: {
-                properties: {
-                  name: { type: 'text', analyzer: 'synonym_analyzer' },
-                },
-              },
-              brandId: {
-                properties: {
-                  name: { type: 'text', analyzer: 'synonym_analyzer' },
-                },
-              },
               sizeVariants: {
                 type: 'nested',
                 properties: {

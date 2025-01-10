@@ -267,7 +267,7 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              should: [
+              must: [
                 {
                   match: {
                     productName: {
@@ -276,20 +276,7 @@ export class SearchService implements OnModuleInit {
                     },
                   },
                 },
-                {
-                  multi_match: {
-                    query: searchKey,
-                    fields: [
-                      'productName^5',
-                      'categoryId.name^2',
-                      'brandId.name^2',
-                      'tags^1',
-                    ],
-                    fuzziness: 'AUTO',
-                  },
-                },
               ],
-              minimum_should_match: 1,
               filter: [
                 { term: { approveStatus: 'approved' } },
                 { term: { isDeleted: false } },
@@ -314,11 +301,12 @@ export class SearchService implements OnModuleInit {
           ],
         },
       });
-
+  
       return body.hits.hits.map((hit) => hit._source);
     } catch (error) {
       this.logger.error(`Error searching products: ${error.message}`);
       throw new NotFoundException('Failed to search products');
     }
   }
+  
 }

@@ -47,7 +47,7 @@ import { ConfigsModule } from './configs/configs.module';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1h' },
+      signOptions: { expiresIn: '3h' },
     }),
     ConfigModule.forRoot({
       isGlobal: true,

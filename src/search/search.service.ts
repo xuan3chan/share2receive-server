@@ -283,10 +283,6 @@ export class SearchService implements OnModuleInit {
               ],
             },
           },
-          sort: [
-            { _score: 'desc' },
-            { 'productName.keyword': 'asc' },
-          ],
         },
       });
   

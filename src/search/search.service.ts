@@ -255,16 +255,24 @@ export class SearchService implements OnModuleInit {
         body: {
           query: {
             bool: {
-              must: [
+              should: [
+                // Ưu tiên khớp chính xác
+                {
+                  match_phrase: {
+                    productName: searchKey,
+                  },
+                },
+                // Khớp từ đồng nghĩa hoặc tìm kiếm gần đúng
                 {
                   match: {
                     productName: {
                       query: searchKey,
-                      boost: 10,
+                      fuzziness: 'AUTO',
                     },
                   },
                 },
               ],
+              minimum_should_match: 1,
               filter: [
                 { term: { approveStatus: 'approved' } },
                 { term: { isDeleted: false } },
@@ -283,6 +291,10 @@ export class SearchService implements OnModuleInit {
               ],
             },
           },
+          sort: [
+            { _score: 'desc' }, // Sắp xếp theo độ khớp
+            { 'productName.keyword': 'asc' }, // Thứ tự chữ cái nếu điểm khớp bằng nhau
+          ],
         },
       });
   

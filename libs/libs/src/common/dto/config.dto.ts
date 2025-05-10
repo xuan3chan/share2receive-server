@@ -6,6 +6,7 @@ import {
   IsOptional,
   Min,
   ValidateNested,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -41,6 +42,45 @@ class DetailSupportDto {
   content_3?: string;
 }
 
+class PaymentMethodDto {
+  @ApiProperty({ example: true, description: 'Thanh toán qua Momo' })
+  @IsBoolean()
+  @IsOptional()
+  momoPayment?: boolean;
+
+  @ApiProperty({ example: false, description: 'Thanh toán bằng điểm thưởng' })
+  @IsBoolean()
+  @IsOptional()
+  bonusPayment?: boolean;
+
+  @ApiProperty({ example: true, description: 'Thanh toán COD' })
+  @IsBoolean()
+  @IsOptional()
+  CODPayment?: boolean;
+}
+
+class UserCanDto {
+  @ApiProperty({ example: true, description: 'Người dùng có thể mua' })
+  @IsBoolean()
+  @IsOptional()
+  userCanBuy?: boolean;
+
+  @ApiProperty({ example: true, description: 'Người dùng có thể bán' })
+  @IsBoolean()
+  @IsOptional()
+  userCanSell?: boolean;
+
+  @ApiProperty({ example: true, description: 'Người dùng có thể trao đổi' })
+  @IsBoolean()
+  @IsOptional()
+  userCanExchange?: boolean;
+
+  @ApiProperty({ example: true, description: 'Người dùng có thể tặng' })
+  @IsBoolean()
+  @IsOptional()
+  userCanDonate?: boolean;
+}
+
 export class UpdateConfigDto {
   @ApiProperty({ example: 'https://example.com/video1.mp4', description: 'URL cho Video 1' })
   @IsString()
@@ -63,11 +103,13 @@ export class UpdateConfigDto {
   @Min(0)
   @IsOptional()
   valueToPromotion?: number;
-  @ApiProperty({ example: 2.0, description: 'Tỷ lệ chuyển đổi khuyến mãi' })
+
+  @ApiProperty({ example: 2.0, description: 'Tỷ lệ chuyển đổi chéo' })
   @IsNumber()
   @Min(0)
   @IsOptional()
   valueToCross?: number;
+
   @ApiProperty({ example: 5, description: 'Cảnh báo khiếu nại' })
   @IsNumber()
   @Min(0)
@@ -91,4 +133,16 @@ export class UpdateConfigDto {
   @Type(() => DetailSupportDto)
   @IsOptional()
   detailSuport?: DetailSupportDto;
+
+  @ApiProperty({ description: 'Phương thức thanh toán', type: PaymentMethodDto })
+  @ValidateNested()
+  @Type(() => PaymentMethodDto)
+  @IsOptional()
+  paymentMethod?: PaymentMethodDto;
+
+  @ApiProperty({ description: 'Người dùng được phép', type: UserCanDto })
+  @ValidateNested()
+  @Type(() => UserCanDto)
+  @IsOptional()
+  userCan?: UserCanDto;
 }

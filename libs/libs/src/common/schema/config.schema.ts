@@ -46,6 +46,34 @@ export class Configs {
         title_3: string;
         content_3: string;
   }
+
+ 
+  @Prop({ type:
+    {
+      momoPayment: { type: mongoose.Schema.Types.Boolean },
+      bonusPayment: { type: mongoose.Schema.Types.Boolean },
+      CODPayment: { type: mongoose.Schema.Types.Boolean },
+    }
+  })
+  paymentMethod: {
+        momoPayment: boolean;
+        bonusPayment: boolean;
+        CODPayment: boolean;
+  }
+  @Prop({ type:
+    {
+      userCanBuy: { type: mongoose.Schema.Types.Boolean },
+      userCanSell: { type: mongoose.Schema.Types.Boolean },
+      userCanExchange: { type: mongoose.Schema.Types.Boolean },
+      userCanDonate: { type: mongoose.Schema.Types.Boolean },
+    }
+  })
+  userCan: {
+        userCanBuy: boolean;
+        userCanSell: boolean;
+        userCanExchange: boolean;
+        userCanDonate: boolean;
+  }
 }
 
 export const ConfigsSchema = SchemaFactory.createForClass(Configs);

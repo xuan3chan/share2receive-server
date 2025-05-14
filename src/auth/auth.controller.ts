@@ -53,16 +53,16 @@ export class AuthController {
     try {
       const googleUserProfile = req.user;
       const result = await this.authService.googleLogin(googleUserProfile);
-
-      // Redirect to frontend with tokens as query params
-      const redirectUrl = `https://shop.share2receive.io.vn/?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
-
+  
+      // Use process.env.FRONTEND_URL for the redirect URL
+      const frontendUrl = process.env.FRONTEND_URL;
+      const redirectUrl = `${frontendUrl}?accessToken=${result.accessToken}&refreshToken=${result.refreshToken}`;
+  
       return res.redirect(redirectUrl);
     } catch (err) {
-      const errorRedirectUrl = `https://shop.share2receive.io.vn/?message=${encodeURIComponent(
-        err.message,
-      )}`;
-
+      const frontendUrl = process.env.FRONTEND_URL ;
+      const errorRedirectUrl = `${frontendUrl}?message=${encodeURIComponent(err.message)}`;
+  
       return res.redirect(errorRedirectUrl);
     }
   }

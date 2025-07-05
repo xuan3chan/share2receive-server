@@ -698,8 +698,8 @@ export class ExchangeService {
       .find()
       .populate('requesterId', 'firstname lastname email')
       .populate('receiverId', 'firstname lastname email')
-      .populate('requestProduct.requesterProductId', 'productName imgUrls')
-      .populate('receiveProduct.receiverProductId', 'productName imgUrls')
+      .populate('requestProduct.requesterProductId', 'productName imgUrls weight sizeVariants')
+      .populate('receiveProduct.receiverProductId', 'productName imgUrls weight sizeVariants')
       .skip((page - 1) * limit)  // Phân trang: bỏ qua (page - 1) * limit bản ghi
       .limit(limit)  // Giới hạn số lượng bản ghi trả về
       .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })  // Sắp xếp theo sortBy và sortOrder

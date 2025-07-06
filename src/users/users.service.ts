@@ -9,13 +9,12 @@ import {
 import { UpdateUserProfileDto, UserStyleDto } from '@app/libs/common/dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage } from 'mongoose';
-import { User, Wallet, WalletDocument } from '@app/libs/common/schema';
+import { User,} from '@app/libs/common/schema';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { remove as removeAccents } from 'remove-accents';
 import { EncryptionService } from '../encryption/encryption.service';
 import { MailerService } from 'src/mailer/mailer.service';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
 import { WalletService } from 'src/wallet/wallet.service';
 @Injectable()
 export class UsersService {
@@ -142,8 +141,8 @@ const matchQuery = regex
           numberOfRating: 1,
           wallet: { $ifNull: ['$wallet.point', 0] }, // Lấy wallet.point, nếu null trả về 0
         },
-      },
-      { $sort: { [sortField]: sortOrder === 'asc' ? 1 : -1 } }, // Sắp xếp
+            },
+            { $sort: { [sortField || 'createdAt']: sortOrder === 'asc' ? 1 : -1 } }, // Sắp xếp, mặc định theo ngày tạo
       { $skip: skip }, // Phân trang: bỏ qua n bản ghi
       { $limit: limit }, // Phân trang: giới hạn số bản ghi
     ];

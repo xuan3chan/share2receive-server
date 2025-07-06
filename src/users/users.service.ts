@@ -81,54 +81,48 @@ export class UsersService {
     page: number,
     limit: number,
     searchKey?: string,
-    sortField: string = 'lastname',
+    sortField: string = 'createdAt',
     sortOrder: 'asc' | 'desc' = 'asc',
   ): Promise<{ total: number; users: any[] }> {
     const skip = (page - 1) * limit;
 
-    // Preprocess search key: loại bỏ dấu, ký tự đặc biệt, chuyển về chữ thường
     // Preprocess search key: loại bỏ dấu, khoảng trắng thừa, và chữ thường hóa
-const preprocessString = (str: string) =>
-  str
-    ? str
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Loại bỏ dấu tiếng Việt
-        .trim()
-        .toLowerCase()
-    : '';
+    const preprocessString = (str: string) =>
+      str
+        ? str
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase()
+        : '';
 
-// Preprocess searchKey
-const preprocessedSearchKey = searchKey ? preprocessString(searchKey) : null;
+    const preprocessedSearchKey = searchKey ? preprocessString(searchKey) : null;
 
-// Build regex: Tìm kiếm linh hoạt (cho phép cả chuỗi email chứa ký tự đặc biệt)
-const regex = preprocessedSearchKey
-  ? new RegExp(preprocessedSearchKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
-  : null;
+    const regex = preprocessedSearchKey
+      ? new RegExp(preprocessedSearchKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      : null;
 
-// Xây dựng matchQuery
-const matchQuery = regex
-  ? {
-      $or: [
-        { firstname: { $regex: regex } }, // Khớp tên
-        { lastname: { $regex: regex } },  // Khớp họ
-        { email: { $regex: regex } },     // Khớp email chứa từ khóa
-      ],
-    }
-  : {};
+    const matchQuery = regex
+      ? {
+          $or: [
+            { firstname: { $regex: regex } },
+            { lastname: { $regex: regex } },
+            { email: { $regex: regex } },
+          ],
+        }
+      : {};
 
-
-    // Aggregation pipeline
     const pipeline: PipelineStage[] = [
-      { $match: matchQuery }, // Bộ lọc tìm kiếm
+      { $match: matchQuery },
       {
         $lookup: {
-          from: 'wallets', // Tên collection Wallet
-          localField: '_id', // ID của user
-          foreignField: 'userId', // Tham chiếu đến userId của Wallet
-          as: 'wallet', // Tên key để ánh xạ kết quả
+          from: 'wallets',
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'wallet',
         },
       },
-      { $unwind: { path: '$wallet', preserveNullAndEmptyArrays: true } }, // Flatten mảng wallet
+      { $unwind: { path: '$wallet', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           firstname: 1,
@@ -139,22 +133,19 @@ const matchQuery = regex
           createdAt: 1,
           averageRating: 1,
           numberOfRating: 1,
-          wallet: { $ifNull: ['$wallet.point', 0] }, // Lấy wallet.point, nếu null trả về 0
+          wallet: { $ifNull: ['$wallet.point', 0] },
         },
-            },
-            { $sort: { [sortField || 'createdAt']: sortOrder === 'asc' ? 1 : -1 } }, // Sắp xếp, mặc định theo ngày tạo
-      { $skip: skip }, // Phân trang: bỏ qua n bản ghi
-      { $limit: limit }, // Phân trang: giới hạn số bản ghi
+      },
+      { $sort: { [sortField || 'createdAt']: sortOrder === 'asc' ? 1 : -1 } },
+      { $skip: skip },
+      { $limit: limit },
     ];
 
-    // Thực thi aggregation pipeline
     const users = await this.userModel.aggregate(pipeline).exec();
     const total = await this.userModel.countDocuments(matchQuery).exec();
 
-    // Trả về kết quả
     return { total, users };
   }
-  
   
 
   async updateRefreshTokenService(
